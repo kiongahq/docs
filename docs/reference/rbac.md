@@ -1,0 +1,109 @@
+# RBAC & security
+
+Authorization runs on **every** API request, in **every** deployment profile — local
+and public alike. The rule table the console uses to enable/disable controls is
+derived from the exact same `Allowed` function the API enforces, so the UI can never
+drift from the backend.
+
+## Roles
+
+| Role | Can do |
+| --- | --- |
+| `admin`, `operator` | Everything, including platform connections |
+| `engineer` | Full ML lifecycle — projects, pipelines, models, agents, tools, features, functions, realtime — but **not** platform connections |
+| `viewer` | Read-only (all `GET`s) |
+| `service` | Internal reporting only — traces, pipeline step transitions, materialization reports, realtime stats |
+
+The `engineer` write scope is the ML lifecycle paths; connections stay
+admin/operator-only. The `service` role is deliberately narrow: it can report state
+back to the control plane but cannot manage resources.
+
+## Where identity comes from
+
+The gateway resolves a principal in this order:
+
+1. **OIDC principal** — when `OIDC_ISSUER` is set, the auth middleware verifies the
+   bearer JWT (RS256, JWKS from `OIDC_JWKS_URL`) and extracts roles.
+2. **Internal service token** — a bearer equal to `MLAIOPS_INTERNAL_TOKEN`
+   (constant-time compared) yields the `service` role.
+3. **Local development principal** — otherwise the request acts as
+   `MLAIOPS_LOCAL_ROLE` (default `admin`), so local workflows need no auth.
+
+### Roles from OIDC claims
+
+In public mode, roles come from the token's `roles` claim, falling back to the
+`groups` claim when no `roles` claim is present. This means **Dex group membership
+maps directly to platform roles** — put a user in a `viewer` group and they get
+read-only access. Configure the mapping in Dex or your IdP.
+
+## Checking your identity
+
+`GET /api/v1/me` returns your subject, email, roles, auth mode, and effective
+permissions:
+
+```json
+{
+  "subject": "you@example.com",
+  "email": "you@example.com",
+  "roles": ["engineer"],
+  "mode": "oidc",
+  "permissions": {
+    "projects_write": true, "pipelines_write": true, "models_write": true,
+    "agents_write": true, "tools_write": true, "features_write": true,
+    "functions_write": true, "connections_write": false
+  }
+}
+```
+
+The console fetches this at load and disables any control your role cannot use
+(with a tooltip explaining why).
+
+## Trying it locally
+
+Preview the read-only console by starting the gateway as a viewer:
+
+```bash
+MLAIOPS_LOCAL_ROLE=viewer docker compose -f deploy/compose.yaml up -d gateway
+```
+
+Then a write is denied and a read succeeds:
+
+```bash
+curl -s -o /dev/null -w "%{http_code}\n" -X POST http://localhost:8080/api/v1/projects \
+  -H 'Content-Type: application/json' -d '{"name":"x","template":"blank"}'   # 403
+curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080/api/v1/projects  # 200
+```
+
+Restore admin by removing the override and restarting the gateway.
+
+## The internal service token
+
+In public mode, in-platform reporters (agent runtime, pipeline flows, materializer,
+realtime processor) authenticate with `MLAIOPS_INTERNAL_TOKEN` and get the `service`
+role — enough to report sessions, steps, materializations, and stats, and nothing
+more. Generate it with `openssl rand -hex 24` and set it in `.env`.
+
+## Other security controls
+
+| Control | Local | Public |
+| --- | --- | --- |
+| **Transport** | HTTP on localhost | HTTPS via Caddy (automatic Let's Encrypt) |
+| **AuthN** | off (local role) | OIDC via Dex on every `/api/*` route |
+| **CORS** | `*` | pinned to `MLAIOPS_ALLOWED_ORIGIN` (your domain) |
+| **Ports** | all published | only Caddy (80/443); everything else internal-only |
+| **Secrets** | dev defaults | `.env` on the VM; connections store only a secret *reference* |
+| **LLM keys** | env-only | env-only — never written to traces, logs, or the store |
+| **Object store creds** | in the storage-proxy only | same (sole credential holder) |
+
+## Network isolation (scale path)
+
+On Kubernetes, `config/network/default-deny.yaml` + `platform-allow.yaml` provide
+scoped NetworkPolicies, and `config/network-istio/strict-mtls.yaml` enables strict
+mTLS. On Compose, the single private network plus the closed internal ports provide
+the isolation boundary.
+
+## Audit
+
+Every mutation writes an immutable audit event (who, what, when), queryable at
+`GET /api/v1/audit`. In Postgres mode, the audit write is part of the same
+transaction as the resource change and the Kafka outbox entry.

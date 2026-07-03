@@ -1,0 +1,59 @@
+# CLI reference
+
+`mlaiops` is a single static Go binary for quick operator/engineer tasks against the
+control plane. It's intentionally small — a thin, scriptable wrapper over the REST
+API. For anything richer, use the [Python SDK](../modules/python.md).
+
+## Build
+
+```bash
+make build          # produces bin/mlaiops-cli (and every other binary)
+# or
+cd go && go build -o mlaiops ./cmd/cli
+```
+
+## Configuration
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `MLAIOPS_URL` | `http://localhost:8080` | Gateway base URL |
+| `USER` | `cli` | Sent as `X-MLAIOps-Actor` for audit attribution |
+
+## Commands
+
+Read commands (list resources as pretty-printed JSON):
+
+```bash
+mlaiops project list
+mlaiops pipeline list
+mlaiops model list
+mlaiops agent list
+mlaiops tool list
+mlaiops connection list
+mlaiops audit list
+```
+
+Submit a pipeline for a project (runs `training-pipeline`):
+
+```bash
+mlaiops pipeline submit <project-id>
+```
+
+## Examples
+
+```bash
+# point at a remote gateway
+MLAIOPS_URL=https://platform.example.com mlaiops project list
+
+# find a project id, then submit a run
+mlaiops project list
+mlaiops pipeline submit prj-1783101021841102592
+```
+
+Non-2xx responses print the error body to stderr and exit non-zero, so the CLI
+composes cleanly in shell scripts.
+
+!!! tip "Auth"
+    The CLI sends no bearer token. Against a public (OIDC) gateway you'd front it
+    with your own auth; for automation, use the [SDK](../modules/python.md) or call
+    the API directly with the appropriate `Authorization` header.
