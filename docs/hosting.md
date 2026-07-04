@@ -52,7 +52,9 @@ Internet ──► Caddy (443, auto Let's Encrypt TLS)
    creates Kafka topics, and waits for the gateway. First TLS issuance takes
    Caddy a few seconds after DNS resolves.
 
-4. Open `https://<your-domain>` — API requests require a Dex login token;
+4. Open `https://<your-domain>` and choose **Open console**. Nexus redirects to
+   Dex, validates the authorization callback, and establishes a secure HttpOnly
+   browser session;
    sign in with the admin user from `.env`.
 
 ## Serverless functions (optional)

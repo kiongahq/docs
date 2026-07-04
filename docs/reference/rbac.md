@@ -63,8 +63,9 @@ The gateway resolves a principal in this order:
    bearer JWT (RS256, JWKS from `OIDC_JWKS_URL`) and extracts roles.
 2. **Internal service token** — a bearer equal to `MLAIOPS_INTERNAL_TOKEN`
    (constant-time compared) yields the `service` role.
-3. **Local development principal** — otherwise the request acts as
-   `MLAIOPS_LOCAL_ROLE` (default `admin`), so local workflows need no auth.
+3. **Local development principal** — otherwise API requests act as
+   `MLAIOPS_LOCAL_ROLE` (default `admin`). The browser console still requires
+   the local username/password session.
 
 ### Roles from OIDC claims
 
@@ -130,7 +131,7 @@ more. Generate it with `openssl rand -hex 24` and set it in `.env`.
 | Control | Local | Public |
 | --- | --- | --- |
 | **Transport** | HTTP on localhost | HTTPS via Caddy (automatic Let's Encrypt) |
-| **AuthN** | off (local role) | OIDC via Dex on every `/api/*` route |
+| **AuthN** | local console session; API local role | OIDC authorization-code session and bearer tokens |
 | **CORS** | `*` | pinned to `MLAIOPS_ALLOWED_ORIGIN` (your domain) |
 | **Ports** | all published | only Caddy (80/443); everything else internal-only |
 | **Secrets** | dev defaults | `.env` on the VM; connections store only a secret *reference* |

@@ -54,6 +54,9 @@ Every port is overridable via the `*_PORT` variable. Defaults:
 | Variable | Values | Purpose |
 | --- | --- | --- |
 | `MLAIOPS_LOCAL_ROLE` | `admin` \| `operator` \| `user` \| `engineer` \| `viewer` | Role applied to requests when OIDC is off (`user` also requires a provisioned `local-dev` profile) |
+| `MLAIOPS_LOCAL_USERNAME` / `MLAIOPS_LOCAL_PASSWORD` | `admin` / `mlaiops-local` | Local console login; change outside throwaway development |
+| `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET` | provider client | Browser authorization-code flow |
+| `OIDC_AUTH_URL` / `OIDC_TOKEN_URL` / `OIDC_REDIRECT_URL` | provider URLs | Browser login endpoints and callback |
 | `MLAIOPS_INTERNAL_TOKEN` | random secret | Presenting it as a bearer token grants the `service` role (reporting endpoints only) |
 | `OIDC_ISSUER` | URL | Enables OIDC auth; when set, roles come from token claims |
 | `OIDC_JWKS_URL` | URL | Required with `OIDC_ISSUER`; JWKS for signature verification |

@@ -62,7 +62,7 @@ The one skip is OpenFaaS (a VM-level install, by design).
 | Service | URL | Credentials (local defaults) |
 | --- | --- | --- |
 | Landing page | <http://localhost:8080> | none |
-| Console + API | <http://localhost:8080/console.html> | none (RBAC role from `MLAIOPS_LOCAL_ROLE`, default admin) |
+| Console + API | <http://localhost:8080/console.html> | `admin` / `mlaiops-local` locally; OIDC when hosted |
 | Jupyter workbench | <http://localhost:8888> | token `mlaiops-local` |
 | MLflow | <http://localhost:15000> | none |
 | Prefect | <http://localhost:4200> | none |

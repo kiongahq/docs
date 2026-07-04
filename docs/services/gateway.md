@@ -25,6 +25,8 @@ The heart of Nexus. A single Go binary that serves the **REST API** and the
 - **Fail-closed** — if a downstream engine rejects a request, the control plane
   reflects it honestly (e.g. a run is marked failed, a deploy returns 502).
 - **Authorization** — the RBAC middleware runs on every request in every mode.
+- **Browser sessions** — local credential login for development and OIDC
+  authorization-code login with secure HttpOnly cookies when hosted.
 - **Live updates** — `GET /api/v1/events` streams a state digest over SSE.
 - **Serves the console** — the vanilla-JS UI is embedded via `go:embed`.
 
