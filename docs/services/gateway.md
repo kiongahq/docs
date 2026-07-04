@@ -29,6 +29,8 @@ The heart of Nexus. A single Go binary that serves the **REST API** and the
   authorization-code login with secure HttpOnly cookies when hosted.
 - **Live updates** — `GET /api/v1/events` streams a state digest over SSE.
 - **Serves the console** — the vanilla-JS UI is embedded via `go:embed`.
+- **Publishes engineering writing** — persisted Markdown posts, public
+  index/article pages, landing previews, and an admin authoring workflow.
 
 ### The embedded console
 

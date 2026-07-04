@@ -97,6 +97,7 @@ nav:
       - Connecting all services: connecting-services.md
       - Jupyter workbench: guides/workbench.md
       - AI coding & IDE workspace: guides/coding-workspace.md
+      - Engineering blog: guides/engineering-blog.md
       - Pipelines: guides/pipelines.md
       - Models & serving: guides/models-serving.md
       - Agents: guides/agents.md

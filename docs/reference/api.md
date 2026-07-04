@@ -28,6 +28,10 @@ document remains available at `GET /api/openapi.json`. Every request is authoriz
 | `GET` | `/api/v1/settings/tokens` | signed-in user | List personal API keys (secrets are never returned) |
 | `POST` | `/api/v1/settings/tokens` | signed-in user | Create a scoped, expiring personal API key |
 | `DELETE` | `/api/v1/settings/tokens/{id}` | key owner | Revoke a personal API key immediately |
+| `GET` | `/api/v1/blogs` | public | List published engineering posts |
+| `GET` | `/api/v1/blogs/{slug}` | public | Read a published post |
+| `GET` / `POST` | `/api/v1/admin/blogs` | admin/operator | List drafts or create a post |
+| `PUT` / `DELETE` | `/api/v1/admin/blogs/{id}` | admin/operator | Update, publish, or delete a post |
 | `GET` | `/api/v1/dashboard` | viewer+ | Workspace summary (counts + recent runs) |
 | `GET` | `/api/v1/onboarding/readiness` | viewer+ | Onboarding readiness score |
 | `GET` | `/api/openapi.json` | public | OpenAPI document |
