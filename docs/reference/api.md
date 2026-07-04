@@ -18,6 +18,9 @@ document remains available at `GET /api/openapi.json`. Every request is authoriz
 | --- | --- | --- | --- |
 | `GET` | `/api/v1/health` | public | Liveness (`{"status":"ok",...}`) |
 | `GET` | `/api/v1/me` | any | Caller identity, roles, and effective permissions |
+| `GET` | `/api/v1/admin/users` | admin/operator | List provisioned users |
+| `PUT` | `/api/v1/admin/users/{subject}` | admin/operator | Assign role, services, projects, storage, and compute quotas |
+| `DELETE` | `/api/v1/admin/users/{subject}` | admin/operator | Revoke all access |
 | `GET` | `/api/v1/dashboard` | viewer+ | Workspace summary (counts + recent runs) |
 | `GET` | `/api/v1/onboarding/readiness` | viewer+ | Onboarding readiness score |
 | `GET` | `/api/openapi.json` | public | OpenAPI document |

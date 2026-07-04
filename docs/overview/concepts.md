@@ -97,6 +97,7 @@ provider API keys never appear in traces, logs, or the control-plane store.
 ## Roles (RBAC)
 
 Every API request is authorized against a **role**: `admin`/`operator` (full
-control), `engineer` (ML lifecycle, not platform connections), `viewer`
+control and user provisioning), `user` (only assigned services, projects and
+quotas), `engineer` (legacy ML lifecycle role, not platform connections), `viewer`
 (read-only), and `service` (internal reporting only, via the internal token). See
 [RBAC & security](../reference/rbac.md).

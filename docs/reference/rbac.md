@@ -9,7 +9,8 @@ drift from the backend.
 
 | Role | Can do |
 | --- | --- |
-| `admin`, `operator` | Everything, including platform connections |
+| `admin`, `operator` | Everything, including user provisioning and platform connections |
+| `user` | Only explicitly assigned services and projects, within assigned quotas |
 | `engineer` | Full ML lifecycle — projects, pipelines, models, agents, tools, features, functions, realtime — but **not** platform connections |
 | `viewer` | Read-only (all `GET`s) |
 | `service` | Internal reporting only — traces, pipeline step transitions, materialization reports, realtime stats |
@@ -17,6 +18,36 @@ drift from the backend.
 The `engineer` write scope is the ML lifecycle paths; connections stay
 admin/operator-only. The `service` role is deliberately narrow: it can report state
 back to the control plane but cannot manage resources.
+
+## User provisioning and entitlements
+
+The `user` role is deny-by-default. An OIDC role alone does not grant access:
+an administrator must create a profile whose `subject` exactly matches the
+token's immutable `sub` claim. Profiles assign:
+
+- platform services, including separate Jupyter workbench and IDE grants;
+- existing project IDs, while projects created by the user are owned by them;
+- storage capacity and an allow-list of buckets;
+- vCPU, memory, VM, project, and concurrent-run limits;
+- an immediate suspension switch.
+
+Admins manage profiles in **Access** or through:
+
+```text
+GET    /api/v1/admin/users
+PUT    /api/v1/admin/users/{subject}
+DELETE /api/v1/admin/users/{subject}
+```
+
+Authorization is enforced in the gateway before handlers run. Collection
+responses are project-filtered, direct resource lookups return `404` when the
+resource is outside the user's scope, storage bucket requests are allow-listed,
+and project/run creation fails when quota is exhausted. UI hiding is only a
+convenience; it is never the security boundary.
+
+The capacity fields are control-plane allocations consumed by workspace and
+compute provisioners. They do not replace Kubernetes ResourceQuota, LimitRange,
+network policy, or per-user workload identities in a multi-user deployment.
 
 ## Where identity comes from
 
@@ -45,7 +76,9 @@ permissions:
 {
   "subject": "you@example.com",
   "email": "you@example.com",
-  "roles": ["engineer"],
+  "roles": ["user"],
+  "services": ["overview", "projects", "pipelines", "workbench"],
+  "provisioned": true,
   "mode": "oidc",
   "permissions": {
     "projects_write": true, "pipelines_write": true, "models_write": true,
@@ -56,7 +89,8 @@ permissions:
 ```
 
 The console fetches this at load and disables any control your role cannot use
-(with a tooltip explaining why).
+(with a tooltip explaining why), removes unassigned navigation, and hides
+unassigned workbench links.
 
 ## Trying it locally
 
