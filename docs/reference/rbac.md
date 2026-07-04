@@ -45,6 +45,28 @@ requests, records the requested services and business reason, and exposes an
 administrator approval queue. Provisioning from that queue marks the request
 approved; rejection records the reviewer and note. Both actions are audited.
 
+## Personal API keys
+
+Signed-in users create personal API keys from **Settings → Personal API keys**
+for CLI, SDK, and local-machine access. A key:
+
+- starts with `nxs_`, is generated from 256 bits of randomness, and is shown once;
+- stores only a SHA-256 digest of the high-entropy secret;
+- has explicit service/project scopes that cannot exceed the creator's access;
+- must expire within 1–365 days;
+- records last use and can be revoked immediately;
+- cannot call settings/admin APIs or expand its own scope.
+
+Use it as a bearer token:
+
+```bash
+export MLAIOPS_TOKEN='nxs_...'
+curl -H "Authorization: Bearer $MLAIOPS_TOKEN" \
+  http://localhost:8080/api/v1/projects
+```
+
+Store keys in an OS keychain or secret manager, never in source control.
+
 Authorization is enforced in the gateway before handlers run. Collection
 responses are project-filtered, direct resource lookups return `404` when the
 resource is outside the user's scope, storage bucket requests are allow-listed,

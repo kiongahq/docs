@@ -25,6 +25,9 @@ document remains available at `GET /api/openapi.json`. Every request is authoriz
 | `POST` | `/api/v1/access-requests` | authenticated user | Request one or more platform services |
 | `GET` | `/api/v1/admin/access-requests` | admin/operator | List the organization approval queue |
 | `PATCH` | `/api/v1/admin/access-requests/{id}` | admin/operator | Approve or reject an access request |
+| `GET` | `/api/v1/settings/tokens` | signed-in user | List personal API keys (secrets are never returned) |
+| `POST` | `/api/v1/settings/tokens` | signed-in user | Create a scoped, expiring personal API key |
+| `DELETE` | `/api/v1/settings/tokens/{id}` | key owner | Revoke a personal API key immediately |
 | `GET` | `/api/v1/dashboard` | viewer+ | Workspace summary (counts + recent runs) |
 | `GET` | `/api/v1/onboarding/readiness` | viewer+ | Onboarding readiness score |
 | `GET` | `/api/openapi.json` | public | OpenAPI document |

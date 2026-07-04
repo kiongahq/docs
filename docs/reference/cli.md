@@ -17,6 +17,7 @@ cd go && go build -o mlaiops ./cmd/cli
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `MLAIOPS_URL` | `http://localhost:8080` | Gateway base URL |
+| `MLAIOPS_TOKEN` | *(unset)* | Personal API key created under Console → Settings |
 | `USER` | `cli` | Sent as `X-MLAIOps-Actor` for audit attribution |
 
 ## Commands

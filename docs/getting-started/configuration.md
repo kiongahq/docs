@@ -64,6 +64,10 @@ Every port is overridable via the `*_PORT` variable. Defaults:
 
 See [RBAC & security](../reference/rbac.md) for the full model.
 
+Personal API keys for local CLI/SDK use are managed in the console under
+**Settings**. They are separate from the internal service token and OIDC
+browser session.
+
 ## LLM providers
 
 Used by the agent runtime and trace proxy.
