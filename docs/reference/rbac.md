@@ -31,7 +31,7 @@ token's immutable `sub` claim. Profiles assign:
 - vCPU, memory, VM, project, and concurrent-run limits;
 - an immediate suspension switch.
 
-Admins manage profiles in **Access** or through:
+Admins manage profiles in **Users & access** or through:
 
 ```text
 GET    /api/v1/admin/users
@@ -90,7 +90,9 @@ permissions:
 
 The console fetches this at load and disables any control your role cannot use
 (with a tooltip explaining why), removes unassigned navigation, and hides
-unassigned workbench links.
+unassigned workbench links. Every signed-in user can open **My access** to see
+their effective role, service grants, assigned projects and buckets, compute
+allocation, quotas, and suspension/provisioning status.
 
 ## Trying it locally
 
