@@ -170,12 +170,13 @@ make -C deploy test-load        # k6 load test against the gateway
 
 ## Public / production install
 
-To host on a public VM behind TLS + OIDC, see **[Public hosting](../hosting.md)**.
-The short version:
+To host a gateway-only pilot on a public VM behind TLS with an external OIDC
+provider, see **[Public VM](../operations/public-vm.md)**. After preparing
+`/etc/kionga/deployment.json`, non-secret config, and mounted secret files:
 
 ```bash
-cp .env.example .env    # fill in domain, OIDC, secrets
-make -C deploy public-up
+python3 deploy/vm/up.py /etc/kionga/deployment.json --validate-only
+make -C deploy public-up DEPLOYMENT=/etc/kionga/deployment.json
 ```
 
 ## Documentation site (this site)

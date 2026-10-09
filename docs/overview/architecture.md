@@ -209,9 +209,11 @@ cards live without hammering the API.
 - **Local:** `deploy/compose.yaml` — bundled services, ports published to localhost,
   local console login required; API RBAC role comes from `MLAIOPS_LOCAL_ROLE`
   (default `admin`).
-- **Public:** `deploy/compose.yaml` **+** `deploy/compose.public.yaml` — the same
-  services, but internal ports are closed and a **Caddy** TLS edge + **Dex** OIDC
-  provider are added in front. Auth is on; RBAC roles come from OIDC claims.
-- **Scale path:** the literal Kubernetes stack (Kind cluster, CRDs, operator,
-  KServe/KFP/Istio) under `deploy/config/` and `deploy/kind/` — optional, documented, and
-  not required for local or single-VM use.
+- **Public VM pilot:** `deploy/vm/compose.yaml` runs a digest-pinned gateway behind
+  Caddy TLS. Identity, PostgreSQL, and ML services are external; this is not the
+  local stack with ports exposed. The older Compose/Dex overlay is retained only
+  for compatibility testing.
+- **Multi-user scale path:** the Helm package and operator under `deploy/helm/`
+  and `deploy/config/` target managed Kubernetes. `deploy/kind/` is a local
+  fidelity environment. Production use requires the
+  [acceptance checklist](../operations/production-operations.md).

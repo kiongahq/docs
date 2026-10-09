@@ -1,13 +1,14 @@
 # Configuration reference
 
-Kionga is configured entirely through environment variables. Locally, sane defaults
-mean the stack runs with **zero configuration**. For public hosting you supply a
-`.env` file (copy `.env.example`). This page is the complete reference.
+The local Compose stack uses environment variables and development defaults. This
+page lists those settings and service-specific variables. The recommended public
+VM and managed Kubernetes packages use versioned non-secret configuration plus
+mounted secret files; see [Public hosting](../hosting.md) for their requirements.
 
 !!! danger "Secrets"
-    Never commit `.env` (it is gitignored). Never put provider API keys or the
-    internal token in the compose files. Local credentials shown here are
-    development defaults — override every one for public.
+    Never commit `.env` or put provider API keys or internal tokens in Compose
+    files. Local credentials shown here are development defaults, not public
+    deployment credentials.
 
 ## Published ports
 
@@ -152,7 +153,12 @@ Used by the agent runtime and trace proxy.
 | `OPENFAAS_URL` | *(unset)* | faasd/OpenFaaS gateway; unset means serverless is "not configured" |
 | `OPENFAAS_USER` / `OPENFAAS_PASSWORD` | *(unset)* | Basic auth |
 
-## Public hosting (compose.public.yaml)
+## Legacy Compose/Dex demo overlay
+
+The variables below apply only to `deploy/compose.public.yaml`, retained for
+compatibility testing. Do not use this overlay as the recommended public
+deployment. Use the [public VM](../operations/public-vm.md) or
+[managed Kubernetes](../operations/managed-kubernetes.md) package instead.
 
 | Variable | Purpose |
 | --- | --- |

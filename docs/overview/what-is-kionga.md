@@ -11,10 +11,10 @@ tooling:
 3. **Agentic AI** — LangGraph agents with persistent session state, long-term
    memory, tool use, LLM cost accounting, and full tracing.
 
-The bundled application is delivered as **one Docker Compose stack**. The same
-application services run on a developer laptop and a single public VM; the public
-deployment adds an authenticated TLS edge. Kubernetes supplies the distributed,
-isolated workspace and controller scale path.
+The local development environment is delivered as a Docker Compose stack. The
+recommended public VM package runs a gateway and TLS edge against separately
+operated identity, database, and ML services. Managed Kubernetes is the path for
+distributed, isolated user workspaces and workload controllers.
 
 ## The problem it solves
 
@@ -51,12 +51,13 @@ non-proprietary tools:
 
 ## What Kionga is *not*
 
-- **It is not a managed cloud service.** It is software you host. The default target
-  is a single VM via Docker Compose; Kubernetes is a documented scale path.
+- **It is not a managed cloud service.** It is software you host. Compose is the
+  development path; a gateway-only VM pilot and managed Kubernetes are distinct
+  deployment packages.
 - **It does not require Kubernetes to be useful.** The three Kubernetes-only
   reference tools (KServe/Knative for serving, KFP/Argo for pipelines, Istio for the
   mesh) are fulfilled Compose-natively (mlflow-serve, Prefect, Caddy). The literal
-  Kubernetes stack (Kind + manifests) remains available as an optional fidelity path.
+  Kubernetes stack (Kind + manifests) remains available for local fidelity testing.
 - **It does not ship its own LLM by default.** Agents call external provider APIs
   (OpenAI, Anthropic, or any OpenAI-compatible endpoint) through a trace-capturing
   proxy. A `mock` backend lets the whole stack run with zero API keys.

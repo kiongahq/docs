@@ -2,3 +2,18 @@ site/
 _site/
 .venv/
 __pycache__/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.DS_Store
+.idea/
+.vscode/
+.env
+.env.*
+!.env.example
+
+# Local coding-assistant state.
+.claude/
+.codex/
+.cursor/
+.aider*

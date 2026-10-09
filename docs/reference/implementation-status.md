@@ -1,8 +1,11 @@
 # Implementation status
 
-This page is the source of truth for what ships in the Kionga repositories. “Implemented”
-means Kionga owns the API, persistence, authorization, UI, and integration contract.
-It does not mean every upstream engine is embedded in the default Compose profile.
+This page records the implementation scope in the Kionga repositories. “Implemented”
+means the named code path exists; it does not certify a production deployment or
+mean every upstream engine is bundled with Compose. The delivery labels and
+evidence below distinguish local tests, live integration tests, and unverified
+external systems. Before admitting users, complete the
+[production acceptance checklist](../operations/production-operations.md).
 
 ## Capability matrix
 
@@ -34,7 +37,7 @@ It does not mean every upstream engine is embedded in the default Compose profil
 | Real-time processing | **Bundled demos** | Kafka fraud, call-center, and recommendation flows with live stats; deterministic fallbacks until a model/agent is selected |
 | Object storage filesystem in Jupyter | **Bundled local workbench** | S3FS mounts configured object-store buckets under `/workspace/object-store`; production multi-user mounts require per-workspace isolation |
 | Functions and event-driven microservices | **External integration** | Project-owned OCI functions, quotas, HTTP/async/Cron/Kafka trigger metadata, invocation, and function DAG execution require `OPENFAAS_URL` |
-| Public VM edge | **Deployment overlay** | Caddy TLS and Dex OIDC are added with `make -C deploy public-up`; internal service ports are closed |
+| Public VM edge | **Gateway-only pilot** | `make -C deploy public-up` runs the digest-pinned gateway behind Caddy TLS with external OIDC, PostgreSQL, and ML services. The separate legacy Compose/Dex overlay is a development compatibility path, not the recommended public package. |
 | Engineering blog and editorial workspace | **Bundled** | Editor.js block content with a server renderer sanitized by bluemonday, separate `/editorial.html` workspace with its own `kionga_editorial` session and author/editor/editorial_admin memberships, draft → review → scheduled/published workflow with a leased scheduled publisher, immutable revisions with compare/restore, autosave with 409 conflicts and local recovery, image uploads (sniffed, EXIF stripped, 480/960/1600 variants) to S3 (RustFS locally) or the filesystem, public search/tag/author pages with highlighted code. See [engineering blog](../guides/engineering-blog.md) |
 | Kubernetes-native execution/serving | **Scale path** | CRDs, operator, RBAC, NetworkPolicy, workspace reconciliation, KFP/Argo and KServe contracts, plus an at-least-once lifecycle worker with manual Kafka commits; elastic agent scaling requires resource metrics |
 
@@ -67,9 +70,10 @@ It does not mean every upstream engine is embedded in the default Compose profil
   required for isolated per-user workspaces and distributed-team resource
   reconciliation.
 
-## Verified local baseline
+## Local verification commands
 
-From the workspace folder, the repositories are expected to pass:
+From the workspace folder, run these commands against the exact revision to be
+released. A command listed here is not a claim that the current CI run passed:
 
 ```bash
 make -C platform verify              # Go, console and unit tests

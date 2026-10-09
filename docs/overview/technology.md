@@ -77,9 +77,11 @@ reflect the images and dependency pins in the Kionga repositories.
 | **GitHub Actions** | CI: `go` job (gofmt, vet, race tests, integration, build, banned-tech scan) and `python` job (ruff, pytest, compileall) |
 | **MkDocs Material** | This documentation site |
 
-## Kubernetes scale path (optional)
+## Kubernetes workload path
 
-Maintained but **not required** for local or single-VM use:
+Managed Kubernetes is required for isolated per-user workspaces and distributed
+team workloads. It is not required for the local Compose stack or a gateway-only
+VM pilot:
 
 | Asset | Location | Role |
 | --- | --- | --- |
@@ -94,8 +96,8 @@ Maintained but **not required** for local or single-VM use:
 
 The platform uses open-source, non-proprietary tools throughout. Where a
 capability is commonly associated with a Kubernetes-only tool, Kionga uses a
-Docker-friendly equivalent for a laptop or single VM, with separate Kubernetes
-integration contracts for the scale path:
+Docker-friendly equivalent for local development, with separate Kubernetes
+integration contracts for distributed workloads:
 
 | Capability | Kionga uses | Kubernetes-native equivalent |
 | --- | --- | --- |

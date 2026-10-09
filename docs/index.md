@@ -1,9 +1,9 @@
 # Kionga
 
-Kionga is a **self-hosted platform that brings the whole AI lifecycle together** —
-classical ML, data-centric AI, and agentic AI — behind one control plane and one
-web console. Its bundled application services run together with Docker Compose on
-a laptop or single VM; Kubernetes adds the isolated, multi-user scale path.
+Kionga is a self-hosted control plane for ML, data, and agent workloads. The
+development stack runs with Docker Compose. Managed Kubernetes is the intended
+path for isolated, multi-user workspaces and workloads, subject to deployment
+acceptance testing in your environment.
 
 <div class="grid cards" markdown>
 
@@ -36,9 +36,10 @@ a laptop or single VM; Kubernetes adds the isolated, multi-user scale path.
 
 ## What you can do with it
 
-Run `make -C deploy local-up`, open the landing page at <http://localhost:8080>, then sign in
-to the console with `admin` / `mlaiops-local`. If 8080 is occupied, use
-`GATEWAY_PORT=18080 make -C deploy local-up`. The bundled lifecycle includes:
+From a folder containing the component repositories, run `make -C deploy local-up`,
+open <http://localhost:8080>, and sign in with the local development account
+`admin` / `mlaiops-local`. If 8080 is occupied, the startup script selects an
+available port and prints its URL. The local stack supports:
 
 - **Create a production-shaped project** from a versioned catalog: classical ML,
   distributed PyTorch training, a functional LangGraph agent, a full-stack AI
@@ -64,17 +65,19 @@ to the console with `admin` / `mlaiops-local`. If 8080 is occupied, use
   with a browser terminal, wired into every service.
 - **Deploy independent OCI functions** and compose them into reusable DAGs when
   an OpenFaaS gateway is configured.
-- **Put the same stack on a public VM** behind TLS + OIDC with one script.
+- **Deploy a gateway-focused public VM pilot** or use the managed Kubernetes
+  package for isolated team workloads. Neither path removes the need for an
+  external identity provider, secret manager, backups, and staging validation.
 
 ## Design principles
 
 | Principle | What it means in practice |
 | --- | --- |
-| **One application stack** | The public VM uses the Compose application services plus a Caddy/Dex edge; Kubernetes is the separate distributed-team scale path. |
-| **Functional, not simulated** | Bundled pipelines execute, models serve live, agents run through a real runtime, and features come from Redis. External capabilities report `not configured` until connected. |
-| **Compose-native** | Kubernetes-only tools (KServe, KFP, Istio) are fulfilled by Docker-friendly equivalents (mlflow-serve, Prefect, Caddy). Kubernetes stays a documented scale path. |
-| **Honest state** | Nothing is green by wishful thinking — every connection is actively health-checked; costs and tokens are measured, never estimated. |
-| **Secure by default in public** | OIDC on every route, RBAC on every request, secrets in `.env`, LLM keys never written to traces or logs. |
+| **Clear deployment boundaries** | Local Compose runs the integrated development stack; the public VM package runs a gateway edge against external services; Kubernetes is the multi-user workload path. |
+| **Functional, not simulated** | Bundled pipelines execute, models can serve from live endpoints, and features come from Redis. Optional external capabilities need their own configured engines. |
+| **Compose-native development** | MLflow serving and Prefect cover local workflows; Kubernetes-native execution and isolation have separate deployment and acceptance requirements. |
+| **Honest state** | Connection status comes from health checks where available; usage is reported only when the underlying provider supplies it. See [implementation status](reference/implementation-status.md) for verified and unverified paths. |
+| **Separate development from production** | Local credentials and shared workspaces are development defaults. Public deployment requires OIDC, secret files from a secret manager, workload isolation, and the [production acceptance checks](operations/production-operations.md). |
 
 ## How this documentation is organized
 
