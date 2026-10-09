@@ -2,8 +2,19 @@
 
 The workbench is a JupyterLab service that runs **inside the platform network**, so
 every service is one hostname away. It also provides the **terminal** for
-shell-based dev work. Create a personal key in Settings and set `MLAIOPS_TOKEN`
-in your terminal or notebook environment to call the platform API as yourself.
+shell-based dev work. Create a personal key in Settings to call the platform API
+as yourself. Use a secure prompt in a notebook, or supply `MLAIOPS_TOKEN` to a
+non-interactive process through its environment or secret manager.
+The browser session opens Jupyter, but it is not copied into notebook kernels.
+The SDK uses the preconfigured `MLAIOPS_URL`; it still needs your personal key.
+
+```python
+from getpass import getpass
+from mlaiops_sdk import MLAIOpsClient
+
+with MLAIOpsClient(token=getpass("Kionga personal API key: ")) as client:
+    print(client.list_projects())
+```
 
 - **URL:** [Open Jupyter through Kionga](http://localhost:8080/workspace.html?tool=workbench)
 - **Login:** your Kionga session; the gateway keeps the notebook token server-side
