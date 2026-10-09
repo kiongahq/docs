@@ -6,8 +6,7 @@ starting, an in-stack-vs-localhost hostname mixup, or Docker resource limits.
 ## Image pull ends with `EOF`
 
 An `EOF` from a registry CDN means the remote image transfer ended early; it is not
-a Kionga configuration error. The bundled object store is RustFS from Docker Hub;
-MinIO images can no longer be pulled anonymously, which is why it was replaced. `make -C deploy local-up`
+a Kionga configuration error. The bundled object store is RustFS from Docker Hub. `make -C deploy local-up`
 automatically limits parallel downloads to two and retries missing images four times. Docker
 keeps completed layers, so if all attempts are exhausted, run the same command again:
 

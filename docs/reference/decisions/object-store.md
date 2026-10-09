@@ -23,22 +23,20 @@ that fits a self-hosted product. It must run as one container with one volume.
 
 | Option | Fit | Why not / why |
 | --- | --- | --- |
-| **RustFS** | S3-compatible, Apache-2.0, 1.0 GA (2026-09), ~35k stars, active; console on 9001, `/health`; MinIO-style deployment | Chosen. Closest to what Kionga already used (same ports, same single-volume model), permissive licence, documented migration path from MinIO. |
+| **RustFS** | S3-compatible, Apache-2.0, 1.0 GA (2026-09), ~35k stars, active; console on 9001, `/health`; single-container deployment | Chosen. Fits the local S3 contract with one service and one volume. |
 | SeaweedFS | Mature, Apache-2.0, broad S3 coverage | More moving parts (master, volume, filer, S3 gateway) for a single-node stack; S3 credentials need a separate config file. |
 | Garage | Small, built for self-hosting | AGPL-3.0; no web console; buckets and keys need its admin CLI. |
 | Chainguard MinIO | Same software, maintained build | Free tier serves only `:latest`, so builds cannot pin a version. |
 
 ## Consequences
 
-- The Compose service is `objectstore`; it keeps `minio` as a network alias so
-  existing `http://minio:9000` settings resolve. Credentials stay
+- The Compose service and DNS name are both `objectstore`. Credentials are
   `mlaiops` / `mlaiops-local-secret` locally (`OBJECTSTORE_*` to override).
-- RustFS runs as uid 10001 and has its own data volume (`objectstore-data`). Data
-  from an existing MinIO volume is copied across with `make -C deploy migrate-minio`,
-  which verifies every object and never writes to the source, rather than pointing
-  RustFS at MinIO's files in place.
+- RustFS runs as uid 10001 with its own `objectstore-data` volume. The local
+  stack has no automatic migration or legacy DNS alias. Older Docker volumes
+  are left untouched, not mounted into RustFS.
 - `deploy` tests assert the image is pinned RustFS, that no service uses a
   `minio/` image, and that every S3 client points at `objectstore`. The platform
-  accepts `rustfs`, `s3` and `minio` connection types for storage readiness.
+  accepts `rustfs` and `s3` connection types for storage readiness.
 - Production deployments keep using any external S3-compatible store (see
   [External object storage](../../operations/external-storage.md)).

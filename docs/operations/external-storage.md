@@ -2,7 +2,7 @@
 
 Kionga ships RustFS for local use. Production and team deployments usually
 keep artifacts, feature snapshots and datasets in an existing S3-compatible
-store (AWS S3, GCS interoperability, Azure via an S3 gateway, Ceph RGW, MinIO,
+store (AWS S3, GCS interoperability, Azure via an S3 gateway, Ceph RGW, RustFS,
 Wasabi, Cloudflare R2). A **storage connection** records such a bucket and
 checks it.
 
@@ -25,7 +25,7 @@ curl -X POST $KIONGA/api/v1/admin/storage-connections/<id>/test
 | `endpoint` | `http(s)://host[:port]`, no path, query or embedded credentials |
 | `region` | lowercase letters, digits and hyphens; defaults to `us-east-1` for signing |
 | `bucket` | valid S3 name; buckets with dots require `path_style` over HTTPS (wildcard certificates do not cover them) |
-| `path_style` | `true` for RustFS, MinIO, Ceph and dotted buckets; `false` for virtual-hosted AWS |
+| `path_style` | `true` for RustFS, Ceph and dotted buckets; `false` for virtual-hosted AWS |
 | `ca_bundle` | PEM CA certificates added to the system roots; private keys are rejected |
 | `secret_ref` | `env:VAR` holding `ACCESS_KEY_ID:SECRET_ACCESS_KEY` |
 

@@ -44,7 +44,7 @@ Two DNS worlds:
 | MLflow tracking/registry | http://localhost:15000 | `http://mlflow:5000` | none |
 | Prefect UI/API | http://localhost:4200 | `http://prefect-server:4200` | none |
 | Langfuse | http://localhost:3000 | `http://langfuse:3000` | `admin@local.dev` / `mlaiops-local-admin`; API keys `pk-lf-local-dev` / `sk-lf-local-dev` |
-| RustFS S3 API | http://localhost:9000 | `http://objectstore:9000` (alias `minio`) | `mlaiops` / `mlaiops-local-secret` |
+| RustFS S3 API | http://localhost:9000 | `http://objectstore:9000` | `mlaiops` / `mlaiops-local-secret` |
 | RustFS web console | http://localhost:9001 | — | same as S3 |
 | Kafka broker | localhost:9092 | `kafka:9092` | none |
 | Kafka REST proxy | http://localhost:8082 | `http://kafka-rest:8082` | none |
@@ -85,7 +85,7 @@ Notes:
   Kubernetes API server is a healthy signal.
 - **Onboarding readiness** (Overview ring / Platform panel) turns green from
   these connections: workspace = any project, plus healthy `mlflow`,
-  `s3`/`rustfs`/`minio` (storage), `kafka` (events), and `kubernetes` connections.
+  `s3`/`rustfs` (storage), `kafka` (events), and `kubernetes` connections.
   Kubernetes is the documented scale path — on the Compose-native stack the
   execution engine is Prefect + the serving manager, so that one item stays
   pending unless you connect a real cluster (e.g. Kind).

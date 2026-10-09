@@ -62,9 +62,8 @@ create.
 
 S3-compatible object storage, served by [RustFS](https://github.com/rustfs/rustfs)
 (Apache-2.0). `objectstore-init` is a one-shot job that creates the buckets and exits.
-The service also answers to the hostname `minio`, so older settings keep working.
-It replaced MinIO, whose images are no longer distributed; see
-[Decision: object store](../reference/decisions/object-store.md) and the migration below.
+The local hostname is `objectstore`. See
+[Decision: object store](../reference/decisions/object-store.md).
 
 | | |
 | --- | --- |
@@ -80,24 +79,6 @@ The shared Compose workbench mounts these buckets through S3FS at
 replacement: renames and directory listings map to object-store operations. Only
 Jupyter receives FUSE/SYS_ADMIN; application services continue through S3 APIs or
 the bounded storage proxy.
-
-### Moving data from MinIO
-
-Earlier versions bundled MinIO in a `minio-data` volume. Its buckets are not visible
-to RustFS until copied; `make -C deploy local-up` prints a reminder until then.
-
-```bash
-make -C deploy migrate-minio
-tail -f /tmp/minio-to-rustfs/progress.log        # percent, ETA, rate, errors
-```
-
-The migration starts a temporary MinIO on the old volume (the MinIO image must still
-be on the machine, or set `MINIO_IMAGE` to one you can pull), copies every bucket
-and object with its content type and metadata, and verifies each by size and MD5,
-reading the stored object back when its ETag is multipart. Re-running resumes.
-`/tmp/minio-to-rustfs/report.csv` lists every object with its before/after state and
-`summary.json` gives the verdict. The `minio-data` volume is only read; delete it
-yourself once satisfied. Only the current version of each object is copied.
 
 ## mlflow
 

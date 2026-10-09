@@ -13,7 +13,7 @@ model-serving containers. This section documents each one.
 | **redis** | `redis:7.4.5-alpine` | 6379 | Data plane | Online feature store |
 | **kafka** | `apache/kafka:3.9.1` | 9092 | Data plane | Events, traces, real-time topics |
 | **kafka-rest** | `ghcr.io/aiven-open/karapace:6.1.4` | 8082 | Data plane | Confluent-compatible HTTP access to Kafka |
-| **objectstore** | `rustfs/rustfs` | 9000 / 9001 | Data plane | S3 object storage + console (alias `minio`) |
+| **objectstore** | `rustfs/rustfs` | 9000 / 9001 | Data plane | S3 object storage + console |
 | **objectstore-init** | `mlaiops-mlflow` (boto3) | — | Data plane | One-shot bucket creation |
 | **mlflow** | `mlaiops-mlflow` (built) | 15000 | Data plane | Tracking + registry |
 | **feature-gateway** | Go (`SERVICE=feature-gateway`) | 8083 | Data plane | Online feature retrieval |
