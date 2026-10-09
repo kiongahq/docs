@@ -154,13 +154,6 @@ The build forbids certain proprietary product names in the Go source and `deploy
 If you referenced one (even in a comment), reword it — serverless is OpenFaaS,
 serving is mlflow-serve, pipelines are Prefect.
 
-## macOS: git stalls / "not a git repository"
-
-The repo is under an iCloud-managed folder and files were evicted. Recover with
-`brctl download <repo>/.git`; if the downloader is wedged, `killall bird` (and
-`fileproviderd`) resets it. Better: move the repo out of `~/Documents`/`~/Desktop`
-entirely.
-
 ## Everything is broken after an update
 
 Reset to a clean state (destructive — wipes volumes):

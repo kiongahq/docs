@@ -17,11 +17,6 @@ folder.
 | **Python 3.11+** | Only for the SDK, tests, or docs outside Docker | Not needed just to run the stack |
 | **Node.js** | Only for `make -C platform verify` (JS syntax check) | Not needed to run the stack |
 
-!!! tip "macOS + iCloud"
-    Don't keep the checkouts under an iCloud-managed folder (`~/Documents`,
-    `~/Desktop`). iCloud can evict files and stall `git` and image builds. Use a plain
-    path like `~/kionga`.
-
 ## Fastest path: the full stack
 
 ```bash
@@ -76,9 +71,7 @@ export GATEWAY=http://localhost:18080
 Bucket creation uses the `boto3` already included in the local MLflow image;
 it does not pull a separate S3 client image. A registry error that says a
 repository or tag does not exist fails immediately rather than consuming all
-retry attempts. On macOS, if iCloud has evicted `.dockerignore` or `Dockerfile`,
-download those files in Finder before a cold build; the startup preflight will
-report the affected file.
+retry attempts.
 
 ### Verify it works
 

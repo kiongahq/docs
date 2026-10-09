@@ -45,9 +45,10 @@ with MLAIOpsClient(base_url="http://localhost:8080", actor="you@example.com") as
 | Connections | `list_connections()`, `create_connection()`, `test_connection()` |
 | Audit | `audit_events()` |
 
-Set `MLAIOPS_TOKEN` to a scoped personal key when calling a hosted platform from a
-local machine. The gateway applies the same project/service boundaries to SDK calls
-as it does to the console.
+Inside Kionga's Jupyter or browser IDE workspace, `MLAIOPS_URL` is already set and
+`MLAIOpsClient()` needs no personal key. Set `MLAIOPS_TOKEN` to a scoped personal
+key when calling a hosted platform from your own machine. The gateway applies
+the same current project/service grants to in-workspace SDK calls as to the console.
 
 ### `models.py` — typed resources
 

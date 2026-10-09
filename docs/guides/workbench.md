@@ -2,17 +2,17 @@
 
 The workbench is a JupyterLab service that runs **inside the platform network**, so
 every service is one hostname away. It also provides the **terminal** for
-shell-based dev work. Create a personal key in Settings to call the platform API
-as yourself. Use a secure prompt in a notebook, or supply `MLAIOPS_TOKEN` to a
-non-interactive process through its environment or secret manager.
-The browser session opens Jupyter, but it is not copied into notebook kernels.
-The SDK uses the preconfigured `MLAIOPS_URL`; it still needs your personal key.
+shell-based dev work. Sign in to Kionga and open Jupyter or the browser IDE from
+the console. Inside either workspace, the SDK uses a loopback helper configured
+through `MLAIOPS_URL` and acts as the workspace owner without a personal API key.
+The browser session is never copied into notebook kernels; the gateway checks
+current user grants on each API request. Personal API keys are for tools running
+outside Kionga, such as your own laptop IDE or external automation.
 
 ```python
-from getpass import getpass
 from mlaiops_sdk import MLAIOpsClient
 
-with MLAIOpsClient(token=getpass("Kionga personal API key: ")) as client:
+with MLAIOpsClient() as client:
     print(client.list_projects())
 ```
 
@@ -21,9 +21,34 @@ with MLAIOpsClient(token=getpass("Kionga personal API key: ")) as client:
 - **Direct local diagnostics:** `http://127.0.0.1:8888/workspaces/workbench/`, with `JUPYTER_TOKEN`; the port is bound to loopback
 - **Build:** `workspace/jupyter/Dockerfile` (Python 3.11)
 - **Persistence:** your work lives in the `jupyter-data` volume across restarts
+- **Notebook file IDs:** Jupyter keeps its file-ID database at `/workspace/.jupyter/file_id_manager.db` on that same volume, so open notebooks retain their IDs across image rebuilds
 - **Object store mount:** `/workspace/object-store/<bucket>`
 - **AI chat:** Jupyter AI chat panel in the left sidebar
+- **JupyterLab extensions:** the Extension Manager lists installed extensions in [read-only mode](https://jupyterlab.readthedocs.io/en/stable/user/extensions.html#configuring-the-extension-manager). PyPI's [removed XML-RPC `browse` method](https://warehouse.pypa.io/api-reference/xml-rpc/#browse-classifiers) breaks JupyterLab's PyPI search; install trusted, prebuilt Python extensions from the Jupyter terminal instead. Reload an already-open JupyterLab tab after upgrading the image to clear the old PyPI Manager view.
 - **Coding agents:** `codex`, `claude`, and the `kionga` scaffolder in terminals
+
+## Install your own coding tools
+
+Jupyter AI is preinstalled. To add another compatible, prebuilt JupyterLab
+extension or Python coding package, use **File → New → Terminal**:
+
+```bash
+python -m pip install --user PACKAGE_NAME
+```
+
+`PYTHONUSERBASE` is set to `/workspace/.kionga/jupyter/python-user`, so the
+package remains available after the workbench image is rebuilt. Restart the
+workbench to load newly installed server extensions; reload the browser tab for
+frontend-only extensions. User settings, Jupyter data and workspace layouts are
+also stored under `/workspace/.kionga/jupyter`. Avoid replacing Kionga's pinned
+MLflow and scikit-learn versions in this environment; use a project virtual
+environment when dependencies conflict.
+
+The Codex and Claude Code command-line agents are already in the Jupyter image.
+Their user-level npm update location is `/workspace/.kionga/jupyter/npm`; for
+example, `npm install --global @anthropic-ai/claude-code` persists across image
+rebuilds. Installing a VS Code `.vsix` in JupyterLab is not supported: use the
+[browser IDE](coding-workspace.md) for VS Code extensions.
 
 Each object-store bucket is mounted as a directory, so notebook code can use normal
 filesystem APIs:
@@ -50,7 +75,7 @@ S3FS; these permissions must not be copied to other platform services.
 
   | Environment variable | Points to |
   | --- | --- |
-  | `MLAIOPS_URL` | Gateway (control plane) |
+  | `MLAIOPS_URL` | Loopback workspace API helper (forwards as your platform identity) |
   | `MLFLOW_TRACKING_URI` | MLflow |
   | `MLFLOW_S3_ENDPOINT_URL` + `AWS_*` | RustFS (S3) |
   | `MLAIOPS_FEATURE_GATEWAY_URL` | Feature gateway |

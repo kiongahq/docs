@@ -32,9 +32,40 @@ opt-in Compose profile and is not exposed by the public deployment overlay.
 If the IDE link says it is offline, run `make -C deploy ide-up` from the workspace folder,
 then click the link again. The console checks readiness before launching it.
 
-On macOS checkouts backed by iCloud, evicted files can block a cold image build;
-`make -C deploy local-up` checks for them first. The Compose gateway and IDE build
-from the small `platform/go/` and `workspace/` contexts. If Docker cannot download the Go builder image,
+## Install AI coding extensions
+
+Open **Extensions** in the browser IDE and install from Open VSX. For example,
+search for **Claude Code for VS Code**, or run this in the IDE terminal:
+
+```bash
+code-server --install-extension anthropic.claude-code
+code-server --list-extensions --show-versions
+```
+
+The IDE stores installed extensions, their settings and their user data under
+`/workspace/.kionga/ide`, not in the replaceable container filesystem. They
+survive IDE restarts and image rebuilds. A downloaded, trusted `.vsix` can also
+be installed through **Extensions: Install from VSIX** or passed to
+`code-server --install-extension`. code-server uses [Open VSX rather than the
+Microsoft marketplace](https://github.com/coder/code-server/blob/main/docs/FAQ.md#why-cant-code-server-use-microsofts-extension-marketplace),
+so some proprietary extensions may be unavailable or incompatible. If an
+Open VSX install fails with `EAI_AGAIN`, retry when the workspace can resolve
+`open-vsx.org` and `openvsx.eclipsecontent.org`; the extension registry is an
+external service. The coding extension's own account sign-in is separate from
+the Kionga session.
+
+When using the optional `ide-agents-up` image, `npm install --global` writes
+user-installed coding-agent CLIs to `/workspace/.kionga/ide/npm` instead of the
+replaceable system path. User-level Python packages similarly use
+`/workspace/.kionga/ide/python-user`.
+
+Compose has one shared development workspace, so these paths are shared by its
+users. On Kubernetes, each provisioned `KiongaWorkspace` has its own PVC, making
+the same paths user-specific. For JupyterLab extensions and Python packages,
+see the [workbench guide](workbench.md#install-your-own-coding-tools).
+
+The Compose gateway and IDE build from the small `platform/go/` and
+`workspace/` contexts. If Docker cannot download the Go builder image,
 an operator with local Go installed can cross-compile into `platform/go/build/gateway`
 and package that binary with `platform/go/Dockerfile.local` for the matching Docker CPU
 architecture. This is a local recovery path, not the normal release build.

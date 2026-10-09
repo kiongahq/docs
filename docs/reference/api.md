@@ -8,9 +8,13 @@ document remains available at `GET /api/openapi.json`. Every request is authoriz
 - **Base URL (local):** `http://localhost:${GATEWAY_PORT:-8080}`; shell examples
   can export `MLAIOPS_URL=http://localhost:8080`
 - **Content type:** `application/json`
-- **Auth:** local API requests use `MLAIOPS_LOCAL_ROLE`; the browser console requires
-  a local session. Hosted clients send `Authorization: Bearer <token>` using OIDC
-  or a scoped personal key. Internal reporters use the service token.
+- **Auth:** the browser console requires a signed-in session. Code running in a
+  provisioned Jupyter or browser IDE workspace uses its preconfigured loopback
+  `MLAIOPS_URL` without a personal key; the gateway authorizes it as the
+  workspace owner and rechecks current grants. Clients outside Kionga send
+  `Authorization: Bearer <token>` using OIDC or a scoped personal key. Internal
+  reporters use a separate service token. In the local profile, the workspace
+  maps to the bootstrap administrator only.
 - **Errors:** non-2xx responses return `{"error": "<code>", "message": "<detail>"}`.
 - **Lists:** most list endpoints return `{"items": [...], "total": N}`.
 

@@ -48,7 +48,8 @@ approved; rejection records the reviewer and note. Both actions are audited.
 ## Personal API keys
 
 Signed-in users create personal API keys from **Settings → Personal API keys**
-for CLI, SDK, and local-machine access. A key:
+for CLI, SDK, and automation running outside Kionga. The in-platform Jupyter
+workbench and browser IDE do not need a personal key. A key:
 
 - starts with `nxs_`, is generated from 256 bits of randomness, and is shown once;
 - stores only a SHA-256 digest of the high-entropy secret;
