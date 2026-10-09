@@ -13,7 +13,7 @@ folder.
 | **~8 GB RAM free for Docker** | The full multi-service stack | Raise Docker Desktop's memory if services get OOM-killed; 12 GB is more comfortable |
 | **25–35 GB free Docker storage** | First build downloads and compiles several large images | Cached rebuilds need less; check with `docker system df` |
 | **Make** | Convenience targets | Optional — you can call `docker compose` directly |
-| **Go 1.25+** | Only for building Go binaries outside Docker or running Go tests | Not needed just to run the stack |
+| **Go 1.26+** | Only for building Go binaries outside Docker or running Go tests | Not needed just to run the stack |
 | **Python 3.11+** | Only for the SDK, tests, or docs outside Docker | Not needed just to run the stack |
 | **Node.js** | Only for `make -C platform verify` (JS syntax check) | Not needed to run the stack |
 

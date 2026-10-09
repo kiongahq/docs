@@ -7,7 +7,7 @@ reflect the images and dependency pins in the Kionga repositories.
 
 | Technology | Version | Role |
 | --- | --- | --- |
-| **Go** | 1.25 (`platform/go/go.mod`) | Control plane, operator, feature gateway, storage proxy, trace proxy, serving manager, metrics collector, CLI |
+| **Go** | 1.26 (`platform/go/go.mod`) | Control plane, operator, feature gateway, storage proxy, trace proxy, serving manager, metrics collector, CLI |
 | **Python** | 3.11 (SDK, runtime); 3.10 (pipeline runner & serving, pinned for parity) | SDK, agent runtime, pipelines, features, real-time demos |
 | **JavaScript** | vanilla (no framework) | Embedded web console, no build toolchain |
 
