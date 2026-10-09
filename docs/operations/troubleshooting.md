@@ -6,8 +6,8 @@ starting, an in-stack-vs-localhost hostname mixup, or Docker resource limits.
 ## Image pull ends with `EOF`
 
 An `EOF` from a registry CDN means the remote image transfer ended early; it is not
-a Kionga configuration error. The default MinIO images use Docker Hub so a Quay CDN
-failure no longer blocks the local stack. `make -C deploy local-up`
+a Kionga configuration error. The bundled object store is RustFS from Docker Hub;
+MinIO images can no longer be pulled anonymously, which is why it was replaced. `make -C deploy local-up`
 automatically limits parallel downloads to two and retries missing images four times. Docker
 keeps completed layers, so if all attempts are exhausted, run the same command again:
 
@@ -52,7 +52,7 @@ See [Connecting all services](../connecting-services.md) for the correct endpoin
 ## Works in the console, fails from my laptop (or vice versa)
 
 You crossed the two DNS worlds. **Inside the stack** use service names
-(`http://minio:9000`); **from your machine** use localhost ports
+(`http://objectstore:9000`); **from your machine** use localhost ports
 (`http://localhost:9000`). See the table in
 [Connecting services](../connecting-services.md).
 

@@ -143,7 +143,7 @@ by default.
 | Module | Role |
 | --- | --- |
 | `definitions.py` | Feature views (`customer_profile`, `transaction_stats_5m`) with entity schemas and deterministic source rows |
-| `materialize.py` | `Materializer` — applies definitions, writes the online store, snapshots Parquet to MinIO, reports counts |
+| `materialize.py` | `Materializer` — applies definitions, writes the online store, snapshots Parquet to the object store, reports counts |
 
 ## `realtime` — real-time demos
 

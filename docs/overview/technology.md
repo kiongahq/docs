@@ -19,7 +19,7 @@ reflect the images and dependency pins in the Kionga repositories.
 | **Redis** | `redis:7.4.5-alpine` | Online feature store |
 | **Apache Kafka** | `apache/kafka:3.9.1` (KRaft) | Durable events, LLM traces, real-time topics |
 | **Kafka REST Proxy** | Karapace `6.1.4` | Apache-licensed, Confluent-compatible HTTP access to Kafka (keeps Python dependency-free) |
-| **MinIO** | `minio/minio` (pinned 2025-07 release) | S3-compatible object storage |
+| **RustFS** | `rustfs/rustfs` 1.0.1 (pinned by digest) | S3-compatible object storage (Apache-2.0; replaced MinIO, whose images are no longer distributed) |
 | **MLflow** | `mlflow==3.1.1` (custom image `mlaiops-mlflow`) | Experiment tracking + model registry |
 
 ## Orchestration & serving

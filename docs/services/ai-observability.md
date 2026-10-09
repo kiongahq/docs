@@ -13,7 +13,7 @@ whose name is derived from the immutable control-plane agent ID.
 | | |
 | --- | --- |
 | **Build** | `agent-runtime/Dockerfile` (Python 3.11, FastAPI + Uvicorn) |
-| **Host port** | `19000` (container listens on 9000; MinIO owns host 9000) |
+| **Host port** | `19000` (container listens on 9000; the object store owns host 9000) |
 | **Health** | `GET /healthz` |
 | **Source** | `agent-runtime/agent_runtime/` |
 
@@ -126,7 +126,7 @@ The development workbench — see the dedicated [workbench guide](../guides/work
 JupyterLab (with a browser terminal) preloaded with the SDK and every connection,
 at <http://localhost:8888> (token `mlaiops-local`).
 
-Configured MinIO buckets are mounted with S3FS under
+Configured object-store buckets are mounted with S3FS under
 `/workspace/object-store/<bucket>`. The optional code-server IDE (`make -C deploy ide-up`,
 <http://localhost:13337>) mounts the same `jupyter-data` volume but does not receive
 FUSE privileges. Kubernetes replaces the shared development profile with isolated

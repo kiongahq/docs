@@ -74,7 +74,7 @@ export GATEWAY=http://localhost:18080
 ```
 
 Bucket creation uses the `boto3` already included in the local MLflow image;
-it does not pull a separate MinIO client image. A registry error that says a
+it does not pull a separate S3 client image. A registry error that says a
 repository or tag does not exist fails immediately rather than consuming all
 retry attempts. On macOS, if iCloud has evicted `.dockerignore` or `Dockerfile`,
 download those files in Finder before a cold build; the startup preflight will
@@ -104,7 +104,7 @@ failures. OpenFaaS is skipped until an external gateway is configured.
 | MLflow | <http://localhost:15000> | none |
 | Prefect | <http://localhost:4200> | none |
 | Langfuse | <http://localhost:3000> | `admin@local.dev` / `mlaiops-local-admin` |
-| MinIO console | <http://localhost:9001> | `mlaiops` / `mlaiops-local-secret` |
+| RustFS console | <http://localhost:9001> | `mlaiops` / `mlaiops-local-secret` |
 
 See [Configuration reference](configuration.md) for every port and setting, and
 [Connecting all services](../connecting-services.md) for the full connection map.
@@ -119,7 +119,7 @@ make -C deploy local-logs     # show the latest logs from the stack
 make -C deploy local-rebuild  # rebuild changed local source images, then start
 ```
 
-Durable state lives in named volumes (`postgres-data`, `minio-data`, `redis-data`,
+Durable state lives in named volumes (`postgres-data`, `objectstore-data`, `redis-data`,
 `prefect-data`, `jupyter-data`), so your projects, models, and notebooks survive
 restarts.
 

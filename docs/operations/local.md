@@ -18,7 +18,7 @@ Restarting is idempotent — `make -C deploy local-up` reconciles to the desired
 rebuilds changed images. It also caps concurrent downloads, retries transient image
 registry failures, waits for the gateway, and creates Kafka topics. `make -C deploy local` is
 an equivalent shorter alias. Durable state survives in the `postgres-data`,
-`minio-data`, `redis-data`, `prefect-data`, and `jupyter-data` volumes.
+`objectstore-data`, `redis-data`, `prefect-data`, and `jupyter-data` volumes.
 
 ## Status & health
 
@@ -52,7 +52,7 @@ a gateway rebuild.
 
 ```bash
 docker compose -f deploy/compose.yaml up feature-materializer   # re-materialize features
-docker compose -f deploy/compose.yaml up minio-init             # ensure buckets
+docker compose -f deploy/compose.yaml up objectstore-init       # ensure buckets
 ```
 
 ## Verifying the whole platform
@@ -100,13 +100,13 @@ docker compose -f deploy/compose.yaml up -d gateway
 ## Data & backups
 
 All durable state is in Postgres (control plane, MLflow, Langfuse, checkpoints) and
-MinIO (artifacts). To back up locally, snapshot those two volumes:
+the RustFS object store (artifacts). To back up locally, snapshot those two volumes:
 
 ```bash
 docker run --rm -v mlaiops_postgres-data:/data -v "$PWD":/backup alpine \
   tar czf /backup/postgres-data.tgz -C /data .
-docker run --rm -v mlaiops_minio-data:/data -v "$PWD":/backup alpine \
-  tar czf /backup/minio-data.tgz -C /data .
+docker run --rm -v mlaiops_objectstore-data:/data -v "$PWD":/backup alpine \
+  tar czf /backup/objectstore-data.tgz -C /data .
 ```
 
 ## Resetting

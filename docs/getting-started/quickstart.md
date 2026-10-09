@@ -147,7 +147,7 @@ The stack ships a customer-support agent (`agents.customer_support.graph:build`)
 
 - **Features:** the Feature Catalog shows `customer_profile` and
   `transaction_stats_5m` with online entity counts (served from Redis).
-- **Storage:** browse MinIO buckets (models, artifacts, features, …) and preview
+- **Storage:** browse object-store buckets (models, artifacts, features, …) and preview
   objects.
 - **Real-time:** produce demo events and watch them scored live —
 

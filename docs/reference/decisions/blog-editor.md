@@ -119,7 +119,7 @@ rejected because it would put publishing back under ML administrators.
 - Media: multipart upload ≤ 10 MB, type sniffed from bytes (JPEG/PNG/WebP/GIF;
   filename and client type ignored), dimensions bounded before decoding, EXIF
   orientation applied, then re-encoded (which drops all metadata) into
-  480/960/1600 px variants. Bytes go to a `MediaStore` (S3/MinIO with SigV4
+  480/960/1600 px variants. Bytes go to a `MediaStore` (any S3 store, RustFS locally, with SigV4
   presigned requests, or the filesystem for local dev/tests). Uploads are
   `pending` until a save references them (`attached`); pending items older than
   24 h are swept. `/media/blog/{id}/{variant}` is public only while the media is

@@ -8,7 +8,7 @@ The vocabulary you'll see throughout the console, the API, and this documentatio
   (projects, runs, models, agents, connections, audit) and drives downstream
   engines.
 - The **data plane** is the set of stores that hold *durable data and events*:
-  Postgres, Redis, Kafka, MinIO, and MLflow.
+  Postgres, Redis, Kafka, RustFS, and MLflow.
 
 ## Resources
 
@@ -68,7 +68,7 @@ per-1k rates.
 
 - **Online** features are served from **Redis** through the feature-gateway for
   low-latency reads (real-time scoring).
-- **Offline** features are materialized as **Parquet snapshots** in MinIO for batch
+- **Offline** features are materialized as **Parquet snapshots** in the object store for batch
   use.
 
 The **feature-materializer** applies feature definitions and populates the online

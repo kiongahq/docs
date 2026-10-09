@@ -20,7 +20,8 @@ Every port is overridable via the `*_PORT` variable. Defaults:
 | `MLFLOW_PORT` | `15000` | MLflow (container listens on 5000) |
 | `PREFECT_PORT` | `4200` | Prefect |
 | `LANGFUSE_PORT` | `3000` | Langfuse |
-| `MINIO_PORT` / `MINIO_CONSOLE_PORT` | `9000` / `9001` | MinIO S3 / console |
+| `OBJECTSTORE_PORT` / `OBJECTSTORE_CONSOLE_PORT` | `9000` / `9001` | RustFS S3 / console |
+| `OBJECTSTORE_ACCESS_KEY` / `OBJECTSTORE_SECRET_KEY` | `mlaiops` / `mlaiops-local-secret` | RustFS root credentials (development defaults) |
 | `POSTGRES_PORT` | `5432` | PostgreSQL |
 | `REDIS_PORT` | `6379` | Redis |
 | `KAFKA_PORT` | `9092` | Kafka broker |
@@ -29,7 +30,7 @@ Every port is overridable via the `*_PORT` variable. Defaults:
 | `STORAGE_PROXY_PORT` | `8084` | Storage proxy |
 | `SERVING_MANAGER_PORT` | `8085` | Serving manager |
 | `TRACE_PROXY_PORT` | `8081` | Trace proxy |
-| `AGENT_RUNTIME_PORT` | `19000` | Agent runtime (container listens on 9000; MinIO owns host 9000) |
+| `AGENT_RUNTIME_PORT` | `19000` | Agent runtime (container listens on 9000; the object store owns host 9000) |
 
 ## Gateway (control plane)
 
@@ -117,7 +118,7 @@ Used by the agent runtime and trace proxy.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `S3_ENDPOINT` | `http://minio:9000` | Object store endpoint |
+| `S3_ENDPOINT` | `http://objectstore:9000` | Object store endpoint |
 | `S3_ACCESS_KEY` / `S3_SECRET_KEY` | `mlaiops` / `mlaiops-local-secret` | Credentials (sole holder) |
 
 ## Feature gateway
@@ -167,7 +168,7 @@ Used by the agent runtime and trace proxy.
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `JUPYTER_TOKEN` | `mlaiops-local` | Login token |
-| `S3_ENDPOINT` | `http://minio:9000` | S3-compatible endpoint mounted through S3FS |
+| `S3_ENDPOINT` | `http://objectstore:9000` | S3-compatible endpoint mounted through S3FS |
 | `S3_MOUNT_ROOT` | `/workspace/object-store` | Filesystem root for bucket mounts |
 | `S3_MOUNT_BUCKETS` | platform bucket list | Space-separated buckets to mount |
 | `KIONGA_WORKSPACE` | `/workspace` | Root in which the project generator and Git sync command may write |

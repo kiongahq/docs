@@ -14,13 +14,13 @@ ways things connect:
                     you (browser / notebook / CLI)
                                   │
       ┌───────────┬───────────┬───┴────────┬───────────┬───────────┐
-   console      MLflow      Prefect     Langfuse    MinIO console  Jupyter / IDE
+   console      MLflow      Prefect     Langfuse    RustFS console Jupyter / IDE
    :8080*       :15000      :4200       :3000       :9001          :8888 / :13337
       │
    gateway ──► Prefect API ──► pipeline-runner (trains, logs to MLflow)
       │  ╲───► serving-manager ──► mlflow-serve containers (live endpoints)
       │  ╲───► agent-runtime ──► LLM via trace-proxy ──► Kafka traces
-      │  ╲───► storage-proxy ──► MinIO        │
+      │  ╲───► storage-proxy ──► RustFS       │
       │  ╲───► feature-gateway ──► Redis      └─► Langfuse (traces)
       │  ╲───► Langfuse API (prompts)
    Postgres (control plane, MLflow, Langfuse, agent checkpoints, pgvector)
@@ -30,7 +30,7 @@ ways things connect:
 Two DNS worlds:
 
 - **Inside the stack** services reach each other by Compose service name:
-  `http://gateway:8080`, `http://mlflow:5000`, `http://minio:9000`, …
+  `http://gateway:8080`, `http://mlflow:5000`, `http://objectstore:9000`, …
 - **From your machine** the same services are on published localhost ports
   (table below). Every port is overridable in `.env` (e.g. `GATEWAY_PORT`).
 
@@ -44,8 +44,8 @@ Two DNS worlds:
 | MLflow tracking/registry | http://localhost:15000 | `http://mlflow:5000` | none |
 | Prefect UI/API | http://localhost:4200 | `http://prefect-server:4200` | none |
 | Langfuse | http://localhost:3000 | `http://langfuse:3000` | `admin@local.dev` / `mlaiops-local-admin`; API keys `pk-lf-local-dev` / `sk-lf-local-dev` |
-| MinIO S3 API | http://localhost:9000 | `http://minio:9000` | `mlaiops` / `mlaiops-local-secret` |
-| MinIO web console | http://localhost:9001 | — | same as S3 |
+| RustFS S3 API | http://localhost:9000 | `http://objectstore:9000` (alias `minio`) | `mlaiops` / `mlaiops-local-secret` |
+| RustFS web console | http://localhost:9001 | — | same as S3 |
 | Kafka broker | localhost:9092 | `kafka:9092` | none |
 | Kafka REST proxy | http://localhost:8082 | `http://kafka-rest:8082` | none |
 | Postgres (+pgvector) | localhost:5432 | `postgres:5432` | `mlaiops` / `mlaiops-local` / db `mlaiops` |
@@ -70,7 +70,7 @@ use in-stack hostnames**, not localhost.
 | Service field | Connection name (suggested) | Health endpoint | Secret ref |
 | --- | --- | --- | --- |
 | MLflow | `local-mlflow` | `http://mlflow:5000/health` | `mlflow-credentials` |
-| S3 / MinIO | `local-minio` | `http://minio:9000/minio/health/live` | `minio-credentials` |
+| S3 / RustFS | `local-objectstore` | `http://objectstore:9000/health` | `objectstore-credentials` |
 | Kafka REST | `local-kafka` | `http://kafka-rest:8082/topics` | `kafka-credentials` |
 | Langfuse | `local-langfuse` | `http://langfuse:3000/api/public/health` | `langfuse-credentials` |
 | Prefect | `local-prefect` | `http://prefect-server:4200/api/health` | `prefect-credentials` |
@@ -85,7 +85,7 @@ Notes:
   Kubernetes API server is a healthy signal.
 - **Onboarding readiness** (Overview ring / Platform panel) turns green from
   these connections: workspace = any project, plus healthy `mlflow`,
-  `s3`/`minio` (storage), `kafka` (events), and `kubernetes` connections.
+  `s3`/`rustfs`/`minio` (storage), `kafka` (events), and `kubernetes` connections.
   Kubernetes is the documented scale path — on the Compose-native stack the
   execution engine is Prefect + the serving manager, so that one item stays
   pending unless you connect a real cluster (e.g. Kind).
@@ -145,7 +145,7 @@ Build once, point anywhere — set the URL and credentials, no image changes:
 
 | Replace | With | How |
 | --- | --- | --- |
-| MinIO | AWS S3 / GCS / Azure (S3 API) | `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` (storage-proxy), `MLFLOW_S3_ENDPOINT_URL` + `AWS_*` (mlflow, runner) |
+| RustFS | AWS S3 / GCS / Azure (S3 API) | `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` (storage-proxy), `MLFLOW_S3_ENDPOINT_URL` + `AWS_*` (mlflow, runner) |
 | Postgres | RDS / Cloud SQL | `DATABASE_URL` on gateway, agent-runtime, langfuse, mlflow backend URI |
 | Redis | managed Redis | `REDIS_URL` on feature-gateway |
 | Kafka | managed Kafka + REST proxy | `KAFKA_REST_URL` everywhere it appears |

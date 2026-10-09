@@ -71,12 +71,12 @@ Markdown is optional: **Import Markdown** appends converted blocks, and
 - **Session:** cookie `kionga_editorial`, HttpOnly, SameSite=Strict, 4 hours,
   membership re-checked on every request.
 - **Media storage:** bucket `kionga-blog-media` (created by
-  `deploy/minio-init.py`). The gateway selects the backend from environment:
+  `deploy/objectstore-init.py`). The gateway selects the backend from environment:
 
   | Variable | Default | Meaning |
   | --- | --- | --- |
   | `KIONGA_BLOG_MEDIA_BACKEND` | `s3` if an endpoint is set, else `fs` | `s3` or `fs` |
-  | `KIONGA_BLOG_MEDIA_S3_ENDPOINT` | none | e.g. `http://minio:9000` |
+  | `KIONGA_BLOG_MEDIA_S3_ENDPOINT` | none | e.g. `http://objectstore:9000` |
   | `KIONGA_BLOG_MEDIA_S3_ACCESS_KEY`, `_SECRET_KEY`, `_REGION` | none, none, `us-east-1` | credentials |
   | `KIONGA_BLOG_MEDIA_BUCKET` | `kionga-blog-media` | bucket |
   | `KIONGA_BLOG_MEDIA_DIR` | `data/blog-media` | filesystem backend root |

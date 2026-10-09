@@ -86,7 +86,7 @@ Day two: update with `make -C deploy workspace-pull` and the same start command
 (Compose recreates changed services); stop with
 `docker compose -f deploy/compose.yaml -f deploy/compose.public.yaml down` (volumes
 persist); follow logs with the same files and `logs -f gateway`. All durable state
-is in the `postgres-data` and `minio-data` volumes, so snapshot those.
+is in the `postgres-data` and `objectstore-data` volumes, so snapshot those.
 
 ## OpenFaaS functions on a VM (faasd)
 

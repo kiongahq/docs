@@ -2,7 +2,7 @@
 
 Kionga is a set of small, single-purpose services on one Compose network. A Go
 **control plane** owns state and orchestration; Python **workloads** do the ML and
-agent execution; a shared **data plane** (Postgres, Redis, Kafka, MinIO) holds
+agent execution; a shared **data plane** (Postgres, Redis, Kafka, RustFS) holds
 durable state and carries events.
 
 ## Component diagram
@@ -42,7 +42,7 @@ flowchart TB
         pg[("postgres +pgvector :5432")]
         redis[("redis :6379")]
         kafka[["kafka :9092<br/>kafka-rest :8082"]]
-        minio[("minio :9000/:9001")]
+        objectstore[("objectstore (RustFS) :9000/:9001")]
         mlflow["mlflow :15000"]
     end
 
@@ -59,10 +59,10 @@ flowchart TB
     gw --> sm --> serve
     gw -. when configured .-> fn
     gw --> ar --> tp --> kafka
-    gw --> sp --> minio
+    gw --> sp --> objectstore
     gw --> fg --> redis
     gw --> lf
-    runner --> minio
+    runner --> objectstore
     ar --> pg
     ar --> lf
     rt --> kafka
@@ -79,7 +79,7 @@ flowchart TB
 This is the single most important operational fact:
 
 - **Inside the stack**, services reach each other by their Compose service name:
-  `http://gateway:8080`, `http://mlflow:5000`, `http://minio:9000`, …
+  `http://gateway:8080`, `http://mlflow:5000`, `http://objectstore:9000`, …
 - **From your machine**, the same services are on published `localhost` ports.
 
 When you register a connection in the console (so the gateway health-checks it), use
@@ -139,8 +139,8 @@ replica ranges. Kubernetes must expose resource metrics for that HPA.
 | **PostgreSQL** (with pgvector) | Control-plane state, the Kafka outbox, MLflow backend, Langfuse backend, agent checkpoints, and vector memory |
 | **Redis** | The online feature store (low-latency lookups) |
 | **Kafka** (+ REST proxy) | Durable lifecycle/audit events, LLM traces, and real-time demo topics |
-| **MinIO** | S3-compatible object storage: models, artifacts, feature snapshots, traces, agent state, pipeline logs |
-| **MLflow** | Experiment tracking and the model registry (Postgres-backed, MinIO artifacts) |
+| **RustFS** | S3-compatible object storage: models, artifacts, feature snapshots, traces, agent state, pipeline logs |
+| **MLflow** | Experiment tracking and the model registry (Postgres-backed, artifacts in RustFS) |
 
 ### Execution, serving, and AI (Python + Go)
 

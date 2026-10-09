@@ -14,7 +14,7 @@ in your terminal or notebook environment to call the platform API as yourself.
 - **AI chat:** Jupyter AI chat panel in the left sidebar
 - **Coding agents:** `codex`, `claude`, and the `kionga` scaffolder in terminals
 
-Each MinIO/S3 bucket is mounted as a directory, so notebook code can use normal
+Each object-store bucket is mounted as a directory, so notebook code can use normal
 filesystem APIs:
 
 ```python
@@ -41,7 +41,7 @@ S3FS; these permissions must not be copied to other platform services.
   | --- | --- |
   | `MLAIOPS_URL` | Gateway (control plane) |
   | `MLFLOW_TRACKING_URI` | MLflow |
-  | `MLFLOW_S3_ENDPOINT_URL` + `AWS_*` | MinIO |
+  | `MLFLOW_S3_ENDPOINT_URL` + `AWS_*` | RustFS (S3) |
   | `MLAIOPS_FEATURE_GATEWAY_URL` | Feature gateway |
   | `KAFKA_REST_URL` | Kafka REST proxy |
   | `PREFECT_API_URL` | Prefect |

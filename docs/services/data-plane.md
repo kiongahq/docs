@@ -58,17 +58,21 @@ at-least-once boundary can redeliver an already reconciled command, so lifecycle
 dispatch is an ID-keyed create-or-update operation rather than a non-idempotent
 create.
 
-## minio & minio-init
+## objectstore & objectstore-init
 
-S3-compatible object storage. `minio-init` is a one-shot job that creates the
-buckets and exits.
+S3-compatible object storage, served by [RustFS](https://github.com/rustfs/rustfs)
+(Apache-2.0). `objectstore-init` is a one-shot job that creates the buckets and exits.
+The service also answers to the hostname `minio`, so older settings keep working.
+It replaced MinIO, whose images are no longer distributed; see
+[Decision: object store](../reference/decisions/object-store.md) and the migration below.
 
 | | |
 | --- | --- |
-| **Image** | `minio/minio:RELEASE.2025-07-23T15-54-02Z` |
+| **Image** | `rustfs/rustfs:1.0.1` (pinned by digest) |
 | **Host ports** | `9000` (S3 API), `9001` (web console) |
 | **Credentials** | `mlaiops` / `mlaiops-local-secret` |
-| **Volume** | `minio-data` |
+| **Volume** | `objectstore-data` |
+| **Health** | `GET http://objectstore:9000/health` |
 | **Buckets** | `mlaiops-models`, `-artifacts`, `-features`, `-traces`, `-agents`, `-pipeline-logs` |
 
 The shared Compose workbench mounts these buckets through S3FS at
@@ -76,6 +80,24 @@ The shared Compose workbench mounts these buckets through S3FS at
 replacement: renames and directory listings map to object-store operations. Only
 Jupyter receives FUSE/SYS_ADMIN; application services continue through S3 APIs or
 the bounded storage proxy.
+
+### Moving data from MinIO
+
+Earlier versions bundled MinIO in a `minio-data` volume. Its buckets are not visible
+to RustFS until copied; `make -C deploy local-up` prints a reminder until then.
+
+```bash
+make -C deploy migrate-minio
+tail -f /tmp/minio-to-rustfs/progress.log        # percent, ETA, rate, errors
+```
+
+The migration starts a temporary MinIO on the old volume (the MinIO image must still
+be on the machine, or set `MINIO_IMAGE` to one you can pull), copies every bucket
+and object with its content type and metadata, and verifies each by size and MD5,
+reading the stored object back when its ETag is multipart. Re-running resumes.
+`/tmp/minio-to-rustfs/report.csv` lists every object with its before/after state and
+`summary.json` gives the verdict. The `minio-data` volume is only read; delete it
+yourself once satisfied. Only the current version of each object is copied.
 
 ## mlflow
 
@@ -88,7 +110,7 @@ trainer, and the serving containers agree — preventing training-serving skew.
 | **Image** | `mlaiops-mlflow` (built from `deploy/mlflow/Dockerfile`) |
 | **Host port** | `15000` (container listens on 5000) |
 | **Backend** | PostgreSQL |
-| **Artifacts** | `s3://mlaiops-models` on MinIO |
+| **Artifacts** | `s3://mlaiops-models` in the object store |
 
 ## feature-gateway
 

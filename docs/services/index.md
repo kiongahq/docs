@@ -13,8 +13,8 @@ model-serving containers. This section documents each one.
 | **redis** | `redis:7.4.5-alpine` | 6379 | Data plane | Online feature store |
 | **kafka** | `apache/kafka:3.9.1` | 9092 | Data plane | Events, traces, real-time topics |
 | **kafka-rest** | `ghcr.io/aiven-open/karapace:6.1.4` | 8082 | Data plane | Confluent-compatible HTTP access to Kafka |
-| **minio** | `minio/minio` | 9000 / 9001 | Data plane | S3 object storage + console |
-| **minio-init** | `minio/mc` | — | Data plane | One-shot bucket creation |
+| **objectstore** | `rustfs/rustfs` | 9000 / 9001 | Data plane | S3 object storage + console (alias `minio`) |
+| **objectstore-init** | `mlaiops-mlflow` (boto3) | — | Data plane | One-shot bucket creation |
 | **mlflow** | `mlaiops-mlflow` (built) | 15000 | Data plane | Tracking + registry |
 | **feature-gateway** | Go (`SERVICE=feature-gateway`) | 8083 | Data plane | Online feature retrieval |
 | **storage-proxy** | Go (`SERVICE=storage-proxy`) | 8084 | Data plane | SigV4 S3 URLs + browse |
@@ -34,7 +34,7 @@ model-serving containers. This section documents each one.
 - **[Gateway (control plane)](gateway.md)** — the single service that owns the API,
   serves the console, and orchestrates everything else. Plus the supporting Go
   services (operator, metrics collector) that ship as binaries.
-- **[Data & messaging](data-plane.md)** — Postgres, Redis, Kafka, MinIO, MLflow,
+- **[Data & messaging](data-plane.md)** — Postgres, Redis, Kafka, RustFS, MLflow,
   and the two Go data services (feature gateway, storage proxy).
 - **[Execution & serving](execution.md)** — Prefect, the pipeline runner, and the
   serving manager.
@@ -54,8 +54,8 @@ docker compose -f deploy/compose.yaml ps
 
 ## Dependency & startup order
 
-Compose `depends_on` enforces a sane boot order: Postgres/Kafka/MinIO come up first,
-then MLflow and the Go/Python services that need them. `minio-init` and
+Compose `depends_on` enforces a sane boot order: Postgres/Kafka/the object store come up first,
+then MLflow and the Go/Python services that need them. `objectstore-init` and
 `feature-materializer` are **one-shot** jobs (`restart: "no"`) that complete and
 exit. `pipeline-runner`, `realtime-processor`, `serving-manager`, and `agent-runtime`
 run continuously (`restart: unless-stopped` where applicable).
