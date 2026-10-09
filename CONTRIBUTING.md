@@ -6,13 +6,13 @@ exists from integrations that have been tested in a live environment.
 
 ## Choose the right section
 
-| Content | Section |
-| --- | --- |
-| First install and first successful run | Getting started |
-| Platform concepts and architecture | Understand |
-| A user task with steps and an expected result | Build |
-| Exact fields, endpoints, permissions, or service contracts | Reference |
-| Deployment, security, recovery, and incident procedures | Operations |
+| Content                                                    | Section         |
+| ---------------------------------------------------------- | --------------- |
+| First install and first successful run                     | Getting started |
+| Platform concepts and architecture                         | Understand      |
+| A user task with steps and an expected result              | Build           |
+| Exact fields, endpoints, permissions, or service contracts | Reference       |
+| Deployment, security, recovery, and incident procedures    | Operations      |
 
 Add a page to `mkdocs.yml` under one primary section. Prefer linking to an
 existing reference page over copying a table of settings into several guides.
@@ -55,5 +55,5 @@ before moving a published page.
 - [ ] Internal links and code examples work from the documented workspace layout.
 - [ ] Security and deployment claims match the current implementation status.
 - [ ] No secrets, machine-specific paths, generated site files, or assistant state
-      have been added.
+  have been added.
 - [ ] `make docs-build` passes with strict mode.

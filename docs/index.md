@@ -1,106 +1,65 @@
-# Kionga
+# Kionga documentation
 
-Kionga is a self-hosted control plane for ML, data, and agent workloads. The
-development stack runs with Docker Compose. Managed Kubernetes is the intended
-path for isolated, multi-user workspaces and workloads, subject to deployment
-acceptance testing in your environment.
+Kionga is an open-source, self-hosted platform that brings projects, pipelines,
+models, features, and AI agents into one control plane. It connects the tools
+your team already uses and gives
+engineers a shared place to build, run, and inspect their work.
+
+Start with the local Compose stack to explore the platform. For a team deployment,
+plan around managed Kubernetes and complete the
+[production acceptance checks](operations/production-operations.md) before
+admitting users. The [implementation status](reference/implementation-status.md)
+distinguishes bundled features from optional integrations and paths that have not
+been verified on a live cluster.
 
 <div class="grid cards" markdown>
 
-- :material-rocket-launch: **[Get started](getting-started/installation.md)**
+- :material-rocket-launch: **[Install locally](getting-started/installation.md)**
 
-    One command (`make -C deploy local-up`) brings up the full stack. Then walk the
-    [quickstart](getting-started/quickstart.md).
+    Clone the component repositories and start the development stack.
 
-- :material-sitemap: **[Architecture](overview/architecture.md)**
+- :material-play-circle: **[Follow the quickstart](getting-started/quickstart.md)**
 
-    How the Go control plane, Python workloads, and the data plane fit together.
+    Create a project, run a pipeline, and explore the connected services.
 
-- :material-server: **[Services](services/index.md)**
+- :material-sitemap: **[Understand the architecture](overview/architecture.md)**
 
-    Every container in the stack, its port, its job, and how it connects.
+    See how the gateway, workloads, and data services fit together.
 
-- :material-package-variant: **[Modules](modules/go-packages.md)**
+- :material-cloud-check: **[Plan a deployment](hosting.md)**
 
-    The Go packages and Python SDK/workloads that make it all work.
-
-- :material-api: **[REST API](reference/api.md)**
-
-    The full control-plane surface — every endpoint, by resource.
-
-- :material-shield-key: **[RBAC & security](reference/rbac.md)**
-
-    Roles, permissions, tokens, and how authorization is enforced everywhere.
+    Compare the public VM pilot with the managed Kubernetes path.
 
 </div>
 
-## What you can do with it
+## What is included
 
-From a folder containing the component repositories, run `make -C deploy local-up`,
-open <http://localhost:8080>, and sign in with the local development account
-`admin` / `mlaiops-local`. If 8080 is occupied, the startup script selects an
-available port and prints its URL. The local stack supports:
+The local stack includes the gateway and console, PostgreSQL, Redis, Kafka,
+RustFS object storage, MLflow, Prefect, Jupyter, and the Kionga workload services.
+You can create projects, define and run pipelines, register and serve models,
+work with features, and develop agents. The optional browser IDE shares the
+Jupyter workspace.
 
-- **Create a production-shaped project** from a versioned catalog: classical ML,
-  distributed PyTorch training, a functional LangGraph agent, a full-stack AI
-  application, or a blank expert workspace.
-- **Provision authenticated users** with explicit services, projects, storage,
-  CPU, memory, GPU, function, and concurrency limits.
-- **Connect every project to Git**, preserve repository/branch/commit lineage, and
-  scaffold full-stack ML/API starters from Jupyter or the browser IDE.
-- **Run the bundled training pipeline or a general container DAG** and watch its real
-  Prefect steps update live in an open-source Dagre-rendered graph; execute function
-  DAGs through OpenFaaS and use Kubernetes-native execution for multi-user isolation.
-- **Register and promote a model**, deploy it to a **live inference endpoint**, and
-  hit it from the built-in test console.
-- **Deploy a LangGraph agent** that answers via a real LLM, keeps session state in
-  Postgres, retrieves features and long-term memory, emits full traces, and carries
-  enforceable CPU/RAM/GPU and fixed-or-autoscaled replica intent.
-- **Build an agent project** with runnable graph/runtime code, typed tools,
-  deterministic evaluation fixtures, containers, and Git-native delivery.
-- **Browse features, artifacts, prompts, and live cost** — all real data.
-- **Score events in real time** — fraud detection, call-center analysis, and
-  personalized recommendations demos, streaming through Kafka.
-- **Develop interactively** in a built-in [Jupyter workbench](guides/workbench.md)
-  with a browser terminal, wired into every service.
-- **Deploy independent OCI functions** and compose them into reusable DAGs when
-  an OpenFaaS gateway is configured.
-- **Deploy a gateway-focused public VM pilot** or use the managed Kubernetes
-  package for isolated team workloads. Neither path removes the need for an
-  external identity provider, secret manager, backups, and staging validation.
+Some capabilities need infrastructure you provide. For example, function
+deployment needs an OpenFaaS gateway, and real LLM responses need a provider
+account. The console should show these integrations as unavailable until they are
+configured. See [connecting services](connecting-services.md) for the local
+service map and [implementation status](reference/implementation-status.md) for
+the current boundaries.
 
-## Design principles
+## Find the right guide
 
-| Principle | What it means in practice |
+| If you want to… | Start here |
 | --- | --- |
-| **Clear deployment boundaries** | Local Compose runs the integrated development stack; the public VM package runs a gateway edge against external services; Kubernetes is the multi-user workload path. |
-| **Functional, not simulated** | Bundled pipelines execute, models can serve from live endpoints, and features come from Redis. Optional external capabilities need their own configured engines. |
-| **Compose-native development** | MLflow serving and Prefect cover local workflows; Kubernetes-native execution and isolation have separate deployment and acceptance requirements. |
-| **Honest state** | Connection status comes from health checks where available; usage is reported only when the underlying provider supplies it. See [implementation status](reference/implementation-status.md) for verified and unverified paths. |
-| **Separate development from production** | Local credentials and shared workspaces are development defaults. Public deployment requires OIDC, secret files from a secret manager, workload isolation, and the [production acceptance checks](operations/production-operations.md). |
+| Learn the platform's terminology | [Core concepts](overview/concepts.md) |
+| Use notebooks or the browser IDE | [Workbench](guides/workbench.md) |
+| Define a pipeline or inspect a run | [Pipelines](guides/pipelines.md) |
+| Provision users and resources | [Access control](guides/access-control.md) |
+| Integrate from a script or application | [REST API](reference/api.md) or [Python SDK](modules/python.md) |
+| Operate or troubleshoot the stack | [Local operations](operations/local.md) and [troubleshooting](operations/troubleshooting.md) |
 
-## How this documentation is organized
-
-- **[Overview](overview/what-is-kionga.md)** — what Kionga is, its architecture, the
-  concepts, and the exact technology used.
-- **[Project templates](guides/project-templates.md)** — production ML, distributed
-  training, agent, full-stack, and expert starter contracts.
-- **[Getting started](getting-started/installation.md)** — install, quickstart, and
-  the complete configuration reference.
-- **[Services](services/index.md)** — a reference for every container in the stack.
-- **[Modules](modules/go-packages.md)** — the Go packages and Python modules.
-- **[Guides](connecting-services.md)** — task-focused walkthroughs (connecting
-  services, the workbench, pipelines, serving, agents, features, real-time).
-- **[Reference](reference/api.md)** — the REST API, RBAC, and CLI.
-- **[Backend contracts](reference/backend.md)** — validation, persistence,
-  orchestration, graph, and agent execution semantics.
-- **[Implementation status](reference/implementation-status.md)** — exactly which
-  capabilities are bundled, optional, external, or Kubernetes-only.
-- **[Operations](operations/local.md)** — running locally, public hosting, and
-  troubleshooting.
-
-!!! note "Local credentials are development defaults"
-    Everything in this documentation that shows a password, key, or token
-    (`mlaiops-local`, `pk-lf-local-dev`, etc.) is a **development default**.
-    Override every one of them for any public deployment — see
-    [Public hosting](hosting.md).
+!!! warning "Local credentials are for development only"
+    The passwords and tokens shown in local examples are defaults for a private
+    development stack. Do not use them on a public deployment. Use the
+    [hosting guide](hosting.md) and [production checklist](operations/production-operations.md)
+    when preparing an environment for other users.

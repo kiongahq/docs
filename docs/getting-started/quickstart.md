@@ -1,23 +1,25 @@
 # Quickstart
 
-This walks the full lifecycle after `make -C deploy local-up`. Do it in the console, the SDK,
-or the [Jupyter workbench](../guides/workbench.md) — all three drive the same API.
+This guide takes you from a new project to a running pipeline, a model endpoint,
+and an agent conversation. Start the local stack with `make -C deploy local-up`
+first. You can use the console, the SDK, or the
+[Jupyter workbench](../guides/workbench.md); they use the same gateway API.
 
-## 0. Confirm the stack is up
+## Check the gateway
 
 ```bash
 export MLAIOPS_URL="${MLAIOPS_URL:-http://localhost:8080}"
-curl -s "$MLAIOPS_URL/api/v1/health"
-# {"status":"ok","service":"mlaiops-gateway","version":"0.1.0"}
-curl -s "$MLAIOPS_URL/api/v1/me"
-# identity + roles + effective permissions
+curl -fsS "$MLAIOPS_URL/api/v1/health"
+curl -fsS "$MLAIOPS_URL/api/v1/me"
 ```
 
-Open `$MLAIOPS_URL`, enter the console, and sign in locally with
-`admin` / `mlaiops-local`. The local API development principal is separate from
-the browser session.
+The health endpoint should return a JSON response with `status: "ok"`. Open the
+URL printed by `local-up` and sign in to the console with the local development
+account `admin` / `mlaiops-local`. The local API development principal is separate
+from that browser session. If the gateway chose a different port, set
+`MLAIOPS_URL` to the printed URL before using the API examples below.
 
-## 1. Create a project
+## Create a project
 
 === "Console"
 
@@ -48,8 +50,8 @@ the browser session.
       -d '{"name":"churn","template":"production-ml","framework":"scikit-learn","accelerator":"cpu"}'
     ```
 
-The response includes the template version, resolved capabilities, requested
-profile, and a `kionga scaffold ...` command. Browse all choices with:
+The response includes the resolved template and a `kionga scaffold ...` command.
+To see the available templates:
 
 ```bash
 curl -s "$MLAIOPS_URL/api/v1/project-templates" | python -m json.tool
@@ -60,14 +62,13 @@ for a runnable LangGraph service choose `production-agent`. These selections rec
 intent but never bypass the administrator's CPU/RAM/GPU/service grants. See the
 [project-template catalog](../guides/project-templates.md).
 
-## 2. Run a real pipeline
+## Run a pipeline
 
 === "Console"
 
-    Go to **Pipelines → ▶ Run pipeline**, choose your project and
-    `training-pipeline`, submit. Watch the **DAG go green** as each step reports
-    live. The open-source Dagre renderer lays out the validated backend graph; it
-    does not determine execution order. The run executes a real Prefect flow:
+    Open **Pipelines**, select your project and the `training-pipeline` definition,
+    then submit a run. The graph shows each step's current state. Dagre lays out
+    the graph in the browser; Prefect executes the flow:
     `validate → train → evaluate → register`.
 
 === "SDK"
@@ -79,17 +80,17 @@ intent but never bypass the administrator's CPU/RAM/GPU/service grants. See the
     run = client.get_pipeline_run(run.id)
     ```
 
-The training step trains a real scikit-learn model (deterministic, fixed
-`random_state`), logs it to MLflow, and registers it with the control plane against
-your project.
+The training step fits a scikit-learn model, records it in MLflow, and registers
+it against your project. Open the run to inspect each step and its logs. If a
+step fails, use the node log to find the underlying error before retrying.
 
-## 3. Promote and deploy the model
+## Promote and deploy a model
 
 === "Console"
 
-    Open **Models**. Your `churn-classifier` version is listed with its accuracy and
-    quality gate. Click **Promote**, then **Deploy** — the serving-manager starts a
-    live `mlflow models serve` container and the card shows a green **● live** tag.
+    Open **Models** and select the version created by the pipeline. Review its
+    metrics and quality gate before choosing **Promote** and **Deploy**. The
+    serving manager starts a model-serving container and reports its status.
 
 === "SDK"
 
@@ -100,13 +101,13 @@ your project.
     client.deploy_model(model.id, canary_weight=0)
     ```
 
-## 4. Get a live prediction
+## Request a prediction
 
 === "Console"
 
-    On the live model card (or the Storage → endpoints table), click **Test**, edit
-    the payload, and **Send prediction request**. You get a real response from the
-    serving container:
+    Open the deployed model and use **Test** to send a payload to its live
+    endpoint. A successful response has the same shape as this example; the
+    predicted value depends on the model:
 
     ```json
     {"predictions": [1]}
@@ -120,15 +121,14 @@ your project.
       -d '{"inputs": [[0.1,-1.2,0.5,2.0,0.3,-0.7,1.1,0.0,-0.4,0.9,-1.5,0.2]]}'
     ```
 
-## 5. Talk to an agent
+## Talk to an agent
 
 The stack ships a customer-support agent (`agents.customer_support.graph:build`).
 
 === "Console"
 
-    Open **Agents**, click **Chat** on the customer-support agent, and ask a
-    question. The turn runs through the real agent runtime; the reply, token count,
-    and latency are shown, and the **Session Monitor** records the session.
+    Open **Agents**, select the customer-support agent, and start a chat. The
+    session view records the turn and any usage information the backend reports.
 
 === "SDK"
 
@@ -139,11 +139,13 @@ The stack ships a customer-support agent (`agents.customer_support.graph:build`)
     ```
 
 !!! note "Mock vs real LLM"
-    By default the agent uses the `mock` backend, so it runs with **zero API keys**
-    (replies are prefixed `[mock]`). To get real answers, set `MLAIOPS_LLM_BACKEND`
-    and a provider key in `.env` — see [Configuration](configuration.md#llm-providers).
+    The local stack defaults to a `mock` backend, so this step does not need a
+    provider key. To use a real provider in development, configure
+    `MLAIOPS_LLM_BACKEND` and its key as described in
+    [Configuration](configuration.md#llm-providers). Do not reuse local secrets
+    in a public deployment.
 
-## 6. Explore features, storage, and real-time
+## Explore features, storage, and real-time data
 
 - **Features:** the Feature Catalog shows `customer_profile` and
   `transaction_stats_5m` with online entity counts (served from Redis).
@@ -158,14 +160,14 @@ The stack ships a customer-support agent (`agents.customer_support.graph:build`)
 
     Then open the **Real-Time** panel to see throughput, latency, and flagged events.
 
-## 7. Develop interactively
+## Open the workbench
 
-Open the **Jupyter workbench** at <http://localhost:8888> (token `mlaiops-local`).
-It has a browser terminal (File → New → Terminal) and a seeded `quickstart.ipynb`
-that reproduces everything above in code, with every connection preconfigured. See
-the [workbench guide](../guides/workbench.md).
+Open the **Jupyter workbench** from the console. It has a browser terminal and a
+seeded `quickstart.ipynb` for exploring the platform in code. You can also use
+the direct local URL <http://localhost:8888> with the development token
+`mlaiops-local`. See the [workbench guide](../guides/workbench.md).
 
-## 8. Add Git, functions, and reusable flows
+## Continue with Git and reusable flows
 
 Connect a project to an HTTPS/SSH Git remote from its detail panel. Open
 **Pipelines → Define flow** to persist a versioned container or function DAG with
