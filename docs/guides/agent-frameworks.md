@@ -93,7 +93,7 @@ NOOA currently requires Python 3.12–3.13, so it is not installed into the defa
 Python 3.11 runtime or Jupyter image. Build a separate image:
 
 ```sh
-docker build -f python/agent_runtime/Dockerfile \
+docker build -f agent-runtime/Dockerfile \
   --build-arg PYTHON_VERSION=3.12 \
   --build-arg SDK_EXTRAS=runtime,nooa \
   -t your-registry/nooa-agent:dev .

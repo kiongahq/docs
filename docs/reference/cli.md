@@ -11,7 +11,7 @@ can invoke a configured coding agent inside the generated directory.
 ## Build
 
 ```bash
-make build          # produces bin/mlaiops-cli (and every other binary)
+make -C platform build          # produces bin/mlaiops-cli (and every other binary)
 # or
 cd go && go build -o mlaiops ./cmd/cli
 ```

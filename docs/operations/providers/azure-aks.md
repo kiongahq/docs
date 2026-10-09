@@ -16,9 +16,9 @@ project data belongs in object storage, not a shared PVC.
 ```bash
 az aks get-credentials --resource-group RESOURCE_GROUP --name CLUSTER --context kionga-aks
 kubectl --context kionga-aks apply -f deploy/helm/providers/aks-storageclass.example.yaml
-python3 scripts/cloud-preflight.py aks --context kionga-aks --cluster CLUSTER --resource-group RESOURCE_GROUP
-bash scripts/deploy-kubernetes.sh kionga-aks kionga-system /secure/production.yaml deploy/helm/providers/aks.example.yaml
-bash scripts/deploy-kubernetes.sh kionga-aks kionga-system /secure/production.yaml deploy/helm/providers/aks.example.yaml --apply
+python3 deploy/scripts/cloud-preflight.py aks --context kionga-aks --cluster CLUSTER --resource-group RESOURCE_GROUP
+bash deploy/scripts/deploy-kubernetes.sh kionga-aks kionga-system /secure/production.yaml deploy/helm/providers/aks.example.yaml
+bash deploy/scripts/deploy-kubernetes.sh kionga-aks kionga-system /secure/production.yaml deploy/helm/providers/aks.example.yaml --apply
 ```
 
 The preflight checks reported configuration, not effective IAM, policy behavior,

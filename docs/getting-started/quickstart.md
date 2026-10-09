@@ -1,6 +1,6 @@
 # Quickstart
 
-This walks the full lifecycle after `make local-up`. Do it in the console, the SDK,
+This walks the full lifecycle after `make -C deploy local-up`. Do it in the console, the SDK,
 or the [Jupyter workbench](../guides/workbench.md) — all three drive the same API.
 
 ## 0. Confirm the stack is up

@@ -2,7 +2,7 @@
 
 Python owns the ML-facing surface: a typed SDK, the agent runtime, pipeline flows,
 feature definitions, and the real-time demos. The package is `mlaiops-sdk`
-(`python/pyproject.toml`), importable as `mlaiops_sdk`, with optional extras for the
+(`sdk-python/pyproject.toml`), importable as `mlaiops_sdk`, with optional extras for the
 heavier agent/runtime dependencies.
 
 ```bash
@@ -156,7 +156,8 @@ by default.
 
 ## Tests
 
-`python/tests/` plus per-module tests. The CI `python` job runs `ruff check` and
+Each repository has its own `tests/` (`sdk-python`, `agent-runtime`,
+`pipeline-runner`, `workspace`, `contracts`), and its CI runs `ruff check` and
 `pytest -q`. Gate tests use the mock LLM and deterministic embedder — fast, free,
 no network. The paid eval lane (LLM-as-judge) runs only when `MLAIOPS_RUN_EVALS=1`
 with a real provider key.

@@ -9,7 +9,7 @@ store location, freshness badge and recent failures.
 
 ## Adapter contract
 
-Every provider implements `feature.Adapter` (`go/internal/feature/adapter.go`):
+Every provider implements `feature.Adapter` (`platform/go/internal/feature/adapter.go`):
 
 | Method | Meaning |
 | --- | --- |
@@ -91,7 +91,7 @@ from features.point_in_time import point_in_time_join
 training = point_in_time_join(labels, feature_rows, entity_key="user_id", features=["plan", "spend"], ttl_seconds=3600)
 ```
 
-The leakage fixture in `python/tests/test_feature_store_correctness.py`
+The leakage fixture in `agent-runtime/tests/test_feature_store_correctness.py`
 places a future value after every label and checks it never appears, and
 compares every output against a brute-force scan.
 

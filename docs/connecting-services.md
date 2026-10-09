@@ -93,7 +93,7 @@ Notes:
 
 ## Connecting from the Jupyter workbench
 
-`make local-up` now includes a JupyterLab workbench at
+`make -C deploy local-up` now includes a JupyterLab workbench at
 **http://localhost:8888** (token `mlaiops-local`) with:
 
 - **Terminal included**: File → New → Terminal — bash with `git`, `curl`,
@@ -158,7 +158,7 @@ Build once, point anywhere — set the URL and credentials, no image changes:
   `mlaiops_default` to reproduce the check.
 - **Works in console, fails from your laptop**: you used an in-stack hostname
   outside the stack (or vice versa) — swap per the two-DNS-worlds table.
-- **Everything down?** `make local-up` is idempotent; `docker compose -f
+- **Everything down?** `make -C deploy local-up` is idempotent; `docker compose -f
   deploy/compose.yaml ps` shows per-service state;
   `GATEWAY=http://localhost:8080 ./scripts/demo-smoke.sh` verifies the configured
   capabilities end to end.

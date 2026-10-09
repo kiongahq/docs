@@ -209,6 +209,6 @@ cluster**. Function nodes are not supported by this executor.
 ## Writing a native Prefect flow
 
 For most jobs, a container node is enough. For a specialised native flow, add it
-under `python/pipelines/`, wrap each step in `reported_step(run_id, "step-name")`,
-and serve it from `python/pipelines/serve.py`. Keep ML library pins aligned with
+under `pipeline-runner/pipelines/`, wrap each step in `reported_step(run_id, "step-name")`,
+and serve it from `pipeline-runner/pipelines/serve.py`. Keep ML library pins aligned with
 the serving image so trained models load under serving.

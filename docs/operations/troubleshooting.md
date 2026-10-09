@@ -7,19 +7,19 @@ starting, an in-stack-vs-localhost hostname mixup, or Docker resource limits.
 
 An `EOF` from a registry CDN means the remote image transfer ended early; it is not
 a Kionga configuration error. The default MinIO images use Docker Hub so a Quay CDN
-failure no longer blocks the local stack. `make local-up`
+failure no longer blocks the local stack. `make -C deploy local-up`
 automatically limits parallel downloads to two and retries missing images four times. Docker
 keeps completed layers, so if all attempts are exhausted, run the same command again:
 
 ```bash
-make local-up
+make -C deploy local-up
 ```
 
 For a slow or unstable connection, reduce concurrency or increase the bounded retry
 count:
 
 ```bash
-COMPOSE_PARALLEL_LIMIT=2 KIONGA_START_RETRIES=6 make local-up
+COMPOSE_PARALLEL_LIMIT=2 KIONGA_START_RETRIES=6 make -C deploy local-up
 ```
 
 The startup script prints service state and recent bootstrap logs when a non-network
@@ -67,8 +67,8 @@ docker compose -f deploy/compose.yaml logs serving-manager
 docker compose -f deploy/compose.yaml logs mlflow
 ```
 
-If you changed a pin, change it in `python/pipelines/Dockerfile`,
-`deploy/mlflow/Dockerfile`, and `deploy/jupyter/Dockerfile`.
+If you changed a pin, change it in `pipeline-runner/Dockerfile`,
+`deploy/mlflow/Dockerfile`, and `workspace/jupyter/Dockerfile`.
 
 ## Serving-manager: "permission denied" on the Docker socket
 
@@ -122,7 +122,7 @@ Docker's storage and remove only stale build cache:
 ```bash
 docker system df
 docker builder prune --force
-make local-up
+make -C deploy local-up
 ```
 
 This keeps named volumes. Do **not** run `docker volume prune` or Compose `down -v`
@@ -134,24 +134,24 @@ unless you intend to delete databases, artifacts, and workspace files. Allocate
 The full stack has about 19 regular and one-shot services. Give Docker more memory
 (Docker Desktop → Settings → Resources; aim for at least 8 GB). Large parallel image builds on first `local-up` can also
 strain the daemon — if Docker Desktop crashes, relaunch it (`open -a Docker` on
-macOS), wait for the daemon, then `make local-up`.
+macOS), wait for the daemon, then `make -C deploy local-up`.
 
 ## Port already in use
 
 Another process holds a published port. Override it in `.env` (e.g.
-`GATEWAY_PORT=8090`) and `make local-up`, or stop the conflicting process.
+`GATEWAY_PORT=8090`) and `make -C deploy local-up`, or stop the conflicting process.
 
 Identify the owner before stopping anything:
 
 ```bash
 lsof -nP -iTCP:8080 -sTCP:LISTEN
-GATEWAY_PORT=18080 make local-up
+GATEWAY_PORT=18080 make -C deploy local-up
 GATEWAY=http://localhost:18080 ./scripts/demo-smoke.sh
 ```
 
-## `make verify` fails the banned-tech scan
+## `make -C platform verify` fails the banned-tech scan
 
-The build forbids certain proprietary product names in the Go source and `config/`.
+The build forbids certain proprietary product names in the Go source and `deploy/config/`.
 If you referenced one (even in a comment), reword it — serverless is OpenFaaS,
 serving is mlflow-serve, pipelines are Prefect.
 
@@ -168,6 +168,6 @@ Reset to a clean state (destructive — wipes volumes):
 
 ```bash
 docker compose -f deploy/compose.yaml down -v
-make local-up
+make -C deploy local-up
 ./scripts/demo-smoke.sh
 ```

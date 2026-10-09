@@ -7,7 +7,7 @@ reflect the images and dependency pins in the repository.
 
 | Technology | Version | Role |
 | --- | --- | --- |
-| **Go** | 1.25 (`go/go.mod`) | Control plane, operator, feature gateway, storage proxy, trace proxy, serving manager, metrics collector, CLI |
+| **Go** | 1.25 (`platform/go/go.mod`) | Control plane, operator, feature gateway, storage proxy, trace proxy, serving manager, metrics collector, CLI |
 | **Python** | 3.11 (SDK, runtime); 3.10 (pipeline runner & serving, pinned for parity) | SDK, agent runtime, pipelines, features, real-time demos |
 | **JavaScript** | vanilla (no framework) | Embedded web console, no build toolchain |
 
@@ -72,7 +72,7 @@ reflect the images and dependency pins in the repository.
 | **pytest** (+ asyncio, cov) | Python tests |
 | **ruff** | Python lint/format |
 | **go test / go vet / gofmt** | Go test, vet, formatting |
-| **k6** | Load testing (`tests/load/`) |
+| **k6** | Load testing (`deploy/tests/load/`) |
 | **Kind** | Local Kubernetes for the optional scale-path fidelity tests |
 | **GitHub Actions** | CI: `go` job (gofmt, vet, race tests, integration, build, banned-tech scan) and `python` job (ruff, pytest, compileall) |
 | **MkDocs Material** | This documentation site |
@@ -83,11 +83,11 @@ Maintained but **not required** for local or single-VM use:
 
 | Asset | Location | Role |
 | --- | --- | --- |
-| **CRDs** | `config/crd/` | `KiongaAgent`, `KiongaPipelineRun`, `KiongaTool`, `KiongaConnection`, `KiongaModelPromotion`, `KiongaWorkspace` |
-| **Operator RBAC** | `config/rbac/` | Scoped operator permissions, including owned agent HPAs |
-| **NetworkPolicies** | `config/network/`, `config/network-istio/` | Default-deny + platform-allow, and strict mTLS |
-| **Security** | `config/security/` | Dex and Vault auth assets |
-| **Backup** | `config/backup/` | CloudNativePG backup |
+| **CRDs** | `deploy/config/crd/` | `KiongaAgent`, `KiongaPipelineRun`, `KiongaTool`, `KiongaConnection`, `KiongaModelPromotion`, `KiongaWorkspace` |
+| **Operator RBAC** | `deploy/config/rbac/` | Scoped operator permissions, including owned agent HPAs |
+| **NetworkPolicies** | `deploy/config/network/`, `deploy/config/network-istio/` | Default-deny + platform-allow, and strict mTLS |
+| **Security** | `deploy/config/security/` | Dex and Vault auth assets |
+| **Backup** | `deploy/config/backup/` | CloudNativePG backup |
 | **Kind cluster** | `deploy/kind/cluster.yaml` | Local Kubernetes cluster definition |
 
 ## Technology choices

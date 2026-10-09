@@ -8,7 +8,7 @@ manifest. Files are written only when you run it.
 ## Where the code goes
 
 Every project has one folder, resolved by one function in the gateway
-(`resolveProjectPath`, `go/internal/httpapi/workspace_paths.go`):
+(`resolveProjectPath`, `platform/go/internal/httpapi/workspace_paths.go`):
 
 | Consumer | Path |
 | --- | --- |
@@ -76,7 +76,7 @@ flowchart LR
   already uses: Jupyter via `jupyter-server-proxy` at
   `/workspaces/workbench/proxy/8890` with the notebook token, code-server via
   `/proxy/8890` with the IDE session.
-- **The sidecar re-validates.** `deploy/workspace/directories.py` accepts only
+- **The sidecar re-validates.** `workspace/workspace/directories.py` accepts only
   `kionga scaffold <namespace>` plus the flags `--template`,
   `--template-version`, `--framework`, `--accelerator`, `--profile` (once each).
   `--prompt` and `--agent` are not allowed. It requires
@@ -107,7 +107,7 @@ which already gives per-tenant isolation without a cluster-wide job runner.
 
 | Message | Fix |
 | --- | --- |
-| `This workspace image has no scaffold runner` | Rebuild the workspace images (`make local-rebuild`) so they include the sidecar and `jupyter-server-proxy` |
+| `This workspace image has no scaffold runner` | Rebuild the workspace images (`make -C deploy local-rebuild`) so they include the sidecar and `jupyter-server-proxy` |
 | `The workspace rejected the scaffold credential` | Make `KIONGA_WORKSPACE_JOB_TOKEN` identical on gateway and workspace, then restart both |
 | `Scaffold jobs need KIONGA_WORKSPACE_JOB_TOKEN` | Set the token (Compose sets a local default) |
 | `target already exists and is not empty` | The project already has code; open it in JupyterLab or the IDE |

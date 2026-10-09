@@ -35,7 +35,7 @@ revoking a grant blocks new requests but does not retroactively close a socket.
 
 On Kubernetes, `KIONGA_WORKSPACE_NAMESPACE` enables discovery of the requesting
 subject's KiongaWorkspace, its internal Service, and `<workspace-name>-auth`
-Secret. Apply `config/rbac/gateway-workspaces.yaml` together with the deployment
+Secret. Apply `deploy/config/rbac/gateway-workspaces.yaml` together with the deployment
 manifests. Change its Role/RoleBinding namespace when changing the workspace
 namespace. The gateway needs read access to workspace CRs and their credentials.
 Hosted users are never routed to the shared local administrator workspace.
@@ -71,11 +71,11 @@ subject. Logging out invalidates that local session, including API calls.
 Personal SDK/CLI use requires a scoped API key from Settings, passed through
 `MLAIOPS_TOKEN`. Workers use the separate `MLAIOPS_INTERNAL_TOKEN` credential.
 Compose supplies it to reporting services, not to interactive workspaces.
-`scripts/demo-smoke.sh` accepts a personal key or signs in with local credentials.
+`deploy/scripts/demo-smoke.sh` accepts a personal key or signs in with local credentials.
 
 ## Verification
 
-`make test-ui` installs pinned test dependencies and exercises the real console
+`make -C platform test-ui` installs pinned test dependencies and exercises the real console
 HTML/JavaScript using jsdom: individual grants, routing, project preservation,
 errors, retry, and workspace availability. Go tests cover session revocation,
 workspace authorization/proxying, HTTP checks, and persisted runtime activation.

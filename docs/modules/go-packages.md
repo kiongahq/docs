@@ -2,12 +2,12 @@
 
 The Go module is `github.com/kiongahq/platform` (Go 1.25). Its direct application
 dependencies include `github.com/jackc/pgx/v5` for Postgres; Kubernetes controller
-libraries and their transitive dependencies support the scale path. Commands live under `go/cmd/`,
-reusable logic under `go/internal/`, and public API types under `go/pkg/`.
+libraries and their transitive dependencies support the scale path. Commands live under `platform/go/cmd/`,
+reusable logic under `platform/go/internal/`, and public API types under `platform/go/pkg/`.
 
-## Commands (`go/cmd`)
+## Commands (`platform/go/cmd`)
 
-Each builds to a `mlaiops-<name>` binary (`make build`) and to a container image via
+Each builds to a `mlaiops-<name>` binary (`make -C platform build`) and to a container image via
 the root `Dockerfile` (`--build-arg SERVICE=<name>`).
 
 | Command | Binary | Role |
@@ -22,7 +22,7 @@ the root `Dockerfile` (`--build-arg SERVICE=<name>`).
 | `serving-manager` | `mlaiops-serving-manager` | Model-serving container control |
 | `cli` | `mlaiops` | Operator/engineer CLI |
 
-## Internal packages (`go/internal`)
+## Internal packages (`platform/go/internal`)
 
 ### `auth`
 
@@ -112,7 +112,7 @@ Live derivation of the component-health grid (`Components`) and the shared
 **catalog** (`Catalog`) from real connections, models, features, agents, and tools —
 no hardcoded data.
 
-## Public API types (`go/pkg`)
+## Public API types (`platform/go/pkg`)
 
 | Package | Contents |
 | --- | --- |
@@ -124,4 +124,4 @@ no hardcoded data.
 Every package has table-driven `_test.go` files. The CI `go` job runs `gofmt -l`
 (must be empty), `go vet`, `go test -race`, the tagged integration suite against a
 real Postgres, `go build ./cmd/...`, and the banned-tech scan. Run locally with
-`make test-go` and `make test-integration`.
+`make -C platform test-go` and `make -C platform test-integration`.

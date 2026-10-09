@@ -14,7 +14,7 @@ Gateway examples assume `export MLAIOPS_URL=http://localhost:8080`.
 
 ## Feature views
 
-Defined in `python/features/definitions.py`. Each view names an **entity**, a
+Defined in `agent-runtime/features/definitions.py`. Each view names an **entity**, a
 **schema** (typed fields), a TTL, and its source rows. The bundled views:
 
 | View | Entity | Example fields |
@@ -72,6 +72,6 @@ streaming events.
 
 ## Adding a feature view
 
-Add a view to `python/features/definitions.py` with its entity, schema, TTL, and a
+Add a view to `agent-runtime/features/definitions.py` with its entity, schema, TTL, and a
 `source_rows` provider (deterministic rows for the demo; in production, read from the
 offline store or a warehouse connection). Re-run the materializer to publish it.

@@ -30,7 +30,7 @@ curl -X POST $KIONGA/api/v1/admin/storage-connections/<id>/test
 | `secret_ref` | `env:VAR` holding `ACCESS_KEY_ID:SECRET_ACCESS_KEY` |
 
 **Test** sends a SigV4-signed `HEAD` on the bucket (the same signer as the
-Storage Explorer, `go/internal/storage`) and records:
+Storage Explorer, `platform/go/internal/storage`) and records:
 
 | Result | Meaning |
 | --- | --- |
@@ -94,7 +94,7 @@ Tenant workloads (per-user workspaces, pipeline steps, agents) must never
 choose where on a node their data lands.
 
 - **Never `hostPath`.** The operator's admission check
-  (`operator.ValidateTenantStorage`, `go/internal/operator/storage_admission.go`)
+  (`operator.ValidateTenantStorage`, `platform/go/internal/operator/storage_admission.go`)
   rejects `hostPath` and any volume source other than PVCs, ConfigMaps,
   Secrets, `emptyDir`, projected and downward-API volumes. A workspace that
   fails the check is marked `Failed` with reason `StorageNotAllowed` and no

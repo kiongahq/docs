@@ -65,7 +65,7 @@ From the repository root:
 
 ```bash
 python3 deploy/vm/up.py /etc/kionga/deployment.json --validate-only
-make public-up DEPLOYMENT=/etc/kionga/deployment.json
+make -C deploy public-up DEPLOYMENT=/etc/kionga/deployment.json
 ```
 
 If `make` is unavailable, run `bash deploy/public-up.sh /etc/kionga/deployment.json`.
@@ -88,7 +88,7 @@ previous reviewed digests/configuration and rerunning; this does not undo data
 migrations or restore secrets automatically.
 
 ```bash
-make public-down DEPLOYMENT=/etc/kionga/deployment.json
+make -C deploy public-down DEPLOYMENT=/etc/kionga/deployment.json
 # Equivalent, retaining certificate/data volumes:
 python3 deploy/vm/up.py /etc/kionga/deployment.json --stop
 ```

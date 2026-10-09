@@ -9,7 +9,7 @@ a laptop or single VM; Kubernetes adds the isolated, multi-user scale path.
 
 - :material-rocket-launch: **[Get started](getting-started/installation.md)**
 
-    One command (`make local-up`) brings up the full stack. Then walk the
+    One command (`make -C deploy local-up`) brings up the full stack. Then walk the
     [quickstart](getting-started/quickstart.md).
 
 - :material-sitemap: **[Architecture](overview/architecture.md)**
@@ -36,9 +36,9 @@ a laptop or single VM; Kubernetes adds the isolated, multi-user scale path.
 
 ## What you can do with it
 
-Run `make local-up`, open the landing page at <http://localhost:8080>, then sign in
+Run `make -C deploy local-up`, open the landing page at <http://localhost:8080>, then sign in
 to the console with `admin` / `mlaiops-local`. If 8080 is occupied, use
-`GATEWAY_PORT=18080 make local-up`. The bundled lifecycle includes:
+`GATEWAY_PORT=18080 make -C deploy local-up`. The bundled lifecycle includes:
 
 - **Create a production-shaped project** from a versioned catalog: classical ML,
   distributed PyTorch training, a functional LangGraph agent, a full-stack AI

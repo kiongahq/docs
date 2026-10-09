@@ -25,7 +25,7 @@ making them talk to each other. Kionga wires them together for you:
 
 - A **single API and console** covers projects, pipelines, models, agents, tools,
   features, connections, and audit.
-- **Real integrations, not placeholder UI** — `make local-up` runs the bundled
+- **Real integrations, not placeholder UI** — `make -C deploy local-up` runs the bundled
   engines end to end; external services such as OpenFaaS remain visibly unconfigured
   until an operator connects them.
 - **Honest infrastructure** — nothing shows as connected unless it passes an active

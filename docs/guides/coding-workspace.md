@@ -7,12 +7,12 @@ in either interface appears immediately in the other.
 ## Start the IDE
 
 ```bash
-make ide-up
+make -C deploy ide-up
 ```
 
 The first run downloads the code-server image and installs only the packages
 needed for the editor. If you also want Codex and Claude Code CLI tools inside
-the IDE terminal, run `make ide-agents-up`; this optional image build downloads
+the IDE terminal, run `make -C deploy ide-agents-up`; this optional image build downloads
 Node.js and both pinned CLIs and can take longer. Jupyter's coding-agent tools
 are unaffected.
 
@@ -24,19 +24,19 @@ switches between Jupyter and the IDE and takes you back to the console.
 Stop it without deleting projects:
 
 ```bash
-make ide-down
+make -C deploy ide-down
 ```
 
 The IDE is code-server, the open-source browser build of VS Code. It is an
 opt-in Compose profile and is not exposed by the public deployment overlay.
-If the IDE link says it is offline, run `make ide-up` from the repository root,
+If the IDE link says it is offline, run `make -C deploy ide-up` from the repository root,
 then click the link again. The console checks readiness before launching it.
 
 On macOS checkouts backed by iCloud, evicted files in the repository root can
-block a cold gateway build. The Compose gateway and IDE use their smaller `go/`
+block a cold gateway build. The Compose gateway and IDE use their smaller `platform/go/`
 and `deploy/` build contexts. If Docker cannot download the Go builder image,
-an operator with local Go installed can cross-compile into `go/build/gateway`
-and package that binary with `go/Dockerfile.local` for the matching Docker CPU
+an operator with local Go installed can cross-compile into `platform/go/build/gateway`
+and package that binary with `platform/go/Dockerfile.local` for the matching Docker CPU
 architecture. This is a local recovery path, not the normal release build.
 
 ## Generate a starter
@@ -81,7 +81,7 @@ state instead of leaving those decisions only in generated files.
 ## Direct agent use
 
 Pinned Codex and Claude Code CLIs are installed in Jupyter, and in the IDE after
-`make ide-agents-up`:
+`make -C deploy ide-agents-up`:
 
 ```bash
 codex

@@ -191,8 +191,8 @@ more. Generate it with `openssl rand -hex 24` and set it in `.env`.
 
 ## Network isolation (scale path)
 
-On Kubernetes, `config/network/default-deny.yaml` + `platform-allow.yaml` provide
-scoped NetworkPolicies, and `config/network-istio/strict-mtls.yaml` enables strict
+On Kubernetes, `deploy/config/network/default-deny.yaml` + `platform-allow.yaml` provide
+scoped NetworkPolicies, and `deploy/config/network-istio/strict-mtls.yaml` enables strict
 mTLS. On Compose, the single private network plus the closed internal ports provide
 the isolation boundary.
 

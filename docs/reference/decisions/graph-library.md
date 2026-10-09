@@ -1,7 +1,7 @@
 # Decision: DAG layout library
 
 **Chosen:** `@dagrejs/dagre` 2.0.0 (MIT), vendored at
-`go/cmd/gateway/web/vendor/dagre.min.js` with its SRI hash, plus Kionga's own SVG
+`platform/go/cmd/gateway/web/vendor/dagre.min.js` with its SRI hash, plus Kionga's own SVG
 renderer (`pipeline-graph.js`).
 
 ## Requirements

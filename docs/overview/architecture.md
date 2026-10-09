@@ -213,5 +213,5 @@ cards live without hammering the API.
   services, but internal ports are closed and a **Caddy** TLS edge + **Dex** OIDC
   provider are added in front. Auth is on; RBAC roles come from OIDC claims.
 - **Scale path:** the literal Kubernetes stack (Kind cluster, CRDs, operator,
-  KServe/KFP/Istio) under `config/` and `deploy/kind/` — optional, documented, and
+  KServe/KFP/Istio) under `deploy/config/` and `deploy/kind/` — optional, documented, and
   not required for local or single-VM use.

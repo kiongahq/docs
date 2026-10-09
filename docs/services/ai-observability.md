@@ -12,10 +12,10 @@ whose name is derived from the immutable control-plane agent ID.
 
 | | |
 | --- | --- |
-| **Build** | `python/agent_runtime/Dockerfile` (Python 3.11, FastAPI + Uvicorn) |
+| **Build** | `agent-runtime/Dockerfile` (Python 3.11, FastAPI + Uvicorn) |
 | **Host port** | `19000` (container listens on 9000; MinIO owns host 9000) |
 | **Health** | `GET /healthz` |
-| **Source** | `python/agent_runtime/` |
+| **Source** | `agent-runtime/agent_runtime/` |
 
 ### What it does per turn
 
@@ -61,7 +61,7 @@ without touching agent code — and provider keys never leak into traces or logs
 
 | | |
 | --- | --- |
-| **Source** | `go/cmd/trace-proxy`, `go/internal/traceproxy` |
+| **Source** | `trace-proxy/cmd/trace-proxy`, `trace-proxy/internal/traceproxy` |
 | **Host port** | `8081` (`TRACE_PROXY_PORT`) |
 | **Health** | `GET /healthz` |
 
@@ -98,9 +98,9 @@ and publishes results.
 
 | | |
 | --- | --- |
-| **Build** | `python/agent_runtime/Dockerfile` |
+| **Build** | `agent-runtime/Dockerfile` |
 | **Entrypoint** | `python -m realtime.service` |
-| **Source** | `python/realtime/` |
+| **Source** | `agent-runtime/realtime/` |
 
 | Demo | Input topic | Output topic | Logic |
 | --- | --- | --- | --- |
@@ -127,7 +127,7 @@ JupyterLab (with a browser terminal) preloaded with the SDK and every connection
 at <http://localhost:8888> (token `mlaiops-local`).
 
 Configured MinIO buckets are mounted with S3FS under
-`/workspace/object-store/<bucket>`. The optional code-server IDE (`make ide-up`,
+`/workspace/object-store/<bucket>`. The optional code-server IDE (`make -C deploy ide-up`,
 <http://localhost:13337>) mounts the same `jupyter-data` volume but does not receive
 FUSE privileges. Kubernetes replaces the shared development profile with isolated
 per-user `KiongaWorkspace` workloads.

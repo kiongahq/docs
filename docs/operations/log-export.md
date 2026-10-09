@@ -49,7 +49,7 @@ Set in `.env` (Compose) or the exporter's environment:
 | `KIONGA_LOG_EXPORT_BATCH` | documents per bulk request (default 500) |
 | `MLAIOPS_TENANT` | tenant to export; one exporter per tenant |
 
-Put secret files in `config/secrets/` (ignored by Git, mounted read-only at
+Put secret files in `deploy/config/secrets/` (ignored by Git, mounted read-only at
 `/run/kionga-secrets`), for example
 `KIONGA_LOG_EXPORT_API_KEY_FILE=/run/kionga-secrets/es-api-key`.
 Credentials are sent only over HTTPS to remote hosts and never appear in errors,

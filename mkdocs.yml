@@ -4,8 +4,9 @@ site_description: >-
   application stack with a Kubernetes scale path. Full documentation: architecture,
   services, modules, installation, configuration, API, RBAC, and operations.
 site_author: Kionga platform team
-repo_name: kiongahq/platform
-repo_url: https://github.com/kiongahq/platform
+site_url: https://kiongahq.github.io/docs/
+repo_name: kiongahq/docs
+repo_url: https://github.com/kiongahq/docs
 edit_uri: edit/main/docs/
 docs_dir: docs
 copyright: Kionga is a self-hosted platform. Local credentials in this documentation are development defaults — override every one for public deployments.
@@ -78,6 +79,7 @@ nav:
   - Overview:
       - What is Kionga: overview/what-is-kionga.md
       - Architecture: overview/architecture.md
+      - Repositories: overview/repositories.md
       - Core concepts: overview/concepts.md
       - Technology & modules used: overview/technology.md
   - Getting started:

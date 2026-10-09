@@ -31,8 +31,8 @@ internal token, and a 32-byte base64 credential encryption key.
 
 ## Development compatibility
 
-`make local-up` remains the development environment. New public deployment uses
-`make public-up DEPLOYMENT=/etc/kionga/deployment.json`. The old Compose overlay
+`make -C deploy local-up` remains the development environment. New public deployment uses
+`make -C deploy public-up DEPLOYMENT=/etc/kionga/deployment.json`. The old Compose overlay
 is available only through `KIONGA_LEGACY_PUBLIC_DEPLOY=1 bash deploy/public-up.sh`;
 it is a legacy demo path, not the recommended production deployment. Do not
 expose its development credentials or services to the Internet.

@@ -9,7 +9,7 @@ The heart of Kionga. A single Go binary that serves the **REST API** and the
 | --- | --- |
 | **Image** | Built from root `Dockerfile` with `SERVICE=gateway` |
 | **Host port** | `8080` (`GATEWAY_PORT`) |
-| **Source** | `go/cmd/gateway`, `go/internal/httpapi` |
+| **Source** | `platform/go/cmd/gateway`, `platform/go/internal/httpapi` |
 | **Health** | `GET /api/v1/health` |
 | **Store** | PostgreSQL (`DATABASE_URL`) or local JSON file (`MLAIOPS_DATA_PATH`) |
 
@@ -51,7 +51,7 @@ The heart of Kionga. A single Go binary that serves the **REST API** and the
 
 ### The embedded console
 
-`go/cmd/gateway/web/` holds the landing page (`index.html`, `landing.css`,
+`platform/go/cmd/gateway/web/` holds the landing page (`index.html`, `landing.css`,
 `landing.js`) and console (`console.html`, `app.js`, `styles.css`), embedded into
 the binary. It is dependency-free (no framework build step). It renders role-aware
 views for workload lifecycle, functions, workspaces, access administration,
@@ -88,9 +88,9 @@ default Compose stack; used only with the optional Kubernetes deployment.
 
 | | |
 | --- | --- |
-| **Source** | `go/cmd/operator`, `go/internal/operator` |
-| **CRDs** | `config/crd/` |
-| **RBAC** | `config/rbac/operator.yaml` |
+| **Source** | `platform/go/cmd/operator`, `platform/go/internal/operator` |
+| **CRDs** | `deploy/config/crd/` |
+| **RBAC** | `deploy/config/rbac/operator.yaml` |
 
 ## metrics-collector
 
@@ -100,7 +100,7 @@ sessions. Ships as `mlaiops-metrics-collector`, default port `9090`.
 
 | | |
 | --- | --- |
-| **Source** | `go/cmd/metrics-collector`, `go/internal/metrics` |
+| **Source** | `platform/go/cmd/metrics-collector`, `platform/go/internal/metrics` |
 | **Config** | `MLAIOPS_METRICS_TARGETS` (gateway/services to scrape) |
 
 ## integration-worker
@@ -113,7 +113,7 @@ after the full poll batch succeeds. Exhausted dispatch or commit retries stop th
 worker before another poll, so restart replays from the last durable commit. This is
 at-least-once delivery; collision-safe create-or-update reconciliation makes replay
 idempotent. Ships as `mlaiops-integration-worker`. Part of the scale-path deployment
-(`config/deploy/integration-worker.yaml`).
+(`deploy/config/deploy/integration-worker.yaml`).
 
 ## cli
 

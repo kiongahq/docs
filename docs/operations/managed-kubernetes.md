@@ -11,7 +11,7 @@ These mechanisms support availability; they do not replace redundant dependencie
 Provider-specific setup and storage overlays: [EKS](providers/aws-eks.md),
 [GKE](providers/gcp-gke.md), and [AKS](providers/azure-aks.md). AWS EKS is the
 initial staging target, but no live cloud deployment is implied by these guides.
-Run `scripts/cloud-preflight.py` for the selected provider before Helm.
+Run `deploy/scripts/cloud-preflight.py` for the selected provider before Helm.
 
 ## 1. Prepare the infrastructure
 
@@ -41,7 +41,7 @@ Bootstrap with a cluster-administrator identity, then use a narrower deploy iden
 ```bash
 kubectl --context CONTEXT create namespace kionga-system
 kubectl --context CONTEXT label namespace kionga-system pod-security.kubernetes.io/enforce=restricted
-kubectl --context CONTEXT apply -f config/crd/
+kubectl --context CONTEXT apply -f deploy/config/crd/
 ```
 
 The chart creates a separate `kionga-workloads` namespace with restricted pod
@@ -109,7 +109,7 @@ the storage proxy currently uses the mounted S3-compatible credentials.
 For authenticated Kafka REST add `KAFKA_REST_TOKEN` to both gateway and worker
 `secrets` lists and populate their Secrets/ExternalSecrets. The consumer sends bearer authentication
 and rejects cross-origin consumer URLs when credentials are configured. Create
-the topics required by `scripts/local-topics.sh` through your Kafka administration
+the topics required by `deploy/scripts/local-topics.sh` through your Kafka administration
 process. Configure engine authentication similarly using supported secret-file
 keys and per-component secret lists; empty defaults do not configure an engine.
 
@@ -155,8 +155,8 @@ Run from the repository root with Helm and kubectl installed:
 
 ```bash
 helm lint deploy/helm/kionga -f /path/to/production.yaml --namespace kionga-system --strict
-bash scripts/deploy-kubernetes.sh CONTEXT kionga-system /path/to/production.yaml
-bash scripts/deploy-kubernetes.sh CONTEXT kionga-system /path/to/production.yaml --apply
+bash deploy/scripts/deploy-kubernetes.sh CONTEXT kionga-system /path/to/production.yaml
+bash deploy/scripts/deploy-kubernetes.sh CONTEXT kionga-system /path/to/production.yaml --apply
 kubectl --context CONTEXT -n kionga-system get pods,services,ingress,hpa,pdb
 kubectl --context CONTEXT -n kionga-system get externalsecrets
 ```
@@ -172,7 +172,7 @@ With staged admin and normal-user OIDC tokens in protected files, and a project
 the user cannot access, run the read-only verifier:
 
 ```bash
-python3 scripts/verify-production.py \
+python3 deploy/scripts/verify-production.py \
   --context CONTEXT --namespace kionga-system \
   --origin https://console.example.com \
   --workspace-host https://workbench-0123456789abcdef0123456789abcdef.workspaces.example.com \

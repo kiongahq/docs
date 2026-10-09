@@ -26,7 +26,7 @@ them**. This is where real training happens.
 
 | | |
 | --- | --- |
-| **Build** | `python/pipelines/Dockerfile` (Python 3.10) |
+| **Build** | `pipeline-runner/Dockerfile` (Python 3.10) |
 | **Entrypoint** | `python -m pipelines.serve` |
 | **Pins** | `mlflow==3.1.1`, `scikit-learn==1.7.0` — identical to the serving image |
 | **Config** | `PREFECT_API_URL`, `MLAIOPS_URL`, `MLFLOW_TRACKING_URI`, `MLFLOW_S3_ENDPOINT_URL`, `AWS_*` |
@@ -45,7 +45,7 @@ schedule jobs.
     The runner's ML library versions are pinned **identically** to the MLflow
     serving image. Unpinned versions are how training-serving skew happens — a model
     trained under one scikit-learn version fails to load under another. If you change
-    a pin, change it in `python/pipelines/Dockerfile` **and** `deploy/mlflow/Dockerfile`.
+    a pin, change it in `pipeline-runner/Dockerfile` **and** `deploy/mlflow/Dockerfile`.
 
 ### Heavy training workloads
 
@@ -69,7 +69,7 @@ API and records the endpoint URL.
 
 | | |
 | --- | --- |
-| **Source** | `go/cmd/serving-manager`, `go/internal/serving` |
+| **Source** | `serving/cmd/serving-manager`, `serving/internal/serving` |
 | **Host port** | `8085` (`SERVING_MANAGER_PORT`) |
 | **Health** | `GET /healthz` |
 | **Special** | Runs as `user: "0:0"` and mounts `/var/run/docker.sock`; this is a privileged local control boundary (the pipeline-runner is the other socket consumer) |

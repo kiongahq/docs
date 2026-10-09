@@ -17,9 +17,9 @@ project data in object storage.
 gcloud container clusters get-credentials CLUSTER --project PROJECT --location LOCATION
 kubectl config current-context # Use this explicit context in every command below.
 kubectl --context CONTEXT apply -f deploy/helm/providers/gke-storageclass.example.yaml
-python3 scripts/cloud-preflight.py gke --context CONTEXT --cluster CLUSTER --project PROJECT --location LOCATION
-bash scripts/deploy-kubernetes.sh CONTEXT kionga-system /secure/production.yaml deploy/helm/providers/gke.example.yaml
-bash scripts/deploy-kubernetes.sh CONTEXT kionga-system /secure/production.yaml deploy/helm/providers/gke.example.yaml --apply
+python3 deploy/scripts/cloud-preflight.py gke --context CONTEXT --cluster CLUSTER --project PROJECT --location LOCATION
+bash deploy/scripts/deploy-kubernetes.sh CONTEXT kionga-system /secure/production.yaml deploy/helm/providers/gke.example.yaml
+bash deploy/scripts/deploy-kubernetes.sh CONTEXT kionga-system /secure/production.yaml deploy/helm/providers/gke.example.yaml --apply
 ```
 
 The preflight checks reported configuration, not effective IAM, policy behavior,

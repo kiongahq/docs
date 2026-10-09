@@ -1,7 +1,9 @@
 # Installation
 
-Kionga runs as one Docker Compose stack. The fastest path to a working platform is
-`make local-up`.
+Kionga runs as one Docker Compose stack built from its component repositories
+(see [Repositories](../overview/repositories.md)). You clone them side by side into
+one workspace folder; every path and command in these docs is relative to that
+folder.
 
 ## Prerequisites
 
@@ -13,41 +15,44 @@ Kionga runs as one Docker Compose stack. The fastest path to a working platform 
 | **Make** | Convenience targets | Optional — you can call `docker compose` directly |
 | **Go 1.25+** | Only for building Go binaries outside Docker or running Go tests | Not needed just to run the stack |
 | **Python 3.11+** | Only for the SDK, tests, or docs outside Docker | Not needed just to run the stack |
-| **Node.js** | Only for `make verify` (JS syntax check) | Not needed to run the stack |
+| **Node.js** | Only for `make -C platform verify` (JS syntax check) | Not needed to run the stack |
 
 !!! tip "macOS + iCloud"
-    Don't keep the repository under an iCloud-managed folder (`~/Documents`,
-    `~/Desktop`). iCloud can evict files and stall `git`. Clone to a plain path like
-    `~/dev/mlops`.
+    Don't keep the checkouts under an iCloud-managed folder (`~/Documents`,
+    `~/Desktop`). iCloud can evict files and stall `git` and image builds. Use a plain
+    path like `~/kionga`.
 
 ## Fastest path: the full stack
 
 ```bash
-git clone https://github.com/kiongahq/platform.git
-cd platform
-make local-up
+mkdir ~/kionga && cd ~/kionga
+git clone https://github.com/kiongahq/deploy.git
+KIONGA_GIT_BASE=https://github.com/kiongahq/ make -C deploy workspace   # clones the other repositories
+make -C deploy local-up
 ```
 
-`make local-up`:
+`make -C deploy workspace` clones every component beside `deploy/` (over SSH by
+default; `KIONGA_GIT_BASE` above switches to HTTPS). `make -C deploy local-up`:
 
-1. Verifies that Docker and Compose v2 are available and the daemon is running.
+1. Verifies that Docker and Compose v2 are available, the daemon is running, and
+   every component checkout is present.
 2. Downloads missing upstream images with conservative concurrency and retries
    transient registry/CDN failures such as `EOF`.
 3. Reuses cached images or builds missing images, then starts every service in
    `deploy/compose.yaml`.
 4. Waits for the control-plane health endpoint.
-5. Creates the Kafka topics (`scripts/local-topics.sh`).
+5. Creates the Kafka topics (`deploy/scripts/local-topics.sh`).
 
-The shorter `make local` alias does the same thing. The bootstrap is idempotent: if
+The shorter `make -C deploy local` alias does the same thing. The bootstrap is idempotent: if
 a download fails even after the bounded retries, run the command again and Docker
 resumes from layers already cached. Tune unusual environments with
 `COMPOSE_PARALLEL_LIMIT`, `KIONGA_START_RETRIES`, and
 `KIONGA_START_TIMEOUT_SECONDS` without editing the Compose file.
 
-Routine `make local-up` runs reuse cached images and build only images that are
-missing. After changing application source, a Dockerfile, or an image dependency,
-use `make local-rebuild`; it performs the same resilient bootstrap with explicit
-image rebuilding.
+Routine `make -C deploy local-up` runs reuse cached images and rebuild only images
+whose sources changed, including sources in another repository the image installs
+(an SDK change rebuilds `agent-runtime` and `jupyter`). `make -C deploy local-rebuild`
+rebuilds everything. `make -C deploy workspace-pull` fast-forwards clean checkouts.
 
 The first run builds several images (Go services, MLflow, agent runtime, pipeline
 runner, and Jupyter workbench). Allow roughly 10–25 minutes depending on bandwidth,
@@ -60,11 +65,11 @@ When it finishes, open the landing page:
 The operational console is at <http://localhost:8080/console.html>.
 Sign in with `admin` / `mlaiops-local`.
 
-If port 8080 is already used, `make local-up` selects a free port in 18080–18084
+If port 8080 is already used, `make -C deploy local-up` selects a free port in 18080–18084
 and prints the URL. To choose a port yourself without changing the container network:
 
 ```bash
-GATEWAY_PORT=18080 make local-up
+GATEWAY_PORT=18080 make -C deploy local-up
 export GATEWAY=http://localhost:18080
 ```
 
@@ -95,7 +100,7 @@ failures. OpenFaaS is skipped until an external gateway is configured.
 | Landing page | <http://localhost:8080> | none |
 | Console + API | <http://localhost:8080/console.html> | `admin` / `mlaiops-local` locally; OIDC when hosted |
 | Jupyter workbench | <http://localhost:8080/workspace.html?tool=workbench> | Kionga session |
-| Browser IDE | <http://localhost:8080/workspace.html?tool=ide> | Kionga session; start with `make ide-up` |
+| Browser IDE | <http://localhost:8080/workspace.html?tool=ide> | Kionga session; start with `make -C deploy ide-up` |
 | MLflow | <http://localhost:15000> | none |
 | Prefect | <http://localhost:4200> | none |
 | Langfuse | <http://localhost:3000> | `admin@local.dev` / `mlaiops-local-admin` |
@@ -107,11 +112,11 @@ See [Configuration reference](configuration.md) for every port and setting, and
 ## Stopping and restarting
 
 ```bash
-make local-down     # stop the stack (volumes persist)
-make local-up       # bring it back
-make local-status   # show every service, including completed one-shot jobs
-make local-logs     # show the latest logs from the stack
-make local-rebuild  # rebuild changed local source images, then start
+make -C deploy local-down     # stop the stack (volumes persist)
+make -C deploy local-up       # bring it back
+make -C deploy local-status   # show every service, including completed one-shot jobs
+make -C deploy local-logs     # show the latest logs from the stack
+make -C deploy local-rebuild  # rebuild changed local source images, then start
 ```
 
 Durable state lives in named volumes (`postgres-data`, `minio-data`, `redis-data`,
@@ -123,8 +128,8 @@ restarts.
 For control-plane development without the full stack:
 
 ```bash
-make install        # pip installs the SDK + dev deps
-make run            # runs the gateway on :8080 (file-backed store)
+pip install -e "sdk-python[dev]" # the SDK and its test dependencies
+make -C platform run            # runs the gateway on :8080 (file-backed store)
 ```
 
 In this mode there is no execution engine, serving, or agent runtime — the gateway
@@ -134,7 +139,7 @@ downstream integrations are simply not configured. Good for API and console work
 ## Building the binaries
 
 ```bash
-make build
+make -C platform build
 ```
 
 Produces static binaries in `bin/`:
@@ -154,10 +159,10 @@ docker build --build-arg SERVICE=gateway -t mlaiops/gateway .
 ## Running the test suites
 
 ```bash
-make verify           # Go/Python tests + vet/ruff, builds, JS check, banned-tech scan
-make test-integration # Postgres outbox + pgvector round-trip
-make test-e2e         # Kind-based end-to-end (optional scale path)
-make test-load        # k6 load test against the gateway
+make -C platform verify           # Go/Python tests + vet/ruff, builds, JS check, banned-tech scan
+make -C platform test-integration # Postgres outbox + pgvector round-trip
+make -C deploy test-e2e-kind         # Kind-based end-to-end (optional scale path)
+make -C deploy test-load        # k6 load test against the gateway
 ```
 
 ## Public / production install
@@ -167,13 +172,13 @@ The short version:
 
 ```bash
 cp .env.example .env    # fill in domain, OIDC, secrets
-make public-up
+make -C deploy public-up
 ```
 
 ## Documentation site (this site)
 
 ```bash
-make docs-install       # pip install mkdocs-material
-make docs-serve         # live preview at http://localhost:8000
-make docs-build         # static build into site/ (strict)
+make -C docs docs-install       # pip install mkdocs-material
+make -C docs docs-serve         # live preview at http://localhost:8000
+make -C docs docs-build         # static build into site/ (strict)
 ```

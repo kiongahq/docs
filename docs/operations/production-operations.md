@@ -9,7 +9,7 @@ cluster, identity mappings, release digests, dependency versions and acceptance 
 Mounted-secret loading is implemented in the Go gateway, operator, worker, feature
 gateway, storage proxy, trace proxy and serving manager. It is not a universal
 loader for Python services or third-party images. Supported names are defined in
-`go/internal/runtimeconfig/config.go`. Files are read at startup; restart/roll out
+`platform/go/internal/runtimeconfig/config.go`. Files are read at startup; restart/roll out
 consumers after rotation. Do not place secret data in ConfigMaps, Helm values,
 deployment JSON, traces or CI logs. Secret values enter process memory/environment
 after loading; mounted files are not protection against a compromised process.
@@ -106,7 +106,7 @@ needs a staged rollout check.
 Track failures as release blockers. Full workload acceptance does not apply to a
 gateway-only VM unless an external workload plane has been separately integrated.
 
-`scripts/verify-production.py` automates the read-only control-plane checks and
+`deploy/scripts/verify-production.py` automates the read-only control-plane checks and
 optionally tests workspace handoff with `--test-workspace-handoff`. Record the
 result, then run the remaining stateful, disruptive and recovery cases in staging.
 The PostgreSQL integration test verifies ticket redemption across connections

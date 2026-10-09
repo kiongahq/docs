@@ -10,7 +10,7 @@ for the previous runtime identifiers.
 | Surface | Canonical value |
 | --- | --- |
 | Workspace command | `kionga` |
-| Workspace script | `deploy/workspace/kionga.py` |
+| Workspace script | `workspace/workspace/kionga.py` |
 | Custom coding-agent command | `KIONGA_CUSTOM_AGENT_COMMAND` |
 | Workspace root | `KIONGA_WORKSPACE` |
 | Workspace subject | `KIONGA_SUBJECT` |
@@ -48,9 +48,9 @@ treated as an in-place text edit on a live cluster.
 For a disposable Kind environment, recreate the cluster:
 
 ```bash
-make kind-down
-make kind-up
-make test-e2e
+kind delete cluster --name mlaiops
+make -C deploy kind-up
+make -C deploy test-e2e-kind
 ```
 
 For a stateful cluster:
@@ -79,10 +79,10 @@ stale pages and search-index entries are removed.
 Validate the upgrade with:
 
 ```bash
-make verify
-make test-integration
-make docs-build
-make test-e2e       # when the Kubernetes lane is available
+make -C platform verify
+make -C platform test-integration
+make -C docs docs-build
+make -C deploy test-e2e-kind       # when the Kubernetes lane is available
 ```
 
 Finally, search the working tree and generated site for pre-migration identifiers.

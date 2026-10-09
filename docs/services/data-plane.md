@@ -42,7 +42,7 @@ the JVM proxy image it replaces.
 | **Images** | `apache/kafka:3.9.1`, `ghcr.io/aiven-open/karapace:6.1.4` |
 | **Host ports** | `9092` (broker), `8082` (REST) |
 
-Topics (created by `scripts/local-topics.sh`): audit/lifecycle command topics,
+Topics (created by `deploy/scripts/local-topics.sh`): audit/lifecycle command topics,
 `mlaiops.llm.traces`, `mlaiops.feature.updates`, and the real-time demo topics
 (`mlaiops.transactions` → `mlaiops.fraud.alerts`, `mlaiops.callcenter.transcripts` →
 `mlaiops.callcenter.insights`, `mlaiops.user.activity` → `mlaiops.recs.results`).
@@ -97,7 +97,7 @@ shape, backed by Redis.
 
 | | |
 | --- | --- |
-| **Source** | `go/cmd/feature-gateway`, `go/internal/feature` |
+| **Source** | `platform/go/cmd/feature-gateway`, `platform/go/internal/feature` |
 | **Host port** | `8083` (`FEATURE_GATEWAY_PORT`) |
 | **Health** | `GET /healthz` |
 | **Config** | `REDIS_URL` |
@@ -112,7 +112,7 @@ short-lived AWS SigV4 URLs and provides bounded browse/preview for the console.
 
 | | |
 | --- | --- |
-| **Source** | `go/cmd/storage-proxy`, `go/internal/storage` |
+| **Source** | `platform/go/cmd/storage-proxy`, `platform/go/internal/storage` |
 | **Host port** | `8084` (`STORAGE_PROXY_PORT`) |
 | **Health** | `GET /healthz` |
 | **Config** | `S3_ENDPOINT`, `S3_ACCESS_KEY`, `S3_SECRET_KEY` |
@@ -122,7 +122,7 @@ Endpoints: `GET /buckets`, `GET /objects`, `GET /object` (bounded preview),
 
 ## feature-materializer
 
-One-shot Python job: applies the feature definitions in `python/features/` and
+One-shot Python job: applies the feature definitions in `agent-runtime/features/` and
 populates the online store, reporting entity counts back to the control plane, then
 exits (`restart: "no"`). Re-run it with:
 

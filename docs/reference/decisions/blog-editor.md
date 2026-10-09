@@ -8,7 +8,7 @@ workspace (`/editorial.html`).
 **Chosen:** [Editor.js](https://editorjs.io) 2.31.7 with the official header,
 list, quote, code, delimiter, embed, table, inline-code, marker and warning
 tools, vendored as the upstream UMD builds under
-`go/cmd/gateway/web/vendor/editorjs/` with their licenses.
+`platform/go/cmd/gateway/web/vendor/editorjs/` with their licenses.
 
 Why:
 
@@ -39,12 +39,12 @@ in `editorial/state.js`, and text-level undo is the browser's own.
 
 ### Supply chain
 
-`scripts/vendor-manifest.py` compares every vendored file with the SHA-256 that
+`platform/scripts/vendor-manifest.py` compares every vendored file with the SHA-256 that
 the jsDelivr package API publishes for the same pinned npm version (an
 independent channel from the download) and writes `MANIFEST.json` with the
 SHA-384 used for Subresource Integrity. `editorial.html` loads each script with
 `integrity`; `blog.html` pins highlight.js 11.11.1 ES modules through an import
-map `integrity` table. `tests/ui/vendor-integrity.test.cjs` recomputes the hashes
+map `integrity` table. `platform/tests/ui/vendor-integrity.test.cjs` recomputes the hashes
 on every gate run and fails if a page references a vendor file without the
 pinned hash. Note: `@editorjs/editorjs` currently has its npm `latest` dist-tag
 pointing at a `0.0.0` preview of a rewrite; 2.31.7 (the `next` tag) is the

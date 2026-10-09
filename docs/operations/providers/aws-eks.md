@@ -27,9 +27,9 @@ It is **not** an EKS Auto Mode recipe (that mode uses a different CSI provisione
 ```bash
 aws eks update-kubeconfig --name CLUSTER --region REGION --alias kionga-eks
 kubectl --context kionga-eks apply -f deploy/helm/providers/eks-storageclass.example.yaml
-python3 scripts/cloud-preflight.py eks --context kionga-eks --cluster CLUSTER --region REGION
-bash scripts/deploy-kubernetes.sh kionga-eks kionga-system /secure/production.yaml deploy/helm/providers/eks.example.yaml
-bash scripts/deploy-kubernetes.sh kionga-eks kionga-system /secure/production.yaml deploy/helm/providers/eks.example.yaml --apply
+python3 deploy/scripts/cloud-preflight.py eks --context kionga-eks --cluster CLUSTER --region REGION
+bash deploy/scripts/deploy-kubernetes.sh kionga-eks kionga-system /secure/production.yaml deploy/helm/providers/eks.example.yaml
+bash deploy/scripts/deploy-kubernetes.sh kionga-eks kionga-system /secure/production.yaml deploy/helm/providers/eks.example.yaml --apply
 ```
 
 Create the namespace, CRDs, SecretStore and cloud dependencies first as described
