@@ -61,7 +61,7 @@ Compose definition. The default package deliberately mounts only four secrets.
 
 ## Validate and start
 
-From the repository root:
+From the workspace folder (the one holding `deploy/`):
 
 ```bash
 python3 deploy/vm/up.py /etc/kionga/deployment.json --validate-only

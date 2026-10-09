@@ -160,5 +160,5 @@ Build once, point anywhere — set the URL and credentials, no image changes:
   outside the stack (or vice versa) — swap per the two-DNS-worlds table.
 - **Everything down?** `make -C deploy local-up` is idempotent; `docker compose -f
   deploy/compose.yaml ps` shows per-service state;
-  `GATEWAY=http://localhost:8080 ./scripts/demo-smoke.sh` verifies the configured
+  `GATEWAY=http://localhost:8080 ./deploy/scripts/demo-smoke.sh` verifies the configured
   capabilities end to end.

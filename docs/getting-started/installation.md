@@ -83,13 +83,13 @@ report the affected file.
 ### Verify it works
 
 ```bash
-./scripts/demo-smoke.sh
+./deploy/scripts/demo-smoke.sh
 ```
 
 This exercises the configured platform end to end — creates a project, runs a real
 pipeline, deploys a model and gets a live prediction, invokes an agent, reads
 features from Redis, browses storage, and scores fraud events. Use
-`GATEWAY=http://localhost:18080 ./scripts/demo-smoke.sh` when the port was
+`GATEWAY=http://localhost:18080 ./deploy/scripts/demo-smoke.sh` when the port was
 overridden. The pass/skip count is dynamic; the command must finish with zero
 failures. OpenFaaS is skipped until an external gateway is configured.
 
@@ -150,10 +150,13 @@ mlaiops-trace-proxy  mlaiops-feature-gateway  mlaiops-storage-proxy
 mlaiops-metrics-collector  mlaiops-serving-manager  mlaiops-cli
 ```
 
-All services are also built from the root `Dockerfile` with a `SERVICE` build arg:
+The platform's Go services build from `platform/go/Dockerfile` with a `SERVICE`
+build arg; every other image builds from its own repository's `Dockerfile` (see
+[Repositories](../overview/repositories.md)):
 
 ```bash
-docker build --build-arg SERVICE=gateway -t mlaiops/gateway .
+docker build --build-arg SERVICE=gateway -t mlaiops/gateway platform/go
+docker build -t mlaiops/serving-manager serving
 ```
 
 ## Running the test suites

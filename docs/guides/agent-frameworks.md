@@ -56,7 +56,7 @@ multimodal inputs, and interactive approval pauses are not automatically mapped.
 Install the optional integration alongside the runtime dependencies:
 
 ```sh
-pip install './python[runtime,agno]'
+pip install './sdk-python[runtime,agno]'
 ```
 
 The ready factory is `agents.framework_examples:build_agno`. Set `AGNO_MODEL`

@@ -1,7 +1,7 @@
 # Technology & modules used
 
 Every technology in the stack, why it's here, and where it's pinned. Versions
-reflect the images and dependency pins in the repository.
+reflect the images and dependency pins in the Kionga repositories.
 
 ## Languages & runtimes
 

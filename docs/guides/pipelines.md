@@ -53,9 +53,9 @@ spec:
        retry: {max: 2, backoffSeconds: 60}, timeoutSeconds: 7200}
 ```
 
-The structural schema is published in the repository at
-`contracts/pipeline/v1.schema.json` (with `contracts/pipeline/examples/`) for editor
-tooling. The gateway additionally rejects what a schema cannot express: duplicate
+The structural schema is published in the [contracts](https://github.com/kiongahq/contracts)
+repository as `pipeline/v1.schema.json`, with examples in `pipeline/examples/`, for
+editor tooling (the platform pins it at `platform/contracts/`). The gateway additionally rejects what a schema cannot express: duplicate
 node ids, dependencies on missing nodes, cycles (reported as a path such as
 `a → b → c → a`), invalid cron or timezone, timeouts above 24 hours, retries above
 10, and overridable parameters that are not declared.

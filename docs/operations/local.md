@@ -58,7 +58,7 @@ docker compose -f deploy/compose.yaml up minio-init             # ensure buckets
 ## Verifying the whole platform
 
 ```bash
-GATEWAY="$GATEWAY" ./scripts/demo-smoke.sh # configured end-to-end checks
+GATEWAY="$GATEWAY" ./deploy/scripts/demo-smoke.sh # configured end-to-end checks
 make -C platform verify                      # gate suite (Go+Python tests, lint, build, banned-tech)
 make -C platform test-integration            # Postgres outbox + pgvector round-trip
 ```

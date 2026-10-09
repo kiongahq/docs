@@ -151,7 +151,7 @@ not installed by this chart.
 
 ## 4. Validate and deploy
 
-Run from the repository root with Helm and kubectl installed:
+Run from the workspace folder (the one holding `deploy/`) with Helm and kubectl installed:
 
 ```bash
 helm lint deploy/helm/kionga -f /path/to/production.yaml --namespace kionga-system --strict

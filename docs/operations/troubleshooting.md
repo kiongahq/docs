@@ -30,7 +30,7 @@ failure persists.
 ```bash
 docker compose -f deploy/compose.yaml ps          # is everything Up / healthy?
 docker compose -f deploy/compose.yaml logs -f <service>
-./scripts/demo-smoke.sh                            # what actually fails, end to end
+./deploy/scripts/demo-smoke.sh                            # what actually fails, end to end
 ```
 
 ## A connection shows "unhealthy"
@@ -146,7 +146,7 @@ Identify the owner before stopping anything:
 ```bash
 lsof -nP -iTCP:8080 -sTCP:LISTEN
 GATEWAY_PORT=18080 make -C deploy local-up
-GATEWAY=http://localhost:18080 ./scripts/demo-smoke.sh
+GATEWAY=http://localhost:18080 ./deploy/scripts/demo-smoke.sh
 ```
 
 ## `make -C platform verify` fails the banned-tech scan
@@ -169,5 +169,5 @@ Reset to a clean state (destructive — wipes volumes):
 ```bash
 docker compose -f deploy/compose.yaml down -v
 make -C deploy local-up
-./scripts/demo-smoke.sh
+./deploy/scripts/demo-smoke.sh
 ```

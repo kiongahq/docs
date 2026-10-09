@@ -29,12 +29,12 @@ make -C deploy ide-down
 
 The IDE is code-server, the open-source browser build of VS Code. It is an
 opt-in Compose profile and is not exposed by the public deployment overlay.
-If the IDE link says it is offline, run `make -C deploy ide-up` from the repository root,
+If the IDE link says it is offline, run `make -C deploy ide-up` from the workspace folder,
 then click the link again. The console checks readiness before launching it.
 
-On macOS checkouts backed by iCloud, evicted files in the repository root can
-block a cold gateway build. The Compose gateway and IDE use their smaller `platform/go/`
-and `deploy/` build contexts. If Docker cannot download the Go builder image,
+On macOS checkouts backed by iCloud, evicted files can block a cold image build;
+`make -C deploy local-up` checks for them first. The Compose gateway and IDE build
+from the small `platform/go/` and `workspace/` contexts. If Docker cannot download the Go builder image,
 an operator with local Go installed can cross-compile into `platform/go/build/gateway`
 and package that binary with `platform/go/Dockerfile.local` for the matching Docker CPU
 architecture. This is a local recovery path, not the normal release build.

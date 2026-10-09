@@ -6,9 +6,9 @@ feature definitions, and the real-time demos. The package is `mlaiops-sdk`
 heavier agent/runtime dependencies.
 
 ```bash
-pip install -e ./python                 # core SDK
-pip install -e "./python[agents]"       # + LangGraph/LangChain/Langfuse/psycopg
-pip install -e "./python[runtime]"      # + FastAPI/Uvicorn (agent runtime)
+pip install -e ./sdk-python                 # core SDK
+pip install -e "./sdk-python[agents]"       # + LangGraph/LangChain/Langfuse/psycopg
+pip install -e "./sdk-python[runtime]"      # + FastAPI/Uvicorn (agent runtime)
 ```
 
 ## `mlaiops_sdk` — the client SDK

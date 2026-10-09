@@ -1,6 +1,6 @@
 # Implementation status
 
-This page is the source of truth for what ships in the repository. “Implemented”
+This page is the source of truth for what ships in the Kionga repositories. “Implemented”
 means Kionga owns the API, persistence, authorization, UI, and integration contract.
 It does not mean every upstream engine is embedded in the default Compose profile.
 
@@ -69,15 +69,21 @@ It does not mean every upstream engine is embedded in the default Compose profil
 
 ## Verified local baseline
 
-The repository is expected to pass:
+From the workspace folder, the repositories are expected to pass:
 
 ```bash
-make -C platform verify
-make -C platform test-integration
+make -C platform verify              # Go, console and unit tests
+make -C platform test-integration    # PostgreSQL
+make -C serving verify && make -C trace-proxy verify
+make -C deploy test                  # compose wiring, cross-repo contracts, Helm chart
 make -C docs docs-build
 make -C deploy local-up
-GATEWAY=http://localhost:8080 ./scripts/demo-smoke.sh
+make -C deploy smoke                 # end-to-end against the running stack
 ```
+
+The Python repositories (`sdk-python`, `agent-runtime`, `pipeline-runner`,
+`workspace`, `contracts`) each run `python -m pytest -q && ruff check .` after
+installing their `requirements-dev.txt` (or `.[dev]` for the SDK).
 
 The smoke test reports a dynamic pass/skip count. OpenFaaS is skipped unless it is
 configured; optional observability checks may also skip while an upstream service

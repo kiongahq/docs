@@ -70,10 +70,10 @@ local checkout, create an environment and install the SDK:
 ```sh
 python -m venv .venv
 source .venv/bin/activate
-pip install './python[huggingface]'
+pip install './sdk-python[huggingface]'
 ```
 
-Run this from the repository root; adjust the path when working elsewhere.
+Run this from the workspace folder that holds `sdk-python/`; adjust the path when working elsewhere.
 For private/gated models, authenticate **inside that environment**:
 
 ```python
