@@ -1,8 +1,7 @@
 site_name: Kionga
 site_description: >-
-  Self-hosted MLOps, data-centric AI, and agentic AI platform — a Compose
-  application stack with a Kubernetes scale path. Full documentation: architecture,
-  services, modules, installation, configuration, API, RBAC, and operations.
+  Documentation for the open-source Kionga ML and AI platform: onboarding,
+  development workflows, APIs, and self-hosted deployment operations.
 site_author: Kionga platform team
 site_url: https://kiongahq.github.io/docs/
 repo_name: kiongahq/docs
@@ -76,61 +75,73 @@ plugins:
 
 nav:
   - Home: index.md
-  - Overview:
-      - What is Kionga: overview/what-is-kionga.md
-      - Architecture: overview/architecture.md
-      - Repositories: overview/repositories.md
-      - Core concepts: overview/concepts.md
-      - Technology & modules used: overview/technology.md
   - Getting started:
+      - Overview: getting-started/index.md
       - Installation: getting-started/installation.md
       - Quickstart: getting-started/quickstart.md
-      - Configuration reference: getting-started/configuration.md
-  - Services:
-      - Overview: services/index.md
-      - Gateway (control plane): services/gateway.md
-      - Data & messaging: services/data-plane.md
-      - Execution & serving: services/execution.md
-      - AI & observability: services/ai-observability.md
-  - Modules:
-      - Go packages: modules/go-packages.md
-      - Python SDK & workloads: modules/python.md
-  - Guides:
-      - Connecting all services: connecting-services.md
-      - Jupyter workbench: guides/workbench.md
-      - Console navigation & service switching: guides/console-navigation.md
-      - Access control & policies: guides/access-control.md
-      - AI coding & IDE workspace: guides/coding-workspace.md
-      - Project templates: guides/project-templates.md
-      - Scaffolding in a workspace: guides/scaffolding.md
-      - Engineering blog: guides/engineering-blog.md
-      - Pipelines: guides/pipelines.md
-      - Logs and events: guides/logs.md
-      - Distributed workspaces, functions & Git: guides/distributed-workspaces.md
-      - Models & serving: guides/models-serving.md
-      - Hugging Face models: guides/huggingface.md
-      - Agent frameworks: guides/agent-frameworks.md
-      - Agents: guides/agents.md
-      - Feature store: guides/features.md
-      - Internal & external feature stores: guides/feature-stores.md
-      - Real-time processing: guides/realtime.md
+      - Connect local services: connecting-services.md
+  - Understand:
+      - Overview: overview/index.md
+      - What is Kionga: overview/what-is-kionga.md
+      - Core concepts: overview/concepts.md
+      - Architecture: overview/architecture.md
+      - Repositories: overview/repositories.md
+      - Open source and licensing: overview/open-source.md
+      - Technology: overview/technology.md
+  - Build:
+      - Overview: guides/index.md
+      - Projects and workspaces:
+          - Project templates: guides/project-templates.md
+          - Scaffold a project: guides/scaffolding.md
+          - Jupyter workbench: guides/workbench.md
+          - Browser IDE and coding tools: guides/coding-workspace.md
+          - Git, functions, and distributed workspaces: guides/distributed-workspaces.md
+      - ML and data:
+          - Pipelines: guides/pipelines.md
+          - Models and serving: guides/models-serving.md
+          - Hugging Face models: guides/huggingface.md
+          - Features: guides/features.md
+          - Feature store integrations: guides/feature-stores.md
+          - Real-time processing: guides/realtime.md
+      - Agents:
+          - Build agents: guides/agents.md
+          - Framework adapters: guides/agent-frameworks.md
+      - Console and collaboration:
+          - Console navigation: guides/console-navigation.md
+          - Access control and policies: guides/access-control.md
+          - Logs and events: guides/logs.md
+          - Engineering blog: guides/engineering-blog.md
   - Reference:
+      - Overview: reference/index.md
       - Implementation status: reference/implementation-status.md
-      - Backend contracts: reference/backend.md
       - REST API: reference/api.md
-      - RBAC & security: reference/rbac.md
       - CLI: reference/cli.md
-      - Kionga identifier migration: reference/kionga-migration.md
-      - 'Decision: DAG layout library': reference/decisions/graph-library.md
-      - "Decision: blog editor and editorial identity": reference/decisions/blog-editor.md
-      - "Decision: object store": reference/decisions/object-store.md
+      - Configuration: getting-started/configuration.md
+      - RBAC and security: reference/rbac.md
+      - Backend contracts: reference/backend.md
+      - Services:
+          - Service inventory: services/index.md
+          - Gateway: services/gateway.md
+          - Data and messaging: services/data-plane.md
+          - Execution and serving: services/execution.md
+          - AI and observability: services/ai-observability.md
+      - Code modules:
+          - Go packages: modules/go-packages.md
+          - Python SDK and workloads: modules/python.md
+      - Design decisions:
+          - DAG layout library: reference/decisions/graph-library.md
+          - Blog editor and editorial identity: reference/decisions/blog-editor.md
+          - Object store: reference/decisions/object-store.md
+      - Identifier migration: reference/kionga-migration.md
   - Operations:
+      - Overview: operations/index.md
       - Local operations: operations/local.md
       - Public hosting: hosting.md
-      - Managed Kubernetes: operations/managed-kubernetes.md
-      - Amazon EKS: operations/providers/aws-eks.md
-      - Google GKE: operations/providers/gcp-gke.md
-      - Azure AKS: operations/providers/azure-aks.md
+      - Managed Kubernetes:
+          - Deployment guide: operations/managed-kubernetes.md
+          - Amazon EKS: operations/providers/aws-eks.md
+          - Google GKE: operations/providers/gcp-gke.md
+          - Azure AKS: operations/providers/azure-aks.md
       - Public VM: operations/public-vm.md
       - Production operations: operations/production-operations.md
       - Log export: operations/log-export.md

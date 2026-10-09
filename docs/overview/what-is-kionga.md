@@ -1,8 +1,7 @@
 # What is Kionga
 
-Kionga is a **self-hosted control plane and console for
-the entire AI lifecycle**. It unifies three worlds that are usually run on separate
-tooling:
+Kionga is an **open-source, self-hosted control plane and console for ML and AI
+workloads**. It brings together three areas often run on separate tooling:
 
 1. **Classical MLOps** — data validation, training pipelines, experiment tracking,
    a model registry, quality-gated promotion, and live model serving.
