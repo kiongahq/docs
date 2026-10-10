@@ -64,8 +64,13 @@ Every port is overridable via the `*_PORT` variable. Defaults:
 | `OIDC_ISSUER` | URL | Enables OIDC auth; when set, roles come from token claims |
 | `OIDC_JWKS_URL` | URL | Required with `OIDC_ISSUER`; JWKS for signature verification |
 | `OIDC_AUDIENCE` | string | Expected token audience |
+| `KIONGA_SSO_PROVIDERS` | JSON list of `{id, name, type}` | Sign-in buttons on the login page; `id` is the Dex connector id |
+| `KIONGA_SSO_GROUP_ROLES` | JSON object, group to role | Maps identity-provider groups to platform roles when the token has no `roles` claim |
+| `KIONGA_SSO_SINGLE_TENANT` | `true` | Tokens without a `tenant` claim belong to `MLAIOPS_TENANT` (Dex cannot add one) |
+| `KIONGA_LOCAL_LOGIN` | `true` | Keeps local accounts next to single sign-on as break-glass access; requires `MLAIOPS_LOCAL_PASSWORD` |
 
-See [RBAC & security](../reference/rbac.md) for the full model.
+See [RBAC & security](../reference/rbac.md) for the full model and
+[Single sign-on](../operations/single-sign-on.md) for LDAP, SAML and OAuth providers.
 
 Personal API keys for local CLI/SDK use are managed in the console under
 **Settings**. They are separate from the internal service token and OIDC
