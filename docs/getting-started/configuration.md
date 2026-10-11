@@ -65,6 +65,12 @@ Every port is overridable via the `*_PORT` variable. Defaults:
 | `OIDC_JWKS_URL` | URL | Required with `OIDC_ISSUER`; JWKS for signature verification |
 | `OIDC_AUDIENCE` | string | Expected token audience |
 | `KIONGA_SSO_PROVIDERS` | JSON list of `{id, name, type}` | Sign-in buttons on the login page; `id` is the Dex connector id |
+| `KIONGA_SSO_PROVIDERS_FILE` | path | The same list from a file, re-read when it changes (the Compose stack's Dex writes it) |
+| `OIDC_SCOPES` | space-separated | Scopes requested at sign-in; default `openid profile email groups`. Add `federated:id` with Dex |
+| `KIONGA_SIGNUP` | `approval` \| `open` \| `off` | What a first single sign-on creates: an access request (default), a starter account, or nothing. See [Sign-up](../operations/single-sign-on.md#sign-up) |
+| `KIONGA_SIGNUP_EMAIL_DOMAINS` | comma-separated | Only verified emails at these domains sign up |
+| `KIONGA_SIGNUP_PROFILE` | resource profile | Profile for `open` sign-up (default `starter`) |
+| `KIONGA_SIGNUP_SERVICES` | comma-separated | Services a sign-up requests or gets |
 | `KIONGA_SSO_GROUP_ROLES` | JSON object, group to role | Maps identity-provider groups to platform roles when the token has no `roles` claim |
 | `KIONGA_SSO_SINGLE_TENANT` | `true` | Tokens without a `tenant` claim belong to `MLAIOPS_TENANT` (Dex cannot add one) |
 | `KIONGA_LOCAL_LOGIN` | `true` | Keeps local accounts next to single sign-on as break-glass access; requires `MLAIOPS_LOCAL_PASSWORD` |
