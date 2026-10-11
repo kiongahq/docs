@@ -26,7 +26,11 @@ example when the directory is down.
    connector ids are rejected.
 3. Dex authenticates the user with the upstream system and returns a code. The
    gateway exchanges it (proving PKCE), verifies the ID token signature, issuer,
-   audience, expiry and nonce, and sets an HttpOnly, Secure session cookie.
+   audience, expiry and nonce, and sets an HttpOnly session cookie, marked
+   Secure when `OIDC_REDIRECT_URL` is https (production requires https).
+   The login starts on the callback's host: opening the console at
+   `127.0.0.1` moves the browser to `localhost` first, so the login cookies
+   reach the callback.
 4. Roles come from the token: a `roles` claim if present, otherwise the user's
    groups mapped through `KIONGA_SSO_GROUP_ROLES`. A group named like a role
    (`viewer`) still counts. Identity-provider groups never grant the internal
@@ -225,6 +229,7 @@ those names in `KIONGA_SSO_GROUP_ROLES`.
 | --- | --- |
 | Login page shows no SSO button | `curl $MLAIOPS_URL/auth/providers`; `KIONGA_SSO_PROVIDERS` (or the file) must be valid JSON and `OIDC_ISSUER` set |
 | An OAuth button is missing after editing `.env` | `make -C deploy sso-reload`; `docker compose logs dex` lists each `config connector` |
+| `invalid login state` on `/auth/callback` | The login cookies did not come back: the browser blocks cookies for this site, the login took over 10 minutes, or `OIDC_REDIRECT_URL` names a host the browser cannot reach as the same site |
 | A first sign-in created no access request | `KIONGA_SIGNUP` is `off`, the email is outside `KIONGA_SIGNUP_EMAIL_DOMAINS` or unverified, or a directory group already grants a role; the gateway logs `sign-up for ...` |
 | `unknown sign-in provider` | The button id is not in `KIONGA_SSO_PROVIDERS`, or does not match a Dex connector id |
 | Dex says "Invalid username or password" | Dex logs: bind DN and password, `userSearch` filter and `username` attribute |
