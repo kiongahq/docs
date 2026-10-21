@@ -27,7 +27,7 @@ tools → respond loop and two tools:
 No agent record is created for you. Register one that points at this entry
 point (the [quickstart](../getting-started/quickstart.md#talk-to-an-agent) shows
 how) before chatting. To list the two tools on the record, register them first
-under **Catalog** or with `POST /api/v1/tools`; the gateway rejects agents that
+with `POST /api/v1/tools` or the SDK's `client.register_tool()`; the gateway rejects agents that
 name unregistered tools.
 
 ## Invoking
