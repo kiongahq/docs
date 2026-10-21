@@ -85,7 +85,7 @@ files, and the production startup checks.
 
 Persistence. `repository.go` is the interface contract; `store.go` is the local
 file implementation; `postgres.go` is the PostgreSQL implementation with the
-transactional **outbox** (`outbox.go`) — every mutation writes resource + audit +
+transactional **outbox** (`outbox.go`): every mutation writes resource + audit +
 outbox atomically. Handles user grants/access requests, personal-key digests, Git
 metadata, functions and DAG definitions, run steps, agent sessions, model endpoints,
 blog posts, and feature views.

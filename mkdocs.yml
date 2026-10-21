@@ -8,7 +8,7 @@ repo_name: kiongahq/docs
 repo_url: https://github.com/kiongahq/docs
 edit_uri: edit/main/docs/
 docs_dir: docs
-copyright: Kionga is a self-hosted platform. Local credentials in this documentation are development defaults — override every one for public deployments.
+copyright: Kionga is a self-hosted platform. Local credentials in this documentation are development defaults; override every one for public deployments.
 
 theme:
   name: material

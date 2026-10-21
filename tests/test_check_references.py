@@ -283,3 +283,15 @@ def test_paths_in_git_checkouts_must_be_tracked(workspace: Path) -> None:
     finally:
         cr._TRACKED.clear()
     assert values(findings) == ["deploy/bin/tool"]
+
+
+def test_style_flags_prose_but_not_code(workspace: Path) -> None:
+    findings = check(workspace, """
+        A robust result \u2014 really.
+        The UI shows `Offline \u2014 kept locally`.
+
+        ```text
+        output \u2014 untouched, comprehensive
+        ```
+    """, style=True)
+    assert sorted(values(findings)) == ["robust", "\u2014"]

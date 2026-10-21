@@ -24,13 +24,13 @@ endpoints and appears in the console.
 | **Workspace** | Jupyter and/or IDE development surface. Compose provides a shared volume; Kubernetes reconciles per-user `KiongaWorkspace` pods, PVCs, services, and credentials. |
 | **Pipeline run** | One execution of a pipeline through the engine. Has a status, a progress percentage, an ordered set of **steps** (a DAG), and logs. |
 | **Pipeline definition** | A reusable, versioned container/function DAG with dependencies, resources, retries, parameters, repository, and commit lineage. The backend validates the graph; Dagre only lays it out for the console. |
-| **Model** | A registered model version with metrics, a **quality gate** status, a **stage** (candidate/production), and — once deployed — a live **endpoint URL** and deployment status. |
+| **Model** | A registered model version with metrics, a **quality gate** status, a **stage** (candidate/production), and, once deployed, a live **endpoint URL** and deployment status. |
 | **Agent** | A deployed LangGraph application: project, image, graph module, LLM backend, tool list, per-replica CPU/memory/GPU, min/max replicas, canary weight, and status. Produces sessions and traces; Kubernetes can reconcile an HPA when the range is elastic. |
 | **Agent session** | One conversation/thread with an agent: turns, current node, token usage, and cost. |
 | **Tool** | A registered capability an agent can call (name, description, schema). |
 | **Feature view** | A named group of features for an entity, with a schema, TTL, and online materialization status. |
 | **Connection** | A registered external service (MLflow, RustFS or S3, Kafka REST, Langfuse, Prefect, OpenFaaS, Redis/Feast, Kubernetes) that the control plane actively health-checks. Stores only a credential *reference* (`none` or `env:VARIABLE`), never raw credentials. |
-| **Audit event** | An immutable record of a mutation — who did what, when. |
+| **Audit event** | An immutable record of a mutation: who did what, when. |
 | **Function** | A project-owned OCI workload with CPU/memory limits and HTTP, async, Cron, or Kafka trigger metadata; deployed and invoked through OpenFaaS when configured. |
 
 ## Connections and health

@@ -48,7 +48,7 @@ Two DNS worlds:
 | Prefect UI/API | http://localhost:4200 | `http://prefect-server:4200` | none |
 | Langfuse | http://localhost:3000 | `http://langfuse:3000` | `admin@local.dev` / `mlaiops-local-admin`; API keys `pk-lf-local-dev` / `sk-lf-local-dev` |
 | RustFS S3 API | http://localhost:9000 | `http://objectstore:9000` | `mlaiops` / `mlaiops-local-secret` |
-| RustFS web console | http://localhost:9001 | — | same as S3 |
+| RustFS web console | http://localhost:9001 | not used in-stack | same as S3 |
 | Kafka broker | localhost:9092 | `kafka:9092` | none |
 | Kafka REST proxy | http://localhost:8082 | `http://kafka-rest:8082` | none |
 | Postgres (+pgvector) | localhost:5432 | `postgres:5432` | `mlaiops` / `mlaiops-local` / db `mlaiops` |

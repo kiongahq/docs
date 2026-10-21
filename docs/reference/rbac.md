@@ -213,7 +213,7 @@ production startup rejects tokens shorter than 24 characters or containing
 | **CORS** | `*` | Pinned to `MLAIOPS_ALLOWED_ORIGIN` (your domain) |
 | **Ports** | Published on `127.0.0.1` only (`KIONGA_BIND_ADDRESS` widens them) | Only Caddy (80/443); everything else internal-only |
 | **Secrets** | Development defaults | `.env` on the VM; connections store only a secret *reference* |
-| **LLM keys** | Environment only | Environment only — never written to traces, logs, or the store |
+| **LLM keys** | Environment only | Environment only; never written to traces, logs, or the store |
 | **Object-store credentials** | Storage proxy and Jupyter mount | Storage proxy is the application credential holder; isolate per-user mounts |
 
 ## Network isolation (scale path)

@@ -98,9 +98,9 @@ platform operator a publisher and every writer a platform user with admin
 reach. A separate session also keeps the blast radius of a stolen console
 cookie away from the public site.
 
-Alternatives considered: an OIDC group claim (`kionga-editors`) — rejected for
+Alternatives considered: an OIDC group claim (`kionga-editors`), rejected for
 now because local mode has no groups and memberships need per-person roles that
-editorial admins manage themselves; an editorial role inside `UserAccess` —
+editorial admins manage themselves; an editorial role inside `UserAccess`,
 rejected because it would put publishing back under ML administrators.
 
 ## 4. Workflow, revisions, scheduling, media

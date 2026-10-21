@@ -19,24 +19,24 @@ The heart of Kionga. A single Go binary that serves the **REST API** and the
   pipeline runs/definitions, functions,
   models, agents, tools, connections, feature views, user access, access requests,
   personal API keys, engineering posts, and immutable audit events.
-- **Transactional writes** — every mutation persists its resource, an audit record,
+- **Transactional writes**: every mutation persists its resource, an audit record,
   and Kafka outbox entries in one transaction (Postgres mode).
-- **Orchestration & proxying** — drives Prefect (pipelines), the serving manager
+- **Orchestration & proxying**: drives Prefect (pipelines), the serving manager
   (endpoints), the agent runtime (agent turns), the storage proxy (browse), the
   feature gateway (lookups), and Langfuse (prompts).
-- **Fail-closed** — if a downstream engine rejects a request, the control plane
+- **Fail-closed**: if a downstream engine rejects a request, the control plane
   reflects it honestly (e.g. a run is marked failed, a deploy returns 502).
-- **Validates project intent** — canonicalizes template aliases, pins the template
+- **Validates project intent**: canonicalizes template aliases, pins the template
   version, rejects incompatible framework/accelerator selections, and records a
   resource-aware scaffold command without granting capacity.
-- **Validates execution graphs** — rejects duplicate/missing dependencies, cycles,
+- **Validates execution graphs**: rejects duplicate/missing dependencies, cycles,
   invalid job resources, and unresolved function references before persistence;
   browser layout never changes execution semantics.
-- **Admits agent workloads** — validates replica bounds and strict Kubernetes GPU
+- **Admits agent workloads**: validates replica bounds and strict Kubernetes GPU
   extended-resource names; for normal users, every owned agent's maximum-replica
   CPU/RAM/GPU plus per-pod trace-sidecar overhead must fit the aggregate
   compute/workload grant.
-- **Routes live agents** — derives the selected Kubernetes Service from the
+- **Routes live agents**: derives the selected Kubernetes Service from the
   immutable agent ID and `MLAIOPS_AGENT_NAMESPACE` (or uses the explicit Compose
   `AGENT_RUNTIME_URL` override), enriches list results with bounded health probes,
   and rejects invocation with `503 agent_not_ready` before forwarding to an

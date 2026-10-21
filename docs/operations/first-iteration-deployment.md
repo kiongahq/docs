@@ -1,6 +1,6 @@
 # First-iteration deployment plan
 
-> Proposed rollout for a small, invited engineering team—not a record of a live
+> Proposed rollout for a small, invited engineering team, not a record of a live
 > installation or a production certification. The initial cloud target is Amazon
 > EKS. The same Helm package has GKE and AKS overlays, but each provider needs
 > its own staging acceptance run. Replace every example hostname, image digest,
@@ -147,7 +147,7 @@ images are required for the documented chart path. Verify each registry
 artifact exists for the target CPU architecture before starting a rollout.
 
 Keep non-secret values in a reviewed release repository or GitOps overlay.
-Keep credentials in the cloud secret manager—not in `.env`, Helm
+Keep credentials in the cloud secret manager, not in `.env`, Helm
 `--set`, checked-in YAML, CI logs, or a shell command line. Use
 `deploy/helm/production.example.yaml` and
 `deploy/helm/providers/eks.example.yaml` as templates. Configure at least:
@@ -217,7 +217,7 @@ service authentication, not per-workload mTLS.
 
 ## 5. Phased deployment runbook
 
-### Phase 0 — Local release candidate
+### Phase 0: Local release candidate
 
 1. Pick and record component commits and compatible image digests.
 2. Run tests against those commits; from the workspace root:
@@ -235,7 +235,7 @@ service authentication, not per-workload mTLS.
 4. Record the exact image digests, schema migration state, test results,
    owner, rollback revision and release notes.
 
-### Phase 1 — Private EKS staging
+### Phase 1: Private EKS staging
 
 1. Create/select the cluster and private node groups. Verify the VPC CNI,
    CoreDNS, metrics-server, EBS CSI, NetworkPolicy enforcement, encrypted
@@ -289,7 +289,7 @@ the namespace, RBAC, pod logs, failure semantics, and quota behavior pass
 staging tests. Likewise, an external Prefect/KFP URL alone does not install or
 validate a runnable execution worker.
 
-### Phase 2 — Acceptance and limited invite
+### Phase 2: Acceptance and limited invite
 
 Run the read-only verifier with protected token files, then perform the
 stateful tests in [production operations](production-operations.md):
@@ -320,7 +320,7 @@ Invite a small team only after backup restore, one-node loss, dependency
 outage, secret rotation, log/alert routing and rollback have been exercised in
 staging. Use synthetic/non-sensitive data for the first external pilot.
 
-### Phase 3 — Expand after measured evidence
+### Phase 3: Expand after measured evidence
 
 Add dedicated GPU nodes, more engine integrations, larger quotas and more
 organizations only when pilot demand and resource metrics justify them.

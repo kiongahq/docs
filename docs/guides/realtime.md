@@ -2,7 +2,7 @@
 
 The **realtime-processor** demonstrates production real-time AI patterns: it consumes
 Kafka events, enriches them with online features, scores them with a model or agent,
-and publishes results — all live, surfaced on the console's Real-Time panel.
+and publishes results, all live, surfaced on the console's Real-Time panel.
 
 Gateway examples assume `export MLAIOPS_URL=http://localhost:8080`. Add a credential to each `curl` call (`-b kionga.cookies` after a local sign-in, or `-H "Authorization: Bearer $MLAIOPS_TOKEN"`); see [Authentication](../reference/api.md#authentication).
 
@@ -32,7 +32,7 @@ Or from the workbench terminal / any Python env with `KAFKA_REST_URL` set.
 === "Console"
 
     Open the **Real-Time** panel. Each demo card shows events processed, average
-    latency, and (for fraud) flagged counts — updating live over SSE.
+    latency, and (for fraud) flagged counts, updated live over SSE.
 
 === "API"
 
@@ -49,7 +49,7 @@ Or from the workbench terminal / any Python env with `KAFKA_REST_URL` set.
 
 1. The processor polls an input topic via the Kafka REST proxy.
 2. It enriches the event with **online features** from the feature gateway.
-3. It scores with a live model endpoint or agent — or a deterministic fallback rule
+3. It scores with a live model endpoint or agent, or a deterministic fallback rule
    when none is configured.
 4. It produces the result to the output topic and records latency.
 5. It reports stats to `POST /api/v1/realtime/{demo}` for the console.
@@ -73,6 +73,6 @@ docker compose -f deploy/compose.yaml up -d realtime-processor
 ## Resilience
 
 The consumer loop tolerates transient Kafka REST timeouts (common during consumer
-group rebalances): rather than crashing — which would leak a consumer instance and
-trigger another rebalance, i.e. a crash loop — it recreates its consumer and
+group rebalances): rather than crashing (which would leak a consumer instance and
+trigger another rebalance, a crash loop), it recreates its consumer and
 continues. Stats reporting resumes automatically.

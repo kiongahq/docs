@@ -85,7 +85,7 @@ the bounded storage proxy.
 
 Experiment tracking and the model registry. Custom image (`mlaiops-mlflow`) pinning
 `mlflow==3.1.1`, `scikit-learn==1.7.0`, and `uvicorn` so the tracking server, the
-trainer, and the serving containers agree — preventing training-serving skew.
+trainer, and the serving containers agree, preventing training-serving skew.
 
 | | |
 | --- | --- |

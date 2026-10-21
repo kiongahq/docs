@@ -7,9 +7,9 @@ Gateway examples assume `export MLAIOPS_URL=http://localhost:8080`. Add a creden
 
 ## Online vs offline
 
-- **Online** — features served from **Redis** through the feature-gateway for
+- **Online**: features served from **Redis** through the feature-gateway for
   low-latency reads (real-time scoring, agent tool lookups).
-- **Offline** — features materialized as **Parquet snapshots** in the object store for batch
+- **Offline**: features materialized as **Parquet snapshots** in the object store for batch
   training/analysis.
 
 ## Feature views

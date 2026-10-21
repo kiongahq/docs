@@ -76,7 +76,7 @@ that a workload is ready.
 2. The gateway proxies to the healthy runtime with the agent's identity headers.
 3. The runtime loads the **Postgres checkpoint** for the session (state persists
    across turns; sessions are scoped per agent).
-4. The graph runs — reasoning, tool calls, feature/memory retrieval.
+4. The graph runs: reasoning, tool calls, feature/memory retrieval.
 5. The LLM is called. With the `openai` and `openai-compatible` backends the call
    goes **through the trace proxy**, which forwards to the provider and publishes
    it to Kafka; `anthropic` calls Anthropic directly; `mock` makes no call.

@@ -113,7 +113,7 @@ out required tokenizer/config/weight files can make a model unusable.
 
 Provision enough disk before pulling large checkpoints. Downloads execute in the
 calling workspace/job, subject to that environment's filesystem and resource
-limits—not the gateway. There is no gateway background download queue or automatic
+limits, not the gateway. There is no gateway background download queue or automatic
 size-based quota reservation in this integration.
 
 ## 4. Build, evaluate, and deploy

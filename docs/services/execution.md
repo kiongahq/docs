@@ -11,7 +11,7 @@ real Prefect flow runs.
 | | |
 | --- | --- |
 | **Image** | `prefecthq/prefect:3-latest` |
-| **Host port** | `4200` (`PREFECT_PORT`) — UI + API |
+| **Host port** | `4200` (`PREFECT_PORT`), UI and API |
 | **Health** | `/api/health` |
 | **Volume** | `prefect-data` |
 

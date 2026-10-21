@@ -30,7 +30,7 @@ reflect the images and dependency pins in the Kionga repositories.
 | **scikit-learn** | `scikit-learn==1.7.0` | Demo training; **pinned identically** in trainer, serving, and workbench images to prevent training-serving skew |
 | **PyTorch DDP** | Project-template dependency, selected by workload | Multi-process and multi-GPU training in the `distributed-training` starter; `torchrun` owns process launch |
 | **mlflow models serve** | via serving-manager | Live model REST endpoints (the Compose-native stand-in for KServe/Knative) |
-| **Docker Engine API** | — | The serving-manager launches serving containers over the Docker socket |
+| **Docker Engine API** | daemon-negotiated | The serving-manager launches serving containers over the Docker socket |
 | **Dagre** | `@dagrejs/dagre@2.0.0` (MIT, pinned browser asset with integrity metadata) | `pipeline-graph.js` lays out accessible persisted pipeline dependency graphs; execution order remains server-side and a compact renderer remains available if the asset cannot load |
 
 ## Agentic AI

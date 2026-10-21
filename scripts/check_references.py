@@ -15,6 +15,7 @@ checks each one against those checkouts:
   cli      `mlaiops <command> <subcommand>` against platform/go/cmd/cli and
            `kionga <command>` against the workspace CLI (workspace/workspace/kionga.py)
   sdk      mlaiops_sdk modules, exports, and MLAIOpsClient methods
+  style    house style in prose: no em dashes and no banned filler words
 
 Usage:
   python scripts/check_references.py [--root ..] [--docs docs]
@@ -777,6 +778,30 @@ def check_sdk(page: list[Segment], facts: Facts, rel: str) -> list[Finding]:
     return sorted(found, key=lambda f: f.line)
 
 
+# House style: no em dashes, and none of these words, in prose. Code (inline
+# or fenced) is exempt so quoted UI strings and command output stay exact.
+BANNED_WORDS = (
+    "delve", "crucial", "robust", "comprehensive", "nuanced", "multifaceted",
+    "furthermore", "moreover", "pivotal", "landscape", "tapestry", "underscore",
+    "foster", "showcase", "intricate", "vibrant", "fundamental", "significant",
+    "interplay",
+)
+BANNED = re.compile(r"\b(%s)\b" % "|".join(BANNED_WORDS), re.IGNORECASE)
+
+
+def check_style(page: list[Segment], facts: Facts, rel: str) -> list[Finding]:
+    found = []
+    for seg in page:
+        if seg.kind != "prose":
+            continue
+        if "\u2014" in seg.text:
+            found.append(Finding(rel, seg.line, "style", "\u2014",
+                                 "em dash; use a comma, colon, parentheses, or a period"))
+        for word in BANNED.findall(seg.text):
+            found.append(Finding(rel, seg.line, "style", word.lower(), "word not used in these docs"))
+    return found
+
+
 CHECKS = {
     "make": check_make,
     "path": check_paths,
@@ -784,6 +809,7 @@ CHECKS = {
     "route": check_routes,
     "cli": check_cli,
     "sdk": check_sdk,
+    "style": check_style,
 }
 
 

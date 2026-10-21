@@ -57,7 +57,7 @@ You crossed the two DNS worlds. **Inside the stack** use service names
 
 ## Model deploy fails or the endpoint won't serve
 
-Almost always **training-serving skew** — the model was trained under different
+Almost always **training-serving skew**: the model was trained under different
 library versions than the serving image. The trainer, serving image, and workbench
 must pin identical versions (`mlflow==3.1.1`, `scikit-learn==1.7.0`). Check:
 
@@ -134,7 +134,7 @@ unless you intend to delete databases, artifacts, and workspace files. Allocate
 
 The default stack runs 21 regular and one-shot services. Give Docker more memory
 (Docker Desktop → Settings → Resources; aim for at least 8 GB). Large parallel image builds on first `local-up` can also
-strain the daemon — if Docker Desktop crashes, relaunch it (`open -a Docker` on
+strain the daemon. If Docker Desktop crashes, relaunch it (`open -a Docker` on
 macOS), wait for the daemon, then `make -C deploy local-up`.
 
 ## Port already in use
@@ -183,7 +183,7 @@ is OpenFaaS, serving is mlflow-serve, pipelines are Prefect.
 
 ## Everything is broken after an update
 
-Reset to a clean state (destructive — wipes volumes):
+Reset to a clean state (destructive: wipes volumes):
 
 ```bash
 docker compose -f deploy/compose.yaml down -v

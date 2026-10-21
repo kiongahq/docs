@@ -130,13 +130,13 @@ repository-wide edits, open a terminal and run `codex`, `claude`, or
 A `quickstart.ipynb` is seeded into the workspace on first start (it never
 overwrites your edits). It walks the whole platform in code:
 
-1. **Identity & health** — `GET /me`, `GET /health`.
-2. **Browse** — projects, registered models, feature views.
-3. **Train & log** — a scikit-learn model logged to MLflow.
-4. **Register** — the model version registered with the control plane (shows up in
+1. **Identity & health**: `GET /me`, `GET /health`.
+2. **Browse**: projects, registered models, feature views.
+3. **Train & log**: a scikit-learn model logged to MLflow.
+4. **Register**: the model version registered with the control plane (shows up in
    the console's Models tab).
-5. **Online features** — a real lookup from Redis via the feature gateway.
-6. **Real-time** — produce fraud events and read live stream stats.
+5. **Online features**: a real lookup from Redis via the feature gateway.
+6. **Real-time**: produce fraud events and read live stream stats.
 
 ## From notebook to live endpoint
 
@@ -170,7 +170,7 @@ from the predict console.
 
 ## Public deployments
 
-In the public overlay the workbench port is **closed** — reach it over an SSH
+In the public overlay the workbench port is **closed**; reach it over an SSH
 tunnel to the VM rather than exposing 8888 to the internet. For multi-user
 Kubernetes deployments, each authorized subject receives an isolated
 `KiongaWorkspace` instead of this shared Compose volume.

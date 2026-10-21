@@ -22,7 +22,7 @@ whose name is derived from the immutable control-plane agent ID.
 1. Loads the agent's graph (`MLAIOPS_GRAPH_MODULE`, or the per-request identity).
 2. Loads the **Postgres checkpoint** for the session (state persists across turns,
    keyed per agent).
-3. Runs the LangGraph graph — reasoning, tool calls, feature/memory retrieval.
+3. Runs the LangGraph graph: reasoning, tool calls, feature/memory retrieval.
 4. Calls the LLM. The `openai` and `openai-compatible` backends go **through the
    trace proxy** (`MLAIOPS_LLM_BASE_URL`); `anthropic` calls Anthropic directly;
    `mock` (the default) makes no network call.

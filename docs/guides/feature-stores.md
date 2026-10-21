@@ -23,7 +23,7 @@ Every provider implements `feature.Adapter` (`platform/go/internal/feature/adapt
 | --- | --- | --- | --- |
 | `internal` | yes | all six | Redis `PING` or feature-gateway `/healthz` (which pings Redis); degraded without an offline location |
 | `feast` | yes | online, ttl | Feast `GET /health`; 401/403 means the credential was rejected; slow (>2 s) is degraded |
-| `tecton`, `hopsworks`, `vertex-ai`, `sagemaker`, `databricks` | no | none | listed as **contract available — no adapter**; connections cannot be created |
+| `tecton`, `hopsworks`, `vertex-ai`, `sagemaker`, `databricks` | no | none | listed as `contract available — no adapter`; connections cannot be created |
 
 Both adapters pass one conformance suite (`TestInternalAdapterConformance`,
 `TestInternalAdapterThroughFeatureGatewayConformance`,

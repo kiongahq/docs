@@ -137,7 +137,7 @@ The FastAPI service that serves LangGraph agents and framework-neutral adapters 
 | Module | Role |
 | --- | --- |
 | `app.py` | FastAPI app: `POST /invoke`, `POST /stream` (SSE), `GET /healthz`; wires checkpointer + memory + tracing; prefers per-request `X-MLAIOps-Agent-*` headers |
-| `graphs.py` | `build_graph(spec, model, checkpointer)` — handles compiled graphs, `StateGraph`, or factory callables |
+| `graphs.py` | `build_graph(spec, *, model, checkpointer)` handles compiled graphs, `StateGraph`, or factory callables |
 | `reporting.py` | `Usage` (measured tokens → cost), `usage_from_messages`, `report_session` back to the gateway |
 | `__main__.py` | Entrypoint |
 
@@ -181,6 +181,6 @@ adapter examples.
 
 Each repository has its own `tests/` (`sdk-python`, `agent-runtime`,
 `pipeline-runner`, `workspace`, `contracts`), and its CI runs `ruff check` and
-`pytest -q`. Gate tests use the mock LLM and deterministic embedder — fast, free,
+`pytest -q`. Gate tests use the mock LLM and deterministic embedder: fast, free,
 no network. The paid eval lane (LLM-as-judge) runs only when `MLAIOPS_RUN_EVALS=1`
 with a real provider key.
