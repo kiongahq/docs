@@ -124,6 +124,7 @@ def test_make_targets_resolve_per_repository(workspace: Path) -> None:
         make -C deploy local-upp
         make -C platform build verify lint
         make -C nowhere build
+        make -C <repo> verify
         ```
 
         Prose that says make sure is not a command.
@@ -265,3 +266,20 @@ def test_repository_allowlist_entries_are_well_formed() -> None:
     entries = cr.load_allowlist(DOCS_REPO / "scripts" / "reference-allowlist.txt")
     assert entries, "allowlist should parse"
     assert {category for category, _ in entries} <= set(cr.CHECKS)
+
+
+def test_paths_in_git_checkouts_must_be_tracked(workspace: Path) -> None:
+    """Untracked build output exists locally but not in a fresh clone (CI)."""
+    import subprocess
+
+    deploy = workspace / "deploy"
+    (deploy / "bin").mkdir()
+    (deploy / "bin" / "tool").write_text("built locally\n")
+    subprocess.run(["git", "init", "-q", str(deploy)], check=True)
+    subprocess.run(["git", "-C", str(deploy), "add", "compose.yaml", "Makefile"], check=True)
+    cr._TRACKED.clear()
+    try:
+        findings = check(workspace, "See `deploy/compose.yaml` and `deploy/bin/tool`.\n", path=True)
+    finally:
+        cr._TRACKED.clear()
+    assert values(findings) == ["deploy/bin/tool"]

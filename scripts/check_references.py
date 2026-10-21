@@ -33,6 +33,7 @@ import argparse
 import ast
 import fnmatch
 import re
+import subprocess
 import sys
 import textwrap
 from dataclasses import dataclass, field
@@ -372,6 +373,8 @@ def check_make(page: list[Segment], facts: Facts, rel: str) -> list[Finding]:
                 else:
                     break
                 i += 1
+            if re.search(r"[<{$]", directory):
+                continue  # a placeholder such as `make -C <repo> build`
             repo = re.sub(r"^(\./|\.\./)+", "", directory).split("/")[0] if directory else ""
             for target in targets:
                 if repo:
@@ -390,14 +393,47 @@ def check_make(page: list[Segment], facts: Facts, rel: str) -> list[Finding]:
 PLACEHOLDER = re.compile(r"[<{].*")
 
 
+_TRACKED: dict[Path, set[str] | None] = {}
+
+
+def tracked_paths(base: Path) -> set[str] | None:
+    """Files and directories git tracks under `base`, or None when `base` is not
+    a git checkout. Untracked build output and local files (`bin/`, `.env`)
+    then fail the same way locally as in CI."""
+    base = base.resolve()
+    if base not in _TRACKED:
+        _TRACKED[base] = None
+        if (base / ".git").exists():
+            try:
+                result = subprocess.run(
+                    ["git", "-C", str(base), "ls-files", "-z"],
+                    capture_output=True, check=True, timeout=30,
+                )
+            except (OSError, subprocess.SubprocessError):
+                return None
+            paths: set[str] = set()
+            for name in result.stdout.decode(errors="replace").split("\0"):
+                if not name:
+                    continue
+                parts = name.split("/")
+                paths.update("/".join(parts[:i]) for i in range(1, len(parts) + 1))
+            _TRACKED[base] = paths
+    return _TRACKED[base]
+
+
 def path_exists(base: Path, path: str) -> bool:
     path = path.rstrip("/")
     path = PLACEHOLDER.sub("", path).rstrip("/")  # check the part before <id> or {id}
     if not path:
         return base.exists()
+    tracked = tracked_paths(base)
+    if tracked is None:
+        if any(ch in path for ch in "*?["):
+            return any(base.glob(path))
+        return (base / path).exists()
     if any(ch in path for ch in "*?["):
-        return any(base.glob(path))
-    return (base / path).exists()
+        return any(fnmatch.fnmatchcase(name, path) for name in tracked)
+    return path in tracked
 
 
 def repo_path_tokens(text: str) -> list[str]:

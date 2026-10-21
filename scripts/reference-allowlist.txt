@@ -8,8 +8,14 @@ path deploy/.env
 # Generated inside a scaffolded project, not a file in the platform repository.
 path platform/project.yaml
 
-# Runtime default of KIONGA_BLOG_MEDIA_DIR, created by the gateway on first upload.
+# Created at runtime or by a build, never committed: the gateway's file-store
+# and blog-media defaults, make -C platform build output, the local recovery
+# gateway binary, and the MkDocs output directory.
 path data/blog-media
+path data/platform.json
+path platform/bin*
+path platform/go/build/gateway
+path docs/site/
 
 # Not environment variables: a DNS resolver errno and placeholders the reader
 # replaces (the *_FILE convention, an assigned project id, a package name).
