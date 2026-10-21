@@ -106,4 +106,4 @@ exposes project-owned function list/deploy/invoke/delete under `/api/v1/function
 The Functions view configures CPU/memory and HTTP, async, Cron, or Kafka trigger
 metadata; reusable function DAGs execute ready jobs in parallel with retries. See
 [Public hosting](../hosting.md) for faasd installation. Until configured, the API
-returns an honest `configured: false` surface and smoke tests skip serverless.
+returns `configured: false` and smoke tests skip serverless.

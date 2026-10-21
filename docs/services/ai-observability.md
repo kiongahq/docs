@@ -92,7 +92,7 @@ Postgres (v3 needs ClickHouse, Redis, and workers, which is too heavy for one VM
 | **API keys** | `pk-lf-local-dev` / `sk-lf-local-dev` (headless init) |
 
 The gateway proxies Langfuse prompt management under `GET /api/v1/prompts` for the
-console's Prompt Library, reporting `configured: false` honestly when keys are unset.
+console's Prompt Library, reporting `configured: false` when keys are unset.
 
 ## realtime-processor
 

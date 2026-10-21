@@ -71,7 +71,11 @@ kionga scaffold risk-app --template fullstack-ai --agent codex \
   --prompt "Add a feature lookup, model scoring, tests, and deployment docs"
 ```
 
-The command clones into `/workspace/<project-namespace>`. Existing checkouts are
+`kionga project sync` clones into `$KIONGA_WORKSPACE/<project-namespace>`
+(default `/workspace/<project-namespace>`). Console launches and scaffold jobs use
+`/workspace/projects/<project-namespace>`, so set
+`KIONGA_WORKSPACE=/workspace/projects` when you want the synced checkout in that
+folder. Existing checkouts are
 updated with `fetch`, branch checkout, and `pull --ff-only`; a mismatched origin or
 non-empty non-Git target fails closed. Private-repository credentials stay in the
 workspace Git credential helper and never enter control-plane state.

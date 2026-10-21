@@ -80,7 +80,7 @@ make -C platform verify              # Go, console and unit tests
 make -C platform test-integration    # PostgreSQL
 make -C serving verify && make -C trace-proxy verify
 make -C deploy test                  # compose wiring, cross-repo contracts, Helm chart
-make -C docs docs-build
+make -C docs docs-build docs-check   # strict site build, references against the code
 make -C deploy local-up
 make -C deploy smoke                 # end-to-end against the running stack
 ```

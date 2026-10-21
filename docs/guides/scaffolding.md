@@ -28,7 +28,17 @@ kionga scaffold churn-model --template production-ml --template-version 1.0.0 \
   --framework xgboost --accelerator cpu --profile team
 ```
 
-Run it from `/workspace/projects` in a workspace terminal.
+`kionga scaffold` writes to `$KIONGA_WORKSPACE/<name>` whatever the current
+directory is, and `KIONGA_WORKSPACE` defaults to `/workspace`. To create the
+project in the folder that Jupyter and IDE launches open, run it in a workspace
+terminal with:
+
+```bash
+KIONGA_WORKSPACE=/workspace/projects kionga scaffold churn-model --template production-ml \
+  --template-version 1.0.0 --framework xgboost --accelerator cpu --profile team
+```
+
+**Run in workspace** (below) sets this for you.
 
 **Run in workspace.** Choose **Run in workspace…** on the project page. The
 confirmation dialog shows the workspace that will run it, the working and
@@ -82,7 +92,7 @@ flowchart LR
   `--prompt` and `--agent` are not allowed. It requires
   `X-Kionga-Workspace-Token` (constant-time compare), runs with `shell=False`,
   in `/workspace/projects`, with only `PATH`, `LANG`, `HOME` and
-  `KIONGA_WORKSPACE` in the environment, a 60 s timeout, one job at a time,
+  `KIONGA_WORKSPACE=/workspace/projects` in the environment, a 60 s timeout, one job at a time,
   and redacts secret-looking values from output.
 - **Blast radius** is the user's own workspace, which they can already change
   from a terminal. The sidecar adds no capability they do not have.

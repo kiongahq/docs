@@ -25,7 +25,7 @@ The heart of Kionga. A single Go binary that serves the **REST API** and the
   (endpoints), the agent runtime (agent turns), the storage proxy (browse), the
   feature gateway (lookups), and Langfuse (prompts).
 - **Fail-closed**: if a downstream engine rejects a request, the control plane
-  reflects it honestly (e.g. a run is marked failed, a deploy returns 502).
+  records the failure (for example, a run is marked failed or a deploy returns 502).
 - **Validates project intent**: canonicalizes template aliases, pins the template
   version, rejects incompatible framework/accelerator selections, and records a
   resource-aware scaffold command without granting capacity.
