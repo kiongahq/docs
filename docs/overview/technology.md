@@ -7,8 +7,8 @@ reflect the images and dependency pins in the Kionga repositories.
 
 | Technology | Version | Role |
 | --- | --- | --- |
-| **Go** | 1.26 (`platform/go/go.mod`) | Control plane, operator, feature gateway, storage proxy, trace proxy, serving manager, metrics collector, CLI |
-| **Python** | 3.11 (SDK, runtime); 3.10 (pipeline runner & serving, pinned for parity) | SDK, agent runtime, pipelines, features, real-time demos |
+| **Go** | 1.26, toolchain and builder image 1.26.10 (`platform/go/go.mod`, `golang:1.26.10-alpine`) | Control plane, operator, feature gateway, storage proxy, trace proxy, serving manager, metrics collector, log exporter, CLI |
+| **Python** | 3.11 (SDK, agent runtime, Jupyter); 3.10 (pipeline runner and the MLflow serving image, pinned for parity) | SDK, agent runtime, pipelines, features, real-time demos |
 | **JavaScript** | vanilla (no framework) | Embedded web console, no build toolchain |
 
 ## Data plane
@@ -18,7 +18,7 @@ reflect the images and dependency pins in the Kionga repositories.
 | **PostgreSQL + pgvector** | `pgvector/pgvector:pg16` | Control-plane state, Kafka outbox, MLflow & Langfuse backends, agent checkpoints, vector memory |
 | **Redis** | `redis:7.4.5-alpine` | Online feature store |
 | **Apache Kafka** | `apache/kafka:3.9.1` (KRaft) | Durable events, LLM traces, real-time topics |
-| **Kafka REST Proxy** | Karapace `6.1.4` | Apache-licensed, Confluent-compatible HTTP access to Kafka (keeps Python dependency-free) |
+| **Kafka REST Proxy** | Karapace `6.1.4` | Apache-licensed, Confluent-compatible HTTP access to Kafka (Python services need only an HTTP client) |
 | **RustFS** | `rustfs/rustfs` 1.0.1 (pinned by digest) | S3-compatible object storage (Apache-2.0; replaced MinIO, whose images are no longer distributed) |
 | **MLflow** | `mlflow==3.1.1` (custom image `mlaiops-mlflow`) | Experiment tracking + model registry |
 
@@ -52,7 +52,8 @@ reflect the images and dependency pins in the Kionga repositories.
 | Technology | Image | Role |
 | --- | --- | --- |
 | **Caddy** | `caddy:2.8` | Automatic Let's Encrypt TLS + reverse proxy (stands in for Istio ingress) |
-| **Dex** | `dexidp/dex:v2.41.1` | OIDC identity provider for console login |
+| **Dex** | `ghcr.io/dexidp/dex:v2.46.0` | OIDC broker for single sign-on (LDAP, SAML, GitHub, Google, GitLab, Microsoft, OIDC), locally and in the public overlay |
+| **GLAuth** | `glauth/glauth:v2.5.4` | Local LDAP test directory behind Dex |
 | **OpenFaaS / faasd** | VM-level install | Open-source serverless (stands in for Knative) |
 | **code-server** | optional Compose profile | Browser IDE sharing the persistent Jupyter workspace |
 | **JupyterLab + Jupyter AI** | custom workbench image | Notebook/terminal primary interface and natural-language coding surface |
@@ -63,7 +64,7 @@ reflect the images and dependency pins in the Kionga repositories.
 | --- | --- | --- |
 | **httpx** | `httpx>=0.27` | HTTP client (SDK, workloads) |
 | **pydantic** | `pydantic>=2.7` | Typed models in the SDK |
-| **pgx** | `github.com/jackc/pgx/v5` | The only third-party Go dependency (Postgres driver) |
+| **pgx** | `github.com/jackc/pgx/v5` | PostgreSQL driver for the Go services (see [Go packages](../modules/go-packages.md) for the other direct dependencies) |
 
 ## Development & CI
 
@@ -74,7 +75,7 @@ reflect the images and dependency pins in the Kionga repositories.
 | **go test / go vet / gofmt** | Go test, vet, formatting |
 | **k6** | Load testing (`deploy/tests/load/`) |
 | **Kind** | Local Kubernetes for the optional scale-path fidelity tests |
-| **GitHub Actions** | CI: `go` job (gofmt, vet, race tests, integration, build, banned-tech scan) and `python` job (ruff, pytest, compileall) |
+| **GitHub Actions** | CI through the shared workflows in `kiongahq/.github`: `go.yml` (gofmt, vet, race tests, build), `python.yml` (ruff, pytest), `image.yml` (build and publish); the platform adds integration, UI, banned-tech, and `govulncheck` jobs |
 | **MkDocs Material** | This documentation site |
 
 ## Kubernetes workload path

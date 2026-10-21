@@ -33,7 +33,8 @@ deleted hourly.
   **Load earlier lines**; **Live tail** streams new lines.
 
 You only ever see projects you can read; asking for another project's run returns
-"not found".
+"not found". The examples need a credential; see
+[Authentication](../reference/api.md#authentication).
 
 ```bash
 curl -s "$MLAIOPS_URL/api/v1/logs?run_id=<run>&node=train&severity=warn,error&q=timeout"

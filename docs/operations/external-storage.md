@@ -8,16 +8,17 @@ checks it.
 
 ## Registering a bucket
 
-Platform → **Feature stores and object storage** → **＋ Object storage**, or:
+Platform → **Feature stores and object storage** → **＋ Object storage**, or with an administrator session (`kionga.cookies` from a local sign-in; see
+[Authentication](../reference/api.md#authentication)):
 
 ```bash
 export LAKE_CREDENTIALS='AKIA...:...'          # on the gateway, never in the request
-curl -X POST $KIONGA/api/v1/admin/storage-connections -H 'Content-Type: application/json' -d '{
+curl -b kionga.cookies -X POST "$MLAIOPS_URL/api/v1/admin/storage-connections" -H 'Content-Type: application/json' -d '{
   "name": "team-lake", "endpoint": "https://s3.eu-west-1.amazonaws.com",
   "region": "eu-west-1", "bucket": "team-lake", "path_style": false,
   "secret_ref": "env:LAKE_CREDENTIALS", "allowed_projects": []
 }'
-curl -X POST $KIONGA/api/v1/admin/storage-connections/<id>/test
+curl -b kionga.cookies -X POST "$MLAIOPS_URL/api/v1/admin/storage-connections/<id>/test"
 ```
 
 | Field | Rules |

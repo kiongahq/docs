@@ -32,16 +32,17 @@ real `/health` and columnar `/get-online-features` contract.
 
 ## Connecting an external store
 
-Platform → **Feature stores and object storage** → **＋ Feature store**, or:
+Platform → **Feature stores and object storage** → **＋ Feature store**, or with an administrator session (`kionga.cookies` from a local sign-in; see
+[Authentication](../reference/api.md#authentication)):
 
 ```bash
-curl -X POST $KIONGA/api/v1/admin/feature-stores -H 'Content-Type: application/json' -d '{
+curl -b kionga.cookies -X POST "$MLAIOPS_URL/api/v1/admin/feature-stores" -H 'Content-Type: application/json' -d '{
   "provider": "feast", "name": "team-feast",
   "config": {"url": "http://feast-feature-server:6566", "feature_services": "customer_profile"},
   "secret_ref": "env:FEAST_TOKEN",
   "allowed_projects": ["prj-123"]
 }'
-curl -X POST $KIONGA/api/v1/admin/feature-stores/<id>/test
+curl -b kionga.cookies -X POST "$MLAIOPS_URL/api/v1/admin/feature-stores/<id>/test"
 ```
 
 - `config` takes only the provider's documented keys. Keys that look like

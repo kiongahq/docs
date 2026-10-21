@@ -84,8 +84,8 @@ scoped per principal at evaluation time.
 | `feature:Write` | Apply feature views, report materializations | `POST /api/v1/features` |
 | `secret:Read` | Reserved; the gateway never returns secrets today | not yet enforced |
 | `infra:Provision` | Create, test and activate connections | connection writes |
-| `blog:Write` | Create, edit and delete blog posts | admin blog writes |
-| `blog:Publish` | Publish a blog post | saving a post as `published` |
+| `blog:Write` | Reserved | not enforced; the engineering blog uses [editorial roles](engineering-blog.md#roles) |
+| `blog:Publish` | Reserved | not enforced; the engineering blog uses editorial roles |
 | `policy:Read` | Read IAM objects; explain another principal | `/api/v1/admin/iam/*` reads, `explain`/`effective` for others |
 | `policy:Write` | Create, edit and delete policies and groups | policy and group writes |
 | `policy:Attach` | Attach or detach a policy | attachments |
@@ -107,7 +107,7 @@ URL-escaped inside a segment.
 | `kionga:workspace/<kind>` | `kionga:workspace/ide` (launch without a project) |
 | `kionga:feature/<name>` | `kionga:feature/customer_profile` |
 | `kionga:user/<subject>`, `kionga:group/<id>`, `kionga:policy/<id>` | `kionga:user/alice` |
-| `kionga:blog/<id>`, `kionga:connection/<id>` | `kionga:connection/conn-1` |
+| `kionga:connection/<id>` | `kionga:connection/conn-1` |
 
 Pipelines are named by their definition ID; ad hoc runs without a definition
 use the run name. Creating a new definition is checked against

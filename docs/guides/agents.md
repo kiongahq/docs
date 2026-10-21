@@ -9,20 +9,26 @@ integration. Other frameworks own their persistence and detailed tracing; the
 common runtime reports turn summaries and usage when supplied by the framework.
 
 Shell examples assume `export MLAIOPS_URL=http://localhost:8080`; change it when
-the gateway port or host differs.
+the gateway port or host differs. Add a credential to each `curl` call (`-b kionga.cookies` after a local sign-in, or `-H "Authorization: Bearer $MLAIOPS_TOKEN"`); see [Authentication](../reference/api.md#authentication).
 
 ## Anatomy of an agent
 
 An agent is a deployed record pointing at an **entrypoint** (`module:function`),
 stored in the backwards-compatible `graph_module` field,
 with an LLM backend, a tool list, per-replica CPU/memory/GPU requests, minimum and
-maximum replicas, a canary weight, and status. The default agent is
-`agents.customer_support.graph:build` — a `StateGraph` with a reason → tools →
-respond loop and two registered tools:
+maximum replicas, a canary weight, and status. The Compose agent runtime
+serves `agents.customer_support.graph:build`: a `StateGraph` with a reason →
+tools → respond loop and two tools:
 
-- `feature_store_lookup` — reads online features via the feature gateway (with a
+- `feature_store_lookup`: reads online features via the feature gateway (with a
   demo fallback).
-- `kb_search` — a knowledge-base lookup.
+- `kb_search`: a knowledge-base lookup.
+
+No agent record is created for you. Register one that points at this entry
+point (the [quickstart](../getting-started/quickstart.md#talk-to-an-agent) shows
+how) before chatting. To list the two tools on the record, register them first
+under **Catalog** or with `POST /api/v1/tools`; the gateway rejects agents that
+name unregistered tools.
 
 ## Invoking
 
@@ -51,7 +57,7 @@ After acceptance, open the agent card to inspect deployment metadata, endpoint,
 sessions, traces, measured usage/cost, and canary traffic. `GET /api/v1/agents`
 performs bounded live `/healthz` probes and returns `status: ready` only for a
 reachable runtime; otherwise it returns `pending` and the console disables Chat.
-The probe view is deliberately ephemeral—persisted desired state alone is not proof
+The probe view is deliberately ephemeral: persisted desired state alone is not proof
 that a workload is ready.
 
 === "API"
@@ -71,8 +77,9 @@ that a workload is ready.
 3. The runtime loads the **Postgres checkpoint** for the session (state persists
    across turns; sessions are scoped per agent).
 4. The graph runs — reasoning, tool calls, feature/memory retrieval.
-5. The LLM is called **through the trace-proxy**, which forwards to the provider and
-   publishes the call to Kafka.
+5. The LLM is called. With the `openai` and `openai-compatible` backends the call
+   goes **through the trace proxy**, which forwards to the provider and publishes
+   it to Kafka; `anthropic` calls Anthropic directly; `mock` makes no call.
 6. The runtime reports the session (turns, current node, tokens, cost) to the
    gateway; the reply returns.
 
@@ -84,24 +91,33 @@ that a workload is ready.
 | `GET /api/v1/agents/{id}/traces` | Trace records |
 | `GET /api/v1/agents/{id}/usage` | Aggregated tokens/cost/active sessions |
 
-Tokens come from LangChain usage metadata — **measured, never estimated**. Cost uses
-`MLAIOPS_COST_PER_1K_INPUT/OUTPUT`. The **Prompt Library** panel proxies Langfuse
+Tokens come from LangChain usage metadata: **measured, never estimated**. Cost uses
+`MLAIOPS_COST_PER_1K_INPUT` and `MLAIOPS_COST_PER_1K_OUTPUT`. The **Prompt Library** panel proxies Langfuse
 prompts; deep observability lives in the Langfuse UI (<http://localhost:3000>).
 
 ## Using a real LLM
 
 By default agents use the `mock` backend (replies prefixed `[mock]`) so the stack
-runs with zero keys. To use a real provider, set in `.env`:
+runs without keys. To use a real provider, set in `deploy/.env` and recreate the
+runtime (`docker compose -f deploy/compose.yaml up -d agent-runtime`):
 
 ```bash
-MLAIOPS_LLM_BACKEND=anthropic          # or openai / openai-compatible
-MLAIOPS_LLM_MODEL=claude-sonnet-4-5
-ANTHROPIC_API_KEY=sk-ant-...
-LLM_UPSTREAM_URL=https://api.anthropic.com
+# OpenAI, or any OpenAI-compatible server behind LLM_UPSTREAM_URL
+MLAIOPS_LLM_BACKEND=openai             # or openai-compatible
+MLAIOPS_LLM_MODEL=gpt-4o
+OPENAI_API_KEY=sk-...
+# LLM_UPSTREAM_URL=https://api.openai.com   # where the trace proxy forwards
+
+# or Anthropic
+# MLAIOPS_LLM_BACKEND=anthropic
+# MLAIOPS_LLM_MODEL=claude-sonnet-4-5
+# ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-Calls still egress through the trace-proxy, so tokens and cost land in Kafka and the
-cost dashboard. Keys are env-only and never written to traces, logs, or the store.
+OpenAI-protocol calls egress through the trace proxy, so every call lands in Kafka
+(`mlaiops.llm.traces`). The `anthropic` backend calls Anthropic directly and is
+not captured by the proxy; Langfuse tracing and measured token usage still
+apply. Keys are env-only and never written to traces, logs, or the store.
 
 ## Canary traffic
 

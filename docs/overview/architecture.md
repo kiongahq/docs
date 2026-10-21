@@ -11,13 +11,14 @@ durable state and carries events.
 flowchart TB
     subgraph you["You"]
         browser["Browser console<br/>:8080"]
-        nb["Jupyter workbench<br/>:8888"]
-        ide["Browser IDE<br/>:13337 optional"]
+        nb["Jupyter workbench<br/>via gateway"]
+        ide["Browser IDE<br/>via gateway, optional"]
         cli["CLI / SDK"]
     end
 
     subgraph control["Control plane (Go)"]
         gw["gateway<br/>API + embedded console :8080"]
+        dex["dex<br/>single sign-on :5556"]
         op["operator<br/>Kubernetes reconcilers"]
         mc["metrics-collector :9090"]
         iw["integration-worker<br/>Kafka → CRDs"]
@@ -52,8 +53,9 @@ flowchart TB
     end
 
     browser --> gw
-    nb --> gw
-    ide --> gw
+    gw --> dex
+    gw --> nb
+    gw --> ide
     cli --> gw
     gw --> prefect --> runner --> mlflow
     gw --> sm --> serve
@@ -80,10 +82,11 @@ This is the single most important operational fact:
 
 - **Inside the stack**, services reach each other by their Compose service name:
   `http://gateway:8080`, `http://mlflow:5000`, `http://objectstore:9000`, …
-- **From your machine**, the same services are on published `localhost` ports.
+- **From your machine**, the same services are on published `localhost` ports,
+  bound to `127.0.0.1` unless `KIONGA_BIND_ADDRESS` widens them.
 
 When you register a connection in the console (so the gateway health-checks it), use
-**in-stack hostnames** — the check runs from inside the gateway container. When you
+**in-stack hostnames**: the check runs from inside the gateway container. When you
 point an external tool at a service, use **localhost**. See
 [Connecting all services](../connecting-services.md).
 
@@ -111,8 +114,8 @@ possible trace sidecar rather than assuming the HPA remains at its minimum.
 The gateway is also a **proxy and orchestrator**: it drives Prefect for pipelines,
 the serving manager for model endpoints, the agent runtime for agent turns, the
 storage proxy for object browsing, the feature gateway for lookups, and Langfuse for
-prompts. It fails closed — if a downstream engine rejects a request, the control
-plane reflects that honestly (e.g. a run is marked failed).
+prompts. It fails closed: if a downstream engine rejects a request, the control
+plane records the failure (for example, a run is marked failed).
 
 For live agent traffic, Compose supplies the explicit shared `AGENT_RUNTIME_URL`.
 On Kubernetes, the gateway and operator share the immutable-ID-to-DNS mapping: the
@@ -123,8 +126,8 @@ unavailable pod.
 
 Supporting Go services: the **operator** (Kubernetes reconcilers for the scale
 path), the **metrics-collector** (Prometheus exposition of platform metrics), the
-**feature-gateway**, the **storage-proxy**, the **trace-proxy**, and the
-**serving-manager**. The **integration-worker** consumes durable lifecycle commands
+**feature-gateway**, and the **storage-proxy** from the `platform` repository, plus
+the **trace-proxy** and the **serving-manager** from their own repositories. The **integration-worker** consumes durable lifecycle commands
 and creates or updates CRDs, including per-user `KiongaWorkspace` resources.
 It commits Kafka offsets manually only after a complete batch reconciles; failed
 dispatch/commit retries terminate the worker so redelivery starts from the last
@@ -153,8 +156,8 @@ replica ranges. Kubernetes must expose resource metrics for that HPA.
   model version over the Docker API and records the live endpoint URL.
 - The **agent-runtime** serves LangGraph agents over HTTP, with Postgres
   checkpoints, feature/memory retrieval, and Langfuse tracing.
-- The **trace-proxy** is the LLM egress: agent calls go through it, it forwards to
-  the configured provider, and it publishes every call to a Kafka traces topic.
+- The **trace-proxy** is the LLM egress for OpenAI-protocol backends: it forwards
+  to the configured provider and publishes every call to a Kafka traces topic.
 - The **realtime-processor** consumes Kafka topics, enriches events with online
   features, scores them with a model or agent, and publishes results.
 - Reusable function DAGs invoke project-owned OCI workloads through OpenFaaS when
@@ -192,7 +195,8 @@ replica ranges. Kubernetes must expose resource metrics for that HPA.
     1. Console → `POST /api/v1/agents/{id}/invoke`.
     2. Gateway proxies to the **agent-runtime** with the agent's identity headers.
     3. The runtime runs the LangGraph graph: it loads the Postgres checkpoint,
-       retrieves features/memory, and calls the LLM **through the trace-proxy**.
+       retrieves features/memory, and calls the LLM (the `mock` backend by
+       default; OpenAI-protocol backends go **through the trace-proxy**).
     4. The trace-proxy forwards to the provider and publishes the call to Kafka;
        the runtime reports the session (turns, tokens, cost) back to the gateway.
     5. The reply returns; the console's Session Monitor and cost dashboard update.
@@ -206,9 +210,10 @@ cards live without hammering the API.
 
 ## Deployment topology
 
-- **Local:** `deploy/compose.yaml` — bundled services, ports published to localhost,
-  local console login required; API RBAC role comes from `MLAIOPS_LOCAL_ROLE`
-  (default `admin`).
+- **Local:** `deploy/compose.yaml` runs the bundled services with ports bound to
+  `127.0.0.1`. Sign-in is required: single sign-on through the bundled Dex, or the
+  local `admin` account, whose role comes from `MLAIOPS_LOCAL_ROLE` (default
+  `admin`).
 - **Public VM pilot:** `deploy/vm/compose.yaml` runs a digest-pinned gateway behind
   Caddy TLS. Identity, PostgreSQL, and ML services are external; this is not the
   local stack with ports exposed. The older Compose/Dex overlay is retained only

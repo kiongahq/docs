@@ -29,7 +29,7 @@ endpoints and appears in the console.
 | **Agent session** | One conversation/thread with an agent: turns, current node, token usage, and cost. |
 | **Tool** | A registered capability an agent can call (name, description, schema). |
 | **Feature view** | A named group of features for an entity, with a schema, TTL, and online materialization status. |
-| **Connection** | A registered external service (MLflow, S3, Kafka, Langfuse, Prefect, Redis, Kubernetes) that the control plane actively health-checks. Stores only a secret *reference*, never raw credentials. |
+| **Connection** | A registered external service (MLflow, RustFS or S3, Kafka REST, Langfuse, Prefect, OpenFaaS, Redis/Feast, Kubernetes) that the control plane actively health-checks. Stores only a credential *reference* (`none` or `env:VARIABLE`), never raw credentials. |
 | **Audit event** | An immutable record of a mutation — who did what, when. |
 | **Function** | A project-owned OCI workload with CPU/memory limits and HTTP, async, Cron, or Kafka trigger metadata; deployed and invoked through OpenFaaS when configured. |
 
@@ -37,9 +37,10 @@ endpoints and appears in the console.
 
 A **connection** registers an external service so the gateway can verify it is
 reachable. The check runs **from inside the gateway container**, so connection
-endpoints use in-stack hostnames (`http://mlflow:5000/health`). Any HTTP response
-below `500` counts as healthy — a `401` from a Kubernetes API server is a healthy
-signal. Nothing shows green by wishful thinking.
+endpoints use in-stack hostnames (`http://mlflow:5000/health`). Only a `2xx`
+response counts as healthy; redirects, missing routes, and authentication
+failures are reported as failures. Prefect and OpenFaaS connections can also be
+activated to receive new operations.
 
 **Onboarding readiness** (the ring on Overview and the checklist on Platform) is
 derived from connections plus having at least one project. See
@@ -50,8 +51,8 @@ derived from connections plus having at least one project. See
 A model has a **gate status** (`passed` / `pending`). Promotion moves a model
 between **stages** (typically `candidate` → `production`). Deployment starts a live
 serving container; **canary weight** controls traffic splitting; **rollback**
-removes the serving container and reverts. This is the classical-ML lifecycle made
-real — a deployed model answers live predictions from the console's test console.
+removes the serving container and reverts. A deployed model answers live
+predictions from the model card's **Test** dialog.
 
 ## Agents, sessions, and tracing
 
@@ -59,8 +60,9 @@ An **agent** is a LangGraph graph served by the runtime. Compose shares one runt
 Kubernetes creates an immutable-ID-derived Service per agent. Live health, not the
 persisted deploy record, determines whether Chat/invocation is enabled. The runtime
 maintains a **session** (state checkpointed in Postgres, keyed per agent) and records
-**turns**. Every LLM call egresses through the **trace-proxy**, which captures it to
-Kafka; **Langfuse** provides the observability UI. Token counts come from the model's
+**turns**. LLM calls from the `openai` and `openai-compatible` backends egress
+through the **trace proxy**, which captures them to Kafka; **Langfuse** provides
+the observability UI. Token counts come from the model's
 usage metadata (measured, never estimated); **cost** is computed from configured
 per-1k rates.
 
@@ -95,11 +97,12 @@ the capability remains **not configured** until `OPENFAAS_URL` is set.
 
 ## Trace-proxy egress
 
-All agent LLM calls are pointed at the **trace-proxy** (`OPENAI_BASE_URL` →
-`http://trace-proxy:8081/v1`). The proxy forwards to the configured upstream
-provider and publishes every call to the `mlaiops.llm.traces` Kafka topic. This
-gives complete, centralized capture of LLM usage without touching agent code — and
-provider API keys never appear in traces, logs, or the control-plane store.
+Compose points the agent runtime's OpenAI-protocol LLM calls at the
+**trace proxy** (`MLAIOPS_LLM_BASE_URL=http://trace-proxy:8081/v1`). The proxy
+forwards to the configured upstream provider (`LLM_UPSTREAM_URL`) and publishes
+every call to the `mlaiops.llm.traces` Kafka topic, without changes to agent code.
+Provider API keys never appear in traces, logs, or the control-plane store. The
+`anthropic` backend calls Anthropic directly and is not captured by the proxy.
 
 ## Roles (RBAC)
 

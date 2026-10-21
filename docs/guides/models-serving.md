@@ -1,14 +1,14 @@
 # Models & serving
 
-The classical-ML lifecycle, made real: register a model, gate it, promote it, deploy
-it to a **live REST endpoint**, split traffic with a canary, and roll back.
+The classical-ML lifecycle: register a model, gate it, promote it, deploy it to a
+**live REST endpoint**, and roll back.
 
-Shell examples assume `export MLAIOPS_URL=http://localhost:8080`.
+Shell examples assume `export MLAIOPS_URL=http://localhost:8080`. Add a credential to each `curl` call (`-b kionga.cookies` after a local sign-in, or `-H "Authorization: Bearer $MLAIOPS_TOKEN"`); see [Authentication](../reference/api.md#authentication).
 
 ## Registry
 
-Models are registered against a project — usually automatically by the training
-pipeline's `register` step, or manually:
+Models are registered against a project, usually by the training pipeline's
+`register` step, or manually:
 
 ```bash
 curl -s -X POST "$MLAIOPS_URL/api/v1/models" \
@@ -34,8 +34,8 @@ curl -s -X POST "$MLAIOPS_URL/api/v1/models/<id>/promote" \
 
 ## Deploying to a live endpoint
 
-Deployment is **real** — the serving-manager launches an `mlflow models serve`
-container for the model version and records the endpoint URL:
+The serving manager launches an `mlflow models serve` container for the model
+version and the gateway records the endpoint URL:
 
 ```bash
 curl -s -X POST "$MLAIOPS_URL/api/v1/models/<id>/deploy" \
@@ -45,8 +45,8 @@ curl -s -X POST "$MLAIOPS_URL/api/v1/models/<id>/deploy" \
 1. The gateway calls the serving-manager (`POST /deployments`).
 2. The manager starts the container on the platform network and returns the URL
    (e.g. `http://mlaiops-serve-churn-classifier:5001`).
-3. The gateway records it and marks the model `serving` — or, if the manager
-   rejects it, marks it `failed` (fail-closed, `502`).
+3. The gateway records it and marks the model `serving`, or, if the manager
+   rejects it, marks it `failed` and returns `502`.
 
 The model card then shows a green **● live** tag and a **Test** button.
 
@@ -72,8 +72,11 @@ Hit the live endpoint through the gateway (it proxies to `/invocations`):
 
 ## Canary & rollback
 
-- **Canary weight** (on deploy, or via agent traffic for agents) splits traffic
-  between versions behind the edge router.
+- **Canary weight** (`canary_weight` on deploy) is recorded on the model. The
+  bundled serving path runs one container per model and does not split traffic
+  between versions. Agents have their own traffic API
+  (`PUT /api/v1/agents/{id}/traffic`), which the Kubernetes operator turns into
+  a stable/canary traffic plan.
 - **Rollback** removes the serving container and reverts:
 
     ```bash

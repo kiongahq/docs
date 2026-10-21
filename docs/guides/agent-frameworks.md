@@ -12,7 +12,7 @@ Go gateway. Each runtime image supplies the code and dependencies it needs.
 | Other frameworks | `CallableAdapter(run)` | Plain request/result contract; your handler owns provider calls and persistence |
 
 These are **runtime adapter integrations**, not automatic conversions between
-frameworks. The existing `agent-system` project scaffolder still generates
+frameworks. The `production-agent` project template still generates
 LangGraph; use the checked-in factories below or add your own module to your
 project/image for other frameworks. The console offers entrypoint presets in
 **Agents → Deploy agent**, but choosing one does not install dependencies.
@@ -64,7 +64,7 @@ and `OPENAI_API_KEY` in the runtime environment. This example uses Agno's
 OpenAI client; replace its factory for other Agno providers, Teams, or tools.
 Each request gets a fresh object and explicit `session_id` / `user_id` arguments.
 
-For the Compose demo, configure the uncommitted root `.env`:
+For the Compose demo, configure the uncommitted `deploy/.env`:
 
 ```dotenv
 AGENT_RUNTIME_EXTRAS=runtime,agno
@@ -93,11 +93,16 @@ NOOA currently requires Python 3.12–3.13, so it is not installed into the defa
 Python 3.11 runtime or Jupyter image. Build a separate image:
 
 ```sh
-docker build -f agent-runtime/Dockerfile \
+docker build \
   --build-arg PYTHON_VERSION=3.12 \
+  --build-arg SDK_SOURCE=local --build-context sdk=sdk-python \
   --build-arg SDK_EXTRAS=runtime,nooa \
-  -t your-registry/nooa-agent:dev .
+  -t your-registry/nooa-agent:dev agent-runtime
 ```
+
+Run it from the workspace folder. `SDK_SOURCE=local` installs the SDK from your
+`sdk-python` checkout; omit both SDK source flags to install the SDK release
+pinned by `SDK_VERSION` instead.
 
 Provide `NOOA_MODEL`, the chosen provider's credentials, and
 `MLAIOPS_GRAPH_MODULE=agents.framework_examples:build_nooa` through your deployment

@@ -3,7 +3,7 @@
 Kionga provides an integrated feature store for both **real-time** (online) and
 **batch** (offline) use, centralized behind the feature gateway.
 
-Gateway examples assume `export MLAIOPS_URL=http://localhost:8080`.
+Gateway examples assume `export MLAIOPS_URL=http://localhost:8080`. Add a credential to each `curl` call (`-b kionga.cookies` after a local sign-in, or `-H "Authorization: Bearer $MLAIOPS_TOKEN"`); see [Authentication](../reference/api.md#authentication).
 
 ## Online vs offline
 

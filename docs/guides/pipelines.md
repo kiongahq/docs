@@ -6,7 +6,7 @@ pipeline). Every run records exactly what it executed: the definition revision a
 its SHA-256, the image digests the runner pulled, the parameters and overrides, the
 policy decision, and the workload that ran each node.
 
-Gateway examples assume `export MLAIOPS_URL=http://localhost:8080`.
+Gateway examples assume `export MLAIOPS_URL=http://localhost:8080`. Add a credential to each `curl` call (`-b kionga.cookies` after a local sign-in, or `-H "Authorization: Bearer $MLAIOPS_TOKEN"`); see [Authentication](../reference/api.md#authentication).
 
 ## The moving parts
 

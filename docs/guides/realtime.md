@@ -4,7 +4,7 @@ The **realtime-processor** demonstrates production real-time AI patterns: it con
 Kafka events, enriches them with online features, scores them with a model or agent,
 and publishes results — all live, surfaced on the console's Real-Time panel.
 
-Gateway examples assume `export MLAIOPS_URL=http://localhost:8080`.
+Gateway examples assume `export MLAIOPS_URL=http://localhost:8080`. Add a credential to each `curl` call (`-b kionga.cookies` after a local sign-in, or `-H "Authorization: Bearer $MLAIOPS_TOKEN"`); see [Authentication](../reference/api.md#authentication).
 
 ## The three demos
 

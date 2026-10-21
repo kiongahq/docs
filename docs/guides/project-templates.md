@@ -18,7 +18,7 @@ never the security boundary.
 
 | Template | Use it for | Frameworks | Accelerators | Recommended profile |
 | --- | --- | --- | --- | --- |
-| `production-ml` | Reproducible training, evaluation gates, MLflow registration, batch inference, serving, and monitoring | `scikit-learn`, `xgboost`, `pytorch` | CPU, single GPU, multi-GPU | `power` |
+| `production-ml` | Reproducible training, evaluation gates, MLflow registration, batch inference, serving, and monitoring | `scikit-learn`, `xgboost`, `pytorch` | CPU or single GPU | `power` |
 | `distributed-training` | Large deep-learning jobs with PyTorch DDP, mixed precision, durable checkpoints, and reproducible evaluation | `pytorch-ddp` | Single GPU or multi-GPU | `gpu` |
 | `production-agent` | Stateful LangGraph agents with tools, checkpoints, semantic memory, tracing, evaluations, and an HTTP runtime | `langgraph` | CPU or single GPU | `team` |
 | `fullstack-ai` | A model or agent backend, governed API, event function, browser client, containers, CI, and tests | `fastapi-ml`, `fastapi-agent` | CPU or single GPU | `power` |
@@ -63,8 +63,9 @@ sync` for an already connected repository.
 
     ```bash
     export MLAIOPS_URL="${MLAIOPS_URL:-http://localhost:8080}"
-    curl -s "$MLAIOPS_URL/api/v1/project-templates" | python -m json.tool
-    curl -s "$MLAIOPS_URL/api/v1/project-templates/production-agent" | python -m json.tool
+    # with a session cookie from a local sign-in (see the REST API reference)
+    curl -s -b kionga.cookies "$MLAIOPS_URL/api/v1/project-templates" | python -m json.tool
+    curl -s -b kionga.cookies "$MLAIOPS_URL/api/v1/project-templates/production-agent" | python -m json.tool
     ```
 
 === "Workspace CLI"
@@ -95,8 +96,8 @@ print(project.scaffold_command)
 ```
 
 For a normal user, the gateway verifies every template-required service before
-creation. The owner therefore needs `pipelines`, `models`, `storage`, `git`, and
-`workbench`; the requested CPU/RAM/storage profile cannot exceed the grant. A
+creation. For `distributed-training` the owner therefore needs `pipelines`,
+`models`, `storage`, `git`, and `workbench`; the requested CPU/RAM/storage profile cannot exceed the grant. A
 single-GPU selection requires at least one provisioned GPU, and `multi-gpu` requires
 at least two, which normally means a custom grant. Template intent never bypasses
 RBAC, quotas, node capacity, or scheduler policy. Admin/operator principals may
