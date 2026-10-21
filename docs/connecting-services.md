@@ -1,12 +1,12 @@
 # Connecting all the services
 
-Everything in the platform is one Compose stack. This guide covers the three
-ways things connect:
+The local platform is one Compose stack. This guide covers the three ways things
+connect:
 
-1. **Service → service** inside the stack (already wired; reference below).
-2. **You → services** from the browser, the Jupyter workbench, or any local tool.
-3. **Console connections** (Platform tab) — registering services with the
-   control plane so health is actively checked and onboarding turns green.
+1. **Service to service** inside the stack (already wired; reference below).
+2. **You to services** from the browser, the Jupyter workbench, or any local tool.
+3. **Console connections** (Platform page): registering services with the
+   control plane so their availability is checked and onboarding turns green.
 
 ## The map
 
@@ -14,9 +14,9 @@ ways things connect:
                     you (browser / notebook / CLI)
                                   │
       ┌───────────┬───────────┬───┴────────┬───────────┬───────────┐
-   console      MLflow      Prefect     Langfuse    RustFS console Jupyter / IDE
-   :8080*       :15000      :4200       :3000       :9001          :8888 / :13337
-      │
+   console      MLflow      Prefect     Langfuse    RustFS console Dex (SSO)
+   :8080*       :15000      :4200       :3000       :9001          :5556
+      │  (Jupyter and the IDE open through the gateway)
    gateway ──► Prefect API ──► pipeline-runner (trains, logs to MLflow)
       │  ╲───► serving-manager ──► mlflow-serve containers (live endpoints)
       │  ╲───► agent-runtime ──► LLM via trace-proxy ──► Kafka traces
@@ -32,15 +32,18 @@ Two DNS worlds:
 - **Inside the stack** services reach each other by Compose service name:
   `http://gateway:8080`, `http://mlflow:5000`, `http://objectstore:9000`, …
 - **From your machine** the same services are on published localhost ports
-  (table below). Every port is overridable in `.env` (e.g. `GATEWAY_PORT`).
+  (table below). Every port is overridable in `deploy/.env` (for example
+  `GATEWAY_PORT`). Ports bind to `127.0.0.1` unless `KIONGA_BIND_ADDRESS` says
+  otherwise; see [Network exposure](operations/local.md#network-exposure).
 
 ## Service reference
 
 | Service | From your machine | Inside the stack | Credentials (local defaults) |
 | --- | --- | --- | --- |
 | Landing page (gateway) | http://localhost:8080 | `http://gateway:8080` | none |
-| Console + API (gateway) | http://localhost:8080/console.html | `http://gateway:8080` | `admin` / `mlaiops-local`; API local role = `MLAIOPS_LOCAL_ROLE` |
-| Jupyter workbench | http://localhost:8888 | `http://jupyter:8888` | token `mlaiops-local` (`JUPYTER_TOKEN`) |
+| Console + API (gateway) | http://localhost:8080/console.html | `http://gateway:8080` | `admin` / `mlaiops-local` (role from `MLAIOPS_LOCAL_ROLE`), or single sign-on |
+| Dex (single sign-on) | http://localhost:5556/dex | `http://dex:5556/dex` | test directory password `kionga-sso-dev` |
+| Jupyter workbench | http://localhost:8080/workspace.html?tool=workbench | `http://jupyter:8888` | Kionga session; diagnostics at `http://127.0.0.1:8888/workspaces/workbench/` with token `mlaiops-local` (`JUPYTER_TOKEN`) |
 | MLflow tracking/registry | http://localhost:15000 | `http://mlflow:5000` | none |
 | Prefect UI/API | http://localhost:4200 | `http://prefect-server:4200` | none |
 | Langfuse | http://localhost:3000 | `http://langfuse:3000` | `admin@local.dev` / `mlaiops-local-admin`; API keys `pk-lf-local-dev` / `sk-lf-local-dev` |
@@ -55,60 +58,70 @@ Two DNS worlds:
 | Serving manager | http://localhost:8085 | `http://serving-manager:8085` | internal token in public mode |
 | Trace proxy (LLM egress) | http://localhost:8081 | `http://trace-proxy:8081` | none |
 | Agent runtime | http://localhost:19000 | `http://agent-runtime:9000` | none |
-| Browser IDE (optional) | http://localhost:13337 | `http://ide:8080` | password `mlaiops-local` (`IDE_PASSWORD`) |
+| Browser IDE (optional) | http://localhost:8080/workspace.html?tool=ide | `http://ide:8080` | Kionga session; no published port |
 
-All local defaults are development-only; public deployments override them in
-`.env` (see `docs/hosting.md`).
+All local defaults are development-only. Public deployments replace them; see
+[Public hosting](hosting.md).
 
 ## Registering connections in the console
 
-The Platform tab's **Add connection** registers a service with the control
-plane; the gateway then actively health-checks it (nothing is green by
-wishful thinking). **The gateway performs the check from inside the stack, so
-use in-stack hostnames**, not localhost.
+**Platform → Add infrastructure** registers a service with the control plane.
+The gateway tests it at once and on every **Test** click. **The gateway
+performs the check from inside the stack, so use in-stack hostnames**, not
+localhost.
 
-| Service field | Connection name (suggested) | Health endpoint | Secret ref |
+| Service | Connection name (suggested) | Service address | Credential reference |
 | --- | --- | --- | --- |
-| MLflow | `local-mlflow` | `http://mlflow:5000/health` | `mlflow-credentials` |
-| S3 / RustFS | `local-objectstore` | `http://objectstore:9000/health` | `objectstore-credentials` |
-| Kafka REST | `local-kafka` | `http://kafka-rest:8082/topics` | `kafka-credentials` |
-| Langfuse | `local-langfuse` | `http://langfuse:3000/api/public/health` | `langfuse-credentials` |
-| Prefect | `local-prefect` | `http://prefect-server:4200/api/health` | `prefect-credentials` |
-| Redis / Feast | `local-features` | `http://feature-gateway:8083/healthz` | `redis-credentials` |
-| Kubernetes | `kind-cluster` | your cluster API URL (optional) | `kubeconfig-secret` |
+| MLflow | `local-mlflow` | `http://mlflow:5000/health` | `none` |
+| RustFS (local) | `local-objectstore` | `http://objectstore:9000/health` | `none` |
+| Kafka REST | `local-kafka` | `http://kafka-rest:8082/topics` | `none` |
+| Langfuse | `local-langfuse` | `http://langfuse:3000/api/public/health` | `none` |
+| Prefect | `local-prefect` | `http://prefect-server:4200/api` | `none` |
+| Redis / Feast | `local-features` | `http://feature-gateway:8083/healthz` | `none` |
+| Kubernetes | `kind-cluster` | your cluster API health URL | `env:VARIABLE` holding a bearer token |
 
 Notes:
 
-- The **secret ref** is a reference name (a Kubernetes Secret name on the
-  cluster path); raw credentials are never stored in the control plane.
-- Any HTTP(S) response below 500 counts as healthy — a `401` from a
-  Kubernetes API server is a healthy signal.
-- **Onboarding readiness** (Overview ring / Platform panel) turns green from
-  these connections: workspace = any project, plus healthy `mlflow`,
-  `s3`/`rustfs` (storage), `kafka` (events), and `kubernetes` connections.
-  Kubernetes is the documented scale path — on the Compose-native stack the
-  execution engine is Prefect + the serving manager, so that one item stays
-  pending unless you connect a real cluster (e.g. Kind).
-- Re-test any connection with its **Test** button (admin/operator role).
+- For Prefect, enter the API base address; the gateway appends `/api/health`.
+  For OpenFaaS, enter the gateway address; the gateway checks
+  `/system/functions` with basic auth (`OPENFAAS_USER`, default `admin`). Every
+  other type takes a health endpoint.
+- The **credential reference** is `none` or `env:VARIABLE`, naming an
+  environment variable set on the gateway. The gateway sends its value as a
+  bearer token. Never paste a secret into the form; the control plane stores
+  only the reference.
+- Only a `2xx` response counts as healthy. Redirects, missing routes, and
+  authentication failures are reported as failures with the reason.
+- Prefect and OpenFaaS connections can be activated with **Use for new
+  operations**; other types monitor availability only.
+- **Onboarding readiness** (Overview ring and Platform panel) turns green from
+  these connections: workspace means any project exists, plus healthy `mlflow`,
+  `s3` or `rustfs` (storage), `kafka` (events), and `kubernetes` connections.
+  Kubernetes is the scale path. On the Compose stack the execution engine is
+  Prefect plus the serving manager, so that one item stays pending unless you
+  connect a real cluster (for example Kind).
+- Creating, testing, and activating connections needs the `infra:Provision`
+  permission (administrators and operators by default).
 
 ## Connecting from the Jupyter workbench
 
-`make -C deploy local-up` now includes a JupyterLab workbench at
-**http://localhost:8888** (token `mlaiops-local`) with:
+`make -C deploy local-up` includes a JupyterLab workbench. Open it from the
+console (**Jupyter**) or at
+<http://localhost:8080/workspace.html?tool=workbench>. It has:
 
-- **Terminal included**: File → New → Terminal — bash with `git`, `curl`,
+- **Terminal included**: File → New → Terminal opens bash with `git`, `curl`,
   and every platform module (`python -m realtime.produce --demo fraud --count 3`).
 - The platform SDK (`mlaiops_sdk`) and modules (`pipelines`, `features`,
   `realtime`, `agents`) preinstalled.
 - ML pins identical to the serving image (`scikit-learn==1.7.0`,
-  `mlflow==3.1.1`) — models trained in a notebook serve without skew.
+  `mlflow==3.1.1`), so models trained in a notebook serve without skew.
 - Every connection preconfigured via environment: `MLAIOPS_URL`,
   `MLFLOW_TRACKING_URI`, `MLFLOW_S3_ENDPOINT_URL` + `AWS_*`,
   `MLAIOPS_FEATURE_GATEWAY_URL`, `KAFKA_REST_URL`, `PREFECT_API_URL`,
   `DATABASE_URL`, `REDIS_URL`, `LANGFUSE_*`.
-- `quickstart.ipynb` (seeded into the workspace volume) walks the whole
-  platform: identity → registry → train + log to MLflow → register with the
-  control plane → online features → real-time events.
+- `quickstart.ipynb` (seeded into the workspace volume) walks the platform:
+  identity, registry, training logged to MLflow, registration with the control
+  plane, online features, and real-time events.
 
 Your notebooks persist in the `jupyter-data` volume across restarts.
 
@@ -122,26 +135,29 @@ Your notebooks persist in the `jupyter-data` volume across restarts.
 - **psql**: `psql postgres://mlaiops:mlaiops-local@localhost:5432/mlaiops`.
 - **Kafka**: brokers `localhost:9092`, or REST at `http://localhost:8082`.
 - **Platform API**: set `MLAIOPS_URL=http://localhost:8080` (or your overridden
-  gateway port), then `curl "$MLAIOPS_URL/api/v1/me"` — see
-  `/api/openapi.json` for the surface.
+  gateway port) and authenticate as described in the
+  [REST API reference](reference/api.md#authentication). `/api-docs.html` and
+  `/api/openapi.json` describe the surface.
 
 ## Wiring the moving parts together
 
-- **Real LLMs for agents**: in `.env` set `MLAIOPS_LLM_BACKEND=openai` (or
-  `anthropic`), the API key, and optionally `MLAIOPS_LLM_MODEL`; calls egress
-  through the trace-proxy so tokens/cost land in Kafka + the cost dashboard.
+- **Real LLMs for agents**: in `deploy/.env` set `MLAIOPS_LLM_BACKEND=openai`
+  (or `anthropic`), the API key, and optionally `MLAIOPS_LLM_MODEL`, then
+  recreate `agent-runtime`. The `openai` and `openai-compatible` backends egress
+  through the trace proxy, so every call lands in Kafka; the `anthropic` backend
+  calls Anthropic directly. See [LLM providers](getting-started/configuration.md#llm-providers).
 - **Real-time demos → live components**: set `FRAUD_MODEL_ENDPOINT` to a live
   model endpoint (Models tab → deploy → endpoint URL) and
   `CALLCENTER_AGENT_ID` to a deployed agent id, then
   `docker compose -f deploy/compose.yaml up -d realtime-processor`.
-- **Serverless (OpenFaaS/faasd)**: install faasd on the VM
-  (`docs/hosting.md`), then set `OPENFAAS_URL`, `OPENFAAS_USER`,
-  `OPENFAAS_PASSWORD` — the Functions view lists, deploys, and invokes project-owned
-  functions once configured.
+- **Serverless (OpenFaaS/faasd)**: install faasd on the host (see
+  [Public hosting](hosting.md#openfaas-functions-on-a-vm-faasd)), then set
+  `OPENFAAS_URL`, `OPENFAAS_USER`, and `OPENFAAS_PASSWORD`. The Functions view
+  then lists, deploys, and invokes project-owned functions.
 
 ## Swapping in external / production services
 
-Build once, point anywhere — set the URL and credentials, no image changes:
+Build once, point anywhere: set the URL and credentials, no image changes.
 
 | Replace | With | How |
 | --- | --- | --- |
@@ -157,8 +173,10 @@ Build once, point anywhere — set the URL and credentials, no image changes:
   network*. The gateway is distroless; use a disposable curl container on
   `mlaiops_default` to reproduce the check.
 - **Works in console, fails from your laptop**: you used an in-stack hostname
-  outside the stack (or vice versa) — swap per the two-DNS-worlds table.
+  outside the stack (or the reverse). Swap it using the table above.
+- **Works on this machine, fails from another**: ports bind to `127.0.0.1` by
+  default. See [Network exposure](operations/local.md#network-exposure).
 - **Everything down?** `make -C deploy local-up` is idempotent; `docker compose -f
-  deploy/compose.yaml ps` shows per-service state;
+  deploy/compose.yaml ps` shows per-service state; and
   `GATEWAY=http://localhost:8080 ./deploy/scripts/demo-smoke.sh` verifies the configured
   capabilities end to end.

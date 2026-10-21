@@ -12,12 +12,19 @@ mounted secret files; see [Public hosting](../hosting.md) for their requirements
 
 ## Published ports
 
-Every port is overridable via the `*_PORT` variable. Defaults:
+Every port is overridable via the `*_PORT` variable, set in `deploy/.env` or
+exported before `make -C deploy local-up`.
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `KIONGA_BIND_ADDRESS` | `127.0.0.1` | Host address every published port below binds to. Set `0.0.0.0` (or one interface address) only on a trusted network; see [Network exposure](../operations/local.md#network-exposure) |
+
+Ports that follow `KIONGA_BIND_ADDRESS`:
 
 | Variable | Default | Service |
 | --- | --- | --- |
 | `GATEWAY_PORT` | `8080` | Console + API |
-| `JUPYTER_PORT` | `8888` | Jupyter workbench |
+| `DEX_PORT` | `5556` | Dex, the single sign-on broker |
 | `MLFLOW_PORT` | `15000` | MLflow (container listens on 5000) |
 | `PREFECT_PORT` | `4200` | Prefect |
 | `LANGFUSE_PORT` | `3000` | Langfuse |
@@ -32,6 +39,16 @@ Every port is overridable via the `*_PORT` variable. Defaults:
 | `SERVING_MANAGER_PORT` | `8085` | Serving manager |
 | `TRACE_PROXY_PORT` | `8081` | Trace proxy |
 | `AGENT_RUNTIME_PORT` | `19000` | Agent runtime (container listens on 9000; the object store owns host 9000) |
+
+Ports that always bind to `127.0.0.1`, whatever `KIONGA_BIND_ADDRESS` says:
+
+| Variable | Default | Service |
+| --- | --- | --- |
+| `JUPYTER_PORT` | `8888` | Jupyter workbench (diagnostics; use it through the gateway) |
+| `LOG_EXPORTER_PORT` | `8086` | Log exporter status (`log-export` profile) |
+
+The browser IDE (`ide` profile) publishes no port; the gateway proxies it. In the
+public overlay (`compose.public.yaml`) only Caddy publishes ports (80 and 443).
 
 ## Gateway (control plane)
 
@@ -48,16 +65,16 @@ Every port is overridable via the `*_PORT` variable. Defaults:
 | `PREFECT_API_URL` | `http://prefect-server:4200/api` | Pipeline engine |
 | `SERVING_MANAGER_URL` | `http://serving-manager:8085` | Model serving control |
 | `LANGFUSE_URL` / `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` | local defaults | Prompt library proxy |
-| `MLAIOPS_LOCAL_ROLE` | `admin` | RBAC role for local API requests when OIDC is disabled; the browser console still requires login |
+| `MLAIOPS_LOCAL_ROLE` | `admin` | Role of the local login account (`MLAIOPS_LOCAL_USERNAME`); every API request still needs a credential |
 | `MLAIOPS_ALLOWED_ORIGIN` | `*` | CORS origin (pinned to your domain in public) |
-| `MLAIOPS_INTERNAL_TOKEN` | *(unset locally)* | Shared bearer token granting the `service` role |
+| `MLAIOPS_INTERNAL_TOKEN` | `kionga-local-service-token` in Compose | Shared bearer token granting the `service` role; set your own outside local development |
 
 ## RBAC
 
 | Variable | Values | Purpose |
 | --- | --- | --- |
 | `MLAIOPS_LOCAL_ROLE` | `admin` \| `operator` \| `user` \| `engineer` \| `viewer` | Role for the authenticated local login; `user` requires a grant keyed by `MLAIOPS_LOCAL_USERNAME` |
-| `MLAIOPS_LOCAL_USERNAME` / `MLAIOPS_LOCAL_PASSWORD` | `admin` / `mlaiops-local` | Local console login; change outside throwaway development |
+| `MLAIOPS_LOCAL_USERNAME` / `MLAIOPS_LOCAL_PASSWORD` | `admin` / `mlaiops-local` | Local console login; change outside throwaway development. The password can also be delivered as a file with `MLAIOPS_LOCAL_PASSWORD_FILE` |
 | `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET` | provider client | Browser authorization-code flow |
 | `OIDC_AUTH_URL` / `OIDC_TOKEN_URL` / `OIDC_REDIRECT_URL` | provider URLs | Browser login endpoints and callback |
 | `MLAIOPS_INTERNAL_TOKEN` | random secret | Presenting it as a bearer token grants the `service` role (reporting endpoints only) |
@@ -66,14 +83,20 @@ Every port is overridable via the `*_PORT` variable. Defaults:
 | `OIDC_AUDIENCE` | string | Expected token audience |
 | `KIONGA_SSO_PROVIDERS` | JSON list of `{id, name, type}` | Sign-in buttons on the login page; `id` is the Dex connector id |
 | `KIONGA_SSO_PROVIDERS_FILE` | path | The same list from a file, re-read when it changes (the Compose stack's Dex writes it) |
-| `OIDC_SCOPES` | space-separated | Scopes requested at sign-in; default `openid profile email groups`. Add `federated:id` with Dex |
+| `OIDC_SCOPES` | space-separated | Scopes requested at sign-in. Compose sets `openid profile email groups federated:id`; `federated:id` is Dex-only |
 | `KIONGA_SIGNUP` | `approval` \| `open` \| `off` | What a first single sign-on creates: an access request (default), a starter account, or nothing. See [Sign-up](../operations/single-sign-on.md#sign-up) |
 | `KIONGA_SIGNUP_EMAIL_DOMAINS` | comma-separated | Only verified emails at these domains sign up |
 | `KIONGA_SIGNUP_PROFILE` | resource profile | Profile for `open` sign-up (default `starter`) |
 | `KIONGA_SIGNUP_SERVICES` | comma-separated | Services a sign-up requests or gets |
 | `KIONGA_SSO_GROUP_ROLES` | JSON object, group to role | Maps identity-provider groups to platform roles when the token has no `roles` claim |
 | `KIONGA_SSO_SINGLE_TENANT` | `true` | Tokens without a `tenant` claim belong to `MLAIOPS_TENANT` (Dex cannot add one) |
-| `KIONGA_LOCAL_LOGIN` | `true` | Keeps local accounts next to single sign-on as break-glass access; requires `MLAIOPS_LOCAL_PASSWORD` |
+| `KIONGA_LOCAL_LOGIN` | `true` | Keeps local accounts next to single sign-on as break-glass access; requires `MLAIOPS_LOCAL_PASSWORD`. With `KIONGA_ENVIRONMENT=production` the password must be at least 16 characters and must not contain `local`, `change-me`, or `password` |
+
+Local sign-in is throttled per account: after 5 failed attempts each further
+attempt waits a doubling delay (1 s, 2 s, 4 s, up to 60 s). Failures are
+forgotten after 15 minutes or on a successful sign-in. The local session cookie
+is HttpOnly and SameSite=Lax, and Secure when the gateway is reached over HTTPS
+(directly or with `X-Forwarded-Proto: https`).
 
 See [RBAC & security](../reference/rbac.md) for the full model and
 [Single sign-on](../operations/single-sign-on.md) for LDAP, SAML and OAuth providers.
@@ -90,19 +113,26 @@ Used by the agent runtime and trace proxy.
 | --- | --- | --- |
 | `MLAIOPS_LLM_BACKEND` | `mock` | `openai` \| `anthropic` \| `openai-compatible` \| `mock` |
 | `MLAIOPS_LLM_MODEL` | *(empty)* | Model name for the chosen backend |
-| `MLAIOPS_LLM_BASE_URL` | `http://trace-proxy:8081/v1` | Where agent LLM calls egress (the trace proxy, for capture) |
+| `MLAIOPS_LLM_BASE_URL` | `http://trace-proxy:8081/v1` | Base URL for the `openai` and `openai-compatible` backends; Compose points it at the trace proxy for capture |
 | `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` | *(empty)* | Provider keys (env-only; never logged or traced) |
 | `LLM_UPSTREAM_URL` | `https://api.openai.com` | Where the trace proxy forwards calls |
-| `MLAIOPS_COST_PER_1K_INPUT` / `_OUTPUT` | `0` | USD per 1k tokens for cost accounting |
+| `MLAIOPS_COST_PER_1K_INPUT` / `MLAIOPS_COST_PER_1K_OUTPUT` | `0` | USD per 1k tokens for cost accounting |
 
-!!! example "Enable real Anthropic-backed agents"
+The `anthropic` backend calls Anthropic directly with `ANTHROPIC_API_KEY`; it does
+not use `MLAIOPS_LLM_BASE_URL`, so the trace proxy does not capture those calls.
+Langfuse tracing still records them when its keys are set.
+
+!!! example "Enable real OpenAI-backed agents"
     ```bash
-    # .env
-    MLAIOPS_LLM_BACKEND=anthropic
-    MLAIOPS_LLM_MODEL=claude-sonnet-4-5
-    ANTHROPIC_API_KEY=sk-ant-...
-    LLM_UPSTREAM_URL=https://api.anthropic.com
+    # deploy/.env
+    MLAIOPS_LLM_BACKEND=openai
+    MLAIOPS_LLM_MODEL=gpt-4o
+    OPENAI_API_KEY=sk-...
     ```
+
+    Calls go to the trace proxy, which forwards them to `LLM_UPSTREAM_URL`. For
+    Anthropic, set `MLAIOPS_LLM_BACKEND=anthropic`, `MLAIOPS_LLM_MODEL`, and
+    `ANTHROPIC_API_KEY` instead.
 
 ## Agent runtime
 
@@ -177,6 +207,7 @@ deployment. Use the [public VM](../operations/public-vm.md) or
 | `MLAIOPS_ACME_EMAIL` | Let's Encrypt account email |
 | `DEX_ADMIN_EMAIL` / `DEX_ADMIN_PASSWORD_HASH` | Console login (bcrypt hash) |
 | `DEX_CLIENT_SECRET` | Console OAuth client secret |
+| `MLAIOPS_LOCAL_PASSWORD` | Break-glass local administrator password (required) |
 | `MLAIOPS_INTERNAL_TOKEN` | Protects internal service APIs |
 | `LANGFUSE_NEXTAUTH_SECRET` / `LANGFUSE_SALT` | Langfuse hardening |
 
@@ -210,8 +241,8 @@ context; users should not override it. The platform API remains configured by
 
 | Variable | Purpose |
 | --- | --- |
-| `TEST_DATABASE_URL` | Postgres DSN for the Go integration lane |
-| `TEST_MEMORY_DSN` | pgvector DSN for the memory round-trip test |
+| `TEST_DATABASE_URL` | Postgres DSN for the Go integration lane (`make -C platform test-integration` sets it) |
+| `TEST_MEMORY_DSN` | pgvector DSN for the SDK's agent-memory round-trip test (`sdk-python`) |
 | `MLAIOPS_RUN_EVALS` | Set to `1` to run the paid agent eval lane (needs a real provider key) |
 
 ## Kubernetes scale path (optional)
