@@ -12,7 +12,8 @@ checks each one against those checkouts:
            *_URL, ...) against every non-Markdown file in the siblings
   route    /api/v1/..., /auth/..., /internal/v1/... routes against the routes
            the Go control plane registers
-  cli      `mlaiops <command> <subcommand>` against platform/go/cmd/cli
+  cli      `mlaiops <command> <subcommand>` against platform/go/cmd/cli and
+           `kionga <command>` against the workspace CLI (workspace/workspace/kionga.py)
   sdk      mlaiops_sdk modules, exports, and MLAIOpsClient methods
 
 Usage:
@@ -180,11 +181,32 @@ class Facts:
     env: set[str] = field(default_factory=set)
     routes: list[tuple[str, list[str]]] = field(default_factory=list)
     cli: set[tuple[str, str]] = field(default_factory=set)
+    kionga: dict[str, set[str]] = field(default_factory=dict)
     sdk: dict[str, "Module"] = field(default_factory=dict)
     top_level: set[str] = field(default_factory=set)
 
     def repo(self, name: str) -> Path:
         return self.docs_repo if name == "docs" else self.root / name
+
+
+SUBPARSERS = re.compile(r"(\w+)\s*=\s*(\w+)\.add_subparsers\(")
+ADD_PARSER = re.compile(r"(?:(\w+)\s*=\s*)?(\w+)\.add_parser\(\s*\"([\w-]+)\"")
+
+
+def argparse_commands(source: str) -> dict[str, set[str]]:
+    """Map each top-level argparse command to its subcommands (empty if none)."""
+    owner = {group: parser for group, parser in SUBPARSERS.findall(source)}
+    parser_name: dict[str, str] = {}
+    commands: dict[str, set[str]] = {}
+    for variable, group, name in ADD_PARSER.findall(source):
+        if variable:
+            parser_name[variable] = name
+        parent = parser_name.get(owner.get(group, ""), "")
+        if parent:
+            commands.setdefault(parent, set()).add(name)
+        else:
+            commands.setdefault(name, set())
+    return commands
 
 
 @dataclass
@@ -313,6 +335,10 @@ def load_facts(root: Path, docs_repo: Path = DOCS_REPO) -> Facts:
                 for command in first:
                     facts.cli.update((command, sub) for sub in CLI_ARG2.findall(line))
 
+    kionga = root / "workspace" / "workspace" / "kionga.py"
+    if kionga.is_file():
+        facts.kionga = argparse_commands(kionga.read_text())
+
     sdk = root / "sdk-python" / "mlaiops_sdk"
     if sdk.is_dir():
         for path in sorted(sdk.glob("*.py")):
@@ -429,7 +455,7 @@ def route_segments(route: str) -> list[str]:
 
 ROUTE_DOC = re.compile(
     r"(?:\b(GET|POST|PUT|PATCH|DELETE|HEAD)\s+`?)?"
-    r"((?:https?://[\w.:-]+|(?<![\w.:/-]))/(?:api/v1|api/openapi\.json|auth|internal/v1)\b[^\s`'\"),|]*)"
+    r"((?:https?://[\w.:-]+|\$\{?\w+\}?|(?<![\w.:/-]))/(?:api/v1|api/openapi\.json|auth|internal/v1)\b[^\s`'\"),|]*)"
 )
 LOCAL_HOSTS = re.compile(r"^https?://(?:localhost|127\.0\.0\.1|gateway|kionga\.example\.com|[\w.-]*example\.(?:com|org))(?::\d+)?")
 
@@ -489,6 +515,8 @@ def check_routes(page: list[Segment], facts: Facts, rel: str) -> list[Finding]:
                 if not LOCAL_HOSTS.match(raw):
                     continue  # another service's API
                 raw = "/" + raw.split("/", 3)[3]
+            elif raw.startswith("$"):
+                raw = raw[raw.index("/"):]  # "$MLAIOPS_URL/api/v1/..." names the gateway
             for route in expand_optional(re.split(r"[?#]", raw)[0].rstrip(".:;")):
                 finding = check_route(method, route, facts, rel, seg.line)
                 if finding:
@@ -498,29 +526,42 @@ def check_routes(page: list[Segment], facts: Facts, rel: str) -> list[Finding]:
 
 CLI_LINE = re.compile(
     r"^(?:\$\s+)?(?:[A-Z_][A-Z0-9_]*=\S*\s+)*"
-    r"(?:\./)?(?:bin/mlaiops-cli|mlaiops-cli|mlaiops|go run \./cmd/cli|go run \./go/cmd/cli)"
+    r"(?:\./)?(bin/mlaiops-cli|mlaiops-cli|mlaiops|go run \./cmd/cli|go run \./go/cmd/cli|kionga)"
     r"(?:\s+(.*))?$"
 )
 
 
 def check_cli(page: list[Segment], facts: Facts, rel: str) -> list[Finding]:
+    """`mlaiops ...` against platform/go/cmd/cli; `kionga ...` against the
+    workspace CLI's argparse tree."""
     found = []
-    commands = {c for c, _ in facts.cli}
+    mlaiops = {c for c, _ in facts.cli}
     for seg in code_segments(page):
         if seg.kind == "block" and seg.lang not in ("", "bash", "sh", "shell", "console", "text"):
             continue
         match = CLI_LINE.match(seg.text.strip())
-        if not match or not match.group(1):
+        if not match or not match.group(2):
             continue
-        words = re.split(r"\s+", match.group(1).strip())
-        command = words[0]
-        if command.startswith(("-", "<", "#")):
+        words = re.split(r"\s+", match.group(2).strip())
+        command, sub = words[0], words[1] if len(words) > 1 else ""
+        if command.startswith(("-", "<", "#", "|", "[")):
             continue
-        sub = words[1] if len(words) > 1 else ""
-        if command not in commands:
+        if sub.startswith(("-", "<", "|", "[", "#", "\\")):
+            sub = ""
+        if match.group(1) == "kionga":
+            if not facts.kionga:
+                continue
+            if command not in facts.kionga:
+                found.append(Finding(rel, seg.line, "cli", f"kionga {command}",
+                                     "no such command in workspace/workspace/kionga.py"))
+            elif sub and facts.kionga[command] and sub not in facts.kionga[command]:
+                found.append(Finding(rel, seg.line, "cli", f"kionga {command} {sub}",
+                                     "no such subcommand in workspace/workspace/kionga.py"))
+            continue
+        if command not in mlaiops:
             found.append(Finding(rel, seg.line, "cli", f"mlaiops {command}",
                                  "no such command in platform/go/cmd/cli"))
-        elif sub and not sub.startswith(("<", "|", "[")) and (command, sub) not in facts.cli:
+        elif sub and (command, sub) not in facts.cli:
             found.append(Finding(rel, seg.line, "cli", f"mlaiops {command} {sub}",
                                  "no such subcommand in platform/go/cmd/cli"))
     return found

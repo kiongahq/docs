@@ -70,6 +70,17 @@ def workspace(tmp_path: Path) -> Path:
             }
         }
     """)
+    write(root / "workspace" / "workspace" / "kionga.py", """
+        def parser():
+            root = argparse.ArgumentParser(prog="kionga")
+            commands = root.add_subparsers(dest="command", required=True)
+            make = commands.add_parser("scaffold", help="generate")
+            projects = commands.add_parser("project", help="projects")
+            project_commands = projects.add_subparsers(dest="project_command")
+            sync = project_commands.add_parser(
+                "sync", help="clone or update"
+            )
+    """)
     write(root / "sdk-python" / "mlaiops_sdk" / "__init__.py", """
         from .client import MLAIOpsClient
         from .models import Project
@@ -161,6 +172,12 @@ def test_routes_against_registered_patterns(workspace: Path) -> None:
         http://localhost:8080/api/v1/projects?limit=1 also resolve, while
         https://huggingface.co/api/v1/models belongs to another service.
         The browser returns to `/auth/callback`, not `/auth/return`.
+
+        ```bash
+        curl -s "$MLAIOPS_URL/api/v1/projects"
+        curl -s "${GATEWAY}/api/v1/project/1"
+        ```
+
         Prefect's own `/api/health` is not a gateway route.
     """, route=True)
     assert values(findings) == [
@@ -168,6 +185,7 @@ def test_routes_against_registered_patterns(workspace: Path) -> None:
         "GET /api/v1/pipelines",
         "GET /api/v1/only-in-tests",
         "/auth/return",
+        "/api/v1/project/1",
     ]
     assert findings[0].message.startswith("method not registered")
 
@@ -180,9 +198,15 @@ def test_cli_commands(workspace: Path) -> None:
         ./bin/mlaiops-cli project delete prj-1
         mlaiops widget list
         psql -U mlaiops mlaiops
+        kionga scaffold churn --template production-ml
+        kionga project sync prj-1
+        kionga project clone prj-1
+        kionga deploy
         ```
     """, cli=True)
-    assert values(findings) == ["mlaiops project delete", "mlaiops widget"]
+    assert values(findings) == [
+        "mlaiops project delete", "mlaiops widget", "kionga project clone", "kionga deploy",
+    ]
 
 
 def test_sdk_symbols_methods_and_keywords(workspace: Path) -> None:
