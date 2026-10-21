@@ -1,6 +1,6 @@
 name: Docs
 
-# Strict build on every PR; publish to GitHub Pages from main.
+# Strict build and reference check on every PR; publish to GitHub Pages from main.
 on:
   push:
     branches: [main]
@@ -32,6 +32,28 @@ jobs:
         if: github.event_name != 'pull_request'
         with:
           path: _site
+
+  # Docs references (make targets, paths, env vars, routes, CLI, SDK) checked
+  # against the main branches of the component repositories. A separate job so
+  # drift introduced by a code change is reported without blocking publication
+  # of unrelated documentation fixes.
+  references:
+    runs-on: ubuntu-latest
+    env:
+      KIONGA_SRC: ${{ github.workspace }}/src
+      KIONGA_GIT_BASE: https://github.com/kiongahq/
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Clone the component repositories
+        run: |
+          git clone -q --depth 1 "${KIONGA_GIT_BASE}deploy.git" "$KIONGA_SRC/deploy"
+          bash "$KIONGA_SRC/deploy/scripts/workspace.sh"
+      - run: python -m pip install pytest
+      - run: python -m pytest -q tests
+      - run: python scripts/check_references.py --root "$KIONGA_SRC"
 
   deploy:
     if: github.event_name != 'pull_request'

@@ -39,6 +39,9 @@ before moving a published page.
 ## Accuracy and status
 
 - Check commands, flags, paths, and defaults against the owning repository.
+  `make docs-check` verifies the mechanical part (make targets, paths, env
+  vars, routes, CLI commands, SDK names); defaults and behaviour still need a
+  read of the code.
 - Mark optional engines as optional. A control-plane API does not imply the
   external engine is installed or reachable.
 - Do not describe mock-backed tests, a successful build, or a health endpoint as
@@ -57,3 +60,4 @@ before moving a published page.
 - [ ] No secrets, machine-specific paths, generated site files, or assistant state
   have been added.
 - [ ] `make docs-build` passes with strict mode.
+- [ ] `make docs-check` passes against current sibling checkouts.

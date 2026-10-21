@@ -1,0 +1,25 @@
+# References check_references.py cannot verify, with the reason each is valid.
+# Format: <category> <value>   (value may use shell-style * and ? wildcards)
+# Keep this list short: fix the docs instead whenever the docs are wrong.
+
+# Created by the reader from deploy/.env.example; never committed.
+path deploy/.env
+
+# Generated inside a scaffolded project, not a file in the platform repository.
+path platform/project.yaml
+
+# Runtime default of KIONGA_BLOG_MEDIA_DIR, created by the gateway on first upload.
+path data/blog-media
+
+# Not environment variables: a DNS resolver errno and placeholders the reader
+# replaces (the *_FILE convention, an assigned project id, a package name).
+env EAI_AGAIN
+env NAME_FILE
+env YOUR_ASSIGNED_PROJECT_ID
+env PACKAGE_NAME
+
+# Shell variable the reader sets in the Azure CLI walkthrough.
+env RESOURCE_GROUP
+
+# Named as removed in the engineering-blog migration note.
+route /api/v1/admin/blogs

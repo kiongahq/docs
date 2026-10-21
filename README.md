@@ -23,7 +23,16 @@ build or mock-backed test.
 make docs-install
 make docs-serve      # http://127.0.0.1:8000, live reload
 make docs-build      # strict: broken links and nav errors fail the build
+make docs-check      # references checked against the sibling checkouts
+make docs-test       # gate tests for the reference checker (needs pytest)
 ```
+
+`make docs-check` runs `scripts/check_references.py`. It reads every page and
+verifies `make` targets, paths into other repositories, environment variable
+names, REST routes, CLI commands, and Python SDK names against the code in the
+sibling checkouts (`KIONGA_SRC=..` by default). Known false positives go in
+`scripts/reference-allowlist.txt` with a comment saying why; when a reference is
+wrong, fix the page instead.
 
 Paths and commands in the docs are relative to a workspace folder holding every
 Kionga repository (see [Repositories](docs/overview/repositories.md)). When a change
