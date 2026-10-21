@@ -64,9 +64,11 @@ A record pointing at the VM, and ports 80 and 443 open.
     cp deploy/.env.example deploy/.env
     ```
 
-2. Fill in `deploy/.env` (the script refuses to start until the first six are set):
+2. Fill in `deploy/.env` (the script refuses to start until the first seven are set):
     - `MLAIOPS_DOMAIN`, `MLAIOPS_ACME_EMAIL`: your DNS name and ACME contact.
     - `DEX_CLIENT_SECRET`, `MLAIOPS_INTERNAL_TOKEN`: `openssl rand -hex 24` each.
+    - `MLAIOPS_LOCAL_PASSWORD`: a long random break-glass password for the local
+      `admin` account.
     - `DEX_ADMIN_EMAIL` and `DEX_ADMIN_PASSWORD_HASH`, a bcrypt hash:
 
         ```bash

@@ -216,10 +216,14 @@ those names in `KIONGA_SSO_GROUP_ROLES`.
 - Keep secrets (`OIDC_CLIENT_SECRET`, bind passwords, connector client secrets) in
   your secret manager and pass them to Dex as environment variables.
 - Decide whether local break-glass login stays on. If it does, use a long random
-  `MLAIOPS_LOCAL_PASSWORD` and keep it in a vault. While it is on, administrators
-  can also issue local passwords to provisioned users; turn it off
-  (`KIONGA_LOCAL_LOGIN` unset) when the identity provider must own every
-  credential.
+  `MLAIOPS_LOCAL_PASSWORD`, keep it in a vault, and deliver it as a file with
+  `MLAIOPS_LOCAL_PASSWORD_FILE` like the other secrets. With
+  `KIONGA_ENVIRONMENT=production` the gateway refuses to start when that password
+  is shorter than 16 characters or contains `local`, `change-me`, or `password`.
+  Failed local sign-ins are throttled per account (a doubling delay after 5
+  failures, up to 60 s). While local sign-in is on, administrators can also issue
+  local passwords to provisioned users; turn it off (`KIONGA_LOCAL_LOGIN` unset)
+  when the identity provider must own every credential.
 - Map groups to the least privileged roles, and grant project and service access
   with [access control policies](../guides/access-control.md).
 
@@ -236,3 +240,6 @@ those names in `KIONGA_SSO_GROUP_ROLES`.
 | Signed in but no access | Waiting for approval (the console banner says so), or the user's groups are not in `KIONGA_SSO_GROUP_ROLES`; Dex logs list the groups it found at login |
 | `identity token validation failed` | `OIDC_ISSUER` must equal Dex's `issuer` exactly; `OIDC_AUDIENCE` must be the client id; with `MLAIOPS_TENANT` set, enable `KIONGA_SSO_SINGLE_TENANT` |
 | Gateway exits with `requires MLAIOPS_LOCAL_PASSWORD` | `KIONGA_LOCAL_LOGIN=true` next to SSO needs an explicit break-glass password |
+| Gateway exits with `must be at least 16 characters and not a development default` | Production mode rejects a short or default break-glass password; set a long random `MLAIOPS_LOCAL_PASSWORD` (or `MLAIOPS_LOCAL_PASSWORD_FILE`) |
+| Local form says "Too many failed attempts for this account" | After 5 failures each attempt waits up to 60 s; wait, then use the correct password. Failures reset after 15 minutes or on success |
+| SSO works on this machine but not from another | Ports bind to `127.0.0.1` by default, and the browser is sent to `localhost`. Set `KIONGA_BIND_ADDRESS`, `KIONGA_GATEWAY_URL`, and `DEX_ISSUER` as in [Network exposure](local.md#network-exposure) |

@@ -73,6 +73,13 @@ markdown_extensions:
 plugins:
   - search
 
+# Strict builds fail on broken links, unlisted pages, and missing anchors.
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+  anchors: warn
+
 nav:
   - Home: index.md
   - Getting started:
@@ -135,6 +142,7 @@ nav:
       - Identifier migration: reference/kionga-migration.md
   - Operations:
       - Overview: operations/index.md
+      - First-iteration deployment plan: operations/first-iteration-deployment.md
       - Local operations: operations/local.md
       - Public hosting: hosting.md
       - Managed Kubernetes:

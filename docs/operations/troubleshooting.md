@@ -66,7 +66,7 @@ docker compose -f deploy/compose.yaml logs serving-manager
 docker compose -f deploy/compose.yaml logs mlflow
 ```
 
-If you changed a pin, change it in `pipeline-runner/Dockerfile`,
+If you changed a pin, change it in `pipeline-runner/requirements.txt`,
 `deploy/mlflow/Dockerfile`, and `workspace/jupyter/Dockerfile`.
 
 ## Serving-manager: "permission denied" on the Docker socket
@@ -93,14 +93,16 @@ double-prefix `/api`. If you overrode it, keep the `/api` suffix
 
 ## Agent replies are prefixed `[mock]`
 
-That's the default `mock` LLM backend — the stack runs keyless. Set a real provider
-in `.env` (`MLAIOPS_LLM_BACKEND`, `MLAIOPS_LLM_MODEL`, the key, `LLM_UPSTREAM_URL`)
-and restart the agent runtime. See [Agents](../guides/agents.md#using-a-real-llm).
+That is the default `mock` LLM backend, so the stack runs without keys. Set a real
+provider in `deploy/.env` (`MLAIOPS_LLM_BACKEND`, `MLAIOPS_LLM_MODEL`, and the
+provider key) and recreate the agent runtime
+(`docker compose -f deploy/compose.yaml up -d agent-runtime`). See
+[Agents](../guides/agents.md#using-a-real-llm).
 
 ## Real-time stats stay empty
 
-- The processor may still be draining after a restart — give it ~10s after producing
-  events.
+- The processor may still be draining after a restart; give it about 10 seconds
+  after producing events.
 - Confirm it's consuming: `docker compose -f deploy/compose.yaml logs realtime-processor`
   should show `realtime processor consuming [...]`.
 - Produce events onto the input topic, not the output topic:
@@ -130,15 +132,16 @@ unless you intend to delete databases, artifacts, and workspace files. Allocate
 
 ## Services get OOM-killed / the stack is slow
 
-The full stack has about 19 regular and one-shot services. Give Docker more memory
+The default stack runs 21 regular and one-shot services. Give Docker more memory
 (Docker Desktop → Settings → Resources; aim for at least 8 GB). Large parallel image builds on first `local-up` can also
 strain the daemon — if Docker Desktop crashes, relaunch it (`open -a Docker` on
 macOS), wait for the daemon, then `make -C deploy local-up`.
 
 ## Port already in use
 
-Another process holds a published port. Override it in `.env` (e.g.
-`GATEWAY_PORT=8090`) and `make -C deploy local-up`, or stop the conflicting process.
+Another process holds a published port. Override it in `deploy/.env` (for example
+`GATEWAY_PORT=8090`) and run `make -C deploy local-up`, or stop the conflicting
+process.
 
 Identify the owner before stopping anything:
 
@@ -148,11 +151,35 @@ GATEWAY_PORT=18080 make -C deploy local-up
 GATEWAY=http://localhost:18080 ./deploy/scripts/demo-smoke.sh
 ```
 
+## Can't reach the stack from another machine
+
+Every port the local stack publishes binds to `127.0.0.1` by default, so other
+machines get "connection refused" even when the stack is healthy. Check the
+binding:
+
+```bash
+docker compose -f deploy/compose.yaml port gateway 8080   # 127.0.0.1:8080
+```
+
+On a trusted network, set `KIONGA_BIND_ADDRESS=0.0.0.0` in `deploy/.env` and run
+`make -C deploy local-up`. That exposes the data services with their development
+credentials too. For single sign-on from another machine also set
+`KIONGA_GATEWAY_URL` and `DEX_ISSUER`; see
+[Network exposure](local.md#network-exposure). Jupyter stays on loopback; open it
+through the gateway.
+
+## Local sign-in says "Too many failed attempts for this account"
+
+The gateway throttles local sign-in per account. After 5 failed attempts each
+further attempt waits a doubling delay (1 s, 2 s, 4 s, up to 60 s). Wait a minute
+and try again with the correct password; failures are forgotten after 15 minutes
+or on a successful sign-in. Restarting the gateway also clears them.
+
 ## `make -C platform verify` fails the banned-tech scan
 
-The build forbids certain proprietary product names in the Go source and `deploy/config/`.
-If you referenced one (even in a comment), reword it — serverless is OpenFaaS,
-serving is mlflow-serve, pipelines are Prefect.
+The build forbids certain proprietary product names in the Go source
+(`platform/go`). If you referenced one (even in a comment), reword it: serverless
+is OpenFaaS, serving is mlflow-serve, pipelines are Prefect.
 
 ## Everything is broken after an update
 

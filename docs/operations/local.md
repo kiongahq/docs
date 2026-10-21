@@ -14,7 +14,7 @@ make -C deploy ide-up         # optional browser IDE sharing Jupyter's workspace
 make -C deploy ide-down       # stop the IDE without deleting the workspace
 ```
 
-Restarting is idempotent — `make -C deploy local-up` reconciles to the desired state and only
+Restarting is idempotent: `make -C deploy local-up` reconciles to the desired state and only
 rebuilds changed images. It also caps concurrent downloads, retries transient image
 registry failures, waits for the gateway, and creates Kafka topics. `make -C deploy local` is
 an equivalent shorter alias. Durable state survives in the `postgres-data`,
@@ -58,9 +58,10 @@ docker compose -f deploy/compose.yaml up objectstore-init       # ensure buckets
 ## Verifying the whole platform
 
 ```bash
-GATEWAY="$GATEWAY" ./deploy/scripts/demo-smoke.sh # configured end-to-end checks
-make -C platform verify                      # gate suite (Go+Python tests, lint, build, banned-tech)
-make -C platform test-integration            # Postgres outbox + pgvector round-trip
+GATEWAY="$GATEWAY" ./deploy/scripts/demo-smoke.sh # configured end-to-end checks (or make -C deploy smoke)
+make -C platform verify                      # Go format, vet, race tests, build, console JS syntax, banned-tech scan
+make -C platform test-integration            # PostgreSQL store tests in a throwaway container
+make -C deploy test                          # Compose wiring, Helm chart, VM installer
 ```
 
 The pass/skip count varies with optional services. The required invariant is zero
@@ -68,7 +69,8 @@ failures; OpenFaaS is skipped when it is not configured.
 
 ## Kubernetes fidelity stack
 
-`make -C deploy kind-up` installs the Kionga CRDs/controllers and loads the locally built
+`make -C deploy k8s-tools` installs pinned `kind` and `helm` binaries under
+`.tools.nosync/bin` in the deploy checkout. `make -C deploy kind-up` installs the Kionga CRDs/controllers and loads the locally built
 images. It also installs metrics-server with the Kind-specific kubelet TLS flag,
 so elastic `KiongaAgent` deployments have a working resource-metrics API for their
 CPU HorizontalPodAutoscalers. Run `make -C deploy test-e2e-kind` after bootstrap to exercise the
@@ -76,20 +78,55 @@ agent and workspace reconcilers.
 
 ## Changing ports
 
-Every published port has a `*_PORT` override. Put them in `.env` (or export them),
-then `make -C deploy local-up`. If 8080 is occupied and no gateway override is set, the
-script chooses a free port in 18080–18084 and prints it. Example — explicitly
-move the console off 8080:
+Every published port has a `*_PORT` override. Put them in `deploy/.env` (or export
+them), then `make -C deploy local-up`. If 8080 is occupied and no gateway override
+is set, the script chooses a free port in 18080-18084 and prints it. For example,
+to move the console off 8080:
 
 ```bash
-echo "GATEWAY_PORT=8090" >> .env
+echo "GATEWAY_PORT=8090" >> deploy/.env
 make -C deploy local-up
 export GATEWAY=http://localhost:8090
 ```
 
+## Network exposure
+
+The local stack ships well-known development credentials (PostgreSQL, the object
+store, Langfuse, the internal service token). Every port it publishes therefore
+binds to `127.0.0.1` by default: only this machine can reach the console, the API,
+and the data services.
+
+`KIONGA_BIND_ADDRESS` sets the host address for those ports. To reach the stack
+from other machines on a trusted network, bind to all interfaces (or to one
+interface's address) and restart:
+
+```bash
+echo "KIONGA_BIND_ADDRESS=0.0.0.0" >> deploy/.env
+make -C deploy local-up
+```
+
+This exposes PostgreSQL, Redis, Kafka, the object store, MLflow, Langfuse, and
+the other published services with their development credentials, not only the
+console. Use it only on a network you trust, and change the credentials first
+if anyone else shares it. Some ports stay on `127.0.0.1` regardless: Jupyter
+(`JUPYTER_PORT`), the log exporter, and the `log-export-es` / `log-export-os`
+test clusters. The browser IDE publishes no port.
+
+Single sign-on redirects the browser to the URLs in `KIONGA_GATEWAY_URL`
+(default `http://localhost:<GATEWAY_PORT>`) and `DEX_ISSUER` (default
+`http://localhost:5556/dex`). For sign-in from another machine, set both to an
+address that machine can reach, for example
+`KIONGA_GATEWAY_URL=http://192.168.1.20:8080` and
+`DEX_ISSUER=http://192.168.1.20:5556/dex`, then rerun `make -C deploy local-up`.
+The local `admin` account works without those changes.
+
+Public hosting does not use this setting: in the public overlay
+(`compose.public.yaml`) only Caddy publishes ports 80 and 443.
+
 ## Switching your local role
 
-Preview the console as a non-admin without OIDC:
+The local `admin` account takes its role from `MLAIOPS_LOCAL_ROLE` (default
+`admin`). To preview the console as a viewer:
 
 ```bash
 MLAIOPS_LOCAL_ROLE=viewer docker compose -f deploy/compose.yaml up -d gateway
@@ -97,10 +134,16 @@ MLAIOPS_LOCAL_ROLE=viewer docker compose -f deploy/compose.yaml up -d gateway
 docker compose -f deploy/compose.yaml up -d gateway
 ```
 
+Recreating the gateway ends existing local sessions; sign in again to get the
+new role. An access
+profile provisioned for the `admin` subject under **Users & access** replaces
+this role.
+
 ## Data & backups
 
-All durable state is in Postgres (control plane, MLflow, Langfuse, checkpoints) and
-the RustFS object store (artifacts). To back up locally, snapshot those two volumes:
+Durable platform state is in PostgreSQL (control plane, MLflow, Langfuse,
+checkpoints) and the RustFS object store (artifacts). Notebooks and projects live
+in `jupyter-data`. To back up the first two locally, snapshot their volumes:
 
 ```bash
 docker run --rm -v mlaiops_postgres-data:/data -v "$PWD":/backup alpine \
@@ -120,11 +163,3 @@ make -C deploy local-up
 
 Do not add `-v` during routine restarts. It permanently deletes platform databases,
 artifacts, models, notebooks, and IDE workspace data.
-
-## Building the docs site
-
-```bash
-make -C docs docs-install     # once
-make -C docs docs-serve       # live preview at http://localhost:8000
-make -C docs docs-build       # strict static build into site/
-```
