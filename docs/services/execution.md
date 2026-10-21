@@ -1,7 +1,7 @@
 # Execution & serving services
 
-How pipelines actually run and how models actually serve — the Compose-native
-equivalents of KFP/Argo and KServe/Knative.
+How pipelines run and how models serve: the Compose-native equivalents of
+KFP/Argo and KServe/Knative.
 
 ## prefect-server
 
@@ -28,10 +28,11 @@ them**. This is where real training happens.
 | --- | --- |
 | **Build** | `pipeline-runner/Dockerfile` (Python 3.10) |
 | **Entrypoint** | `python -m pipelines.serve` |
-| **Pins** | `mlflow==3.1.1`, `scikit-learn==1.7.0` — identical to the serving image |
+| **Pins** | `mlflow==3.1.1`, `scikit-learn==1.7.0` in `pipeline-runner/requirements.txt`, identical to the serving image |
 | **Config** | `PREFECT_API_URL`, `MLAIOPS_URL`, `MLFLOW_TRACKING_URI`, `MLFLOW_S3_ENDPOINT_URL`, `AWS_*` |
 
-The bundled `training_pipeline` flow runs `validate → train → evaluate → register`:
+The bundled `training_pipeline` flow (deployment `training-pipeline/mlaiops`) runs
+`validate → train → evaluate → register`:
 it trains a deterministic scikit-learn classifier, logs the run and model to MLflow,
 and registers the model version with the control plane against the submitting
 project. Each step reports its transition to
@@ -43,9 +44,10 @@ schedule jobs.
 
 !!! warning "Version pins matter"
     The runner's ML library versions are pinned **identically** to the MLflow
-    serving image. Unpinned versions are how training-serving skew happens — a model
-    trained under one scikit-learn version fails to load under another. If you change
-    a pin, change it in `pipeline-runner/Dockerfile` **and** `deploy/mlflow/Dockerfile`.
+    serving image. Unpinned versions cause training-serving skew: a model trained
+    under one scikit-learn version fails to load under another. If you change a
+    pin, change it in `pipeline-runner/requirements.txt`, `deploy/mlflow/Dockerfile`,
+    **and** `workspace/jupyter/Dockerfile`.
 
 ### Heavy training workloads
 
@@ -99,7 +101,7 @@ proxy predictions to `/invocations`.
 
 ## serverless (OpenFaaS / faasd)
 
-Not a Compose service — a VM-level install. When `OPENFAAS_URL` is set, the gateway
+Not a Compose service; install it on the host or cluster. When `OPENFAAS_URL` is set, the gateway
 exposes project-owned function list/deploy/invoke/delete under `/api/v1/functions*`.
 The Functions view configures CPU/memory and HTTP, async, Cron, or Kafka trigger
 metadata; reusable function DAGs execute ready jobs in parallel with retries. See

@@ -7,8 +7,8 @@ The heart of Kionga. A single Go binary that serves the **REST API** and the
 
 | | |
 | --- | --- |
-| **Image** | Built from root `Dockerfile` with `SERVICE=gateway` |
-| **Host port** | `8080` (`GATEWAY_PORT`) |
+| **Image** | Built from `platform/go/Dockerfile` with `SERVICE=gateway` |
+| **Host port** | `8080` (`GATEWAY_PORT`, bound to `KIONGA_BIND_ADDRESS`) |
 | **Source** | `platform/go/cmd/gateway`, `platform/go/internal/httpapi` |
 | **Health** | `GET /api/v1/health` |
 | **Store** | PostgreSQL (`DATABASE_URL`) or local JSON file (`MLAIOPS_DATA_PATH`) |
@@ -41,19 +41,25 @@ The heart of Kionga. A single Go binary that serves the **REST API** and the
   `AGENT_RUNTIME_URL` override), enriches list results with bounded health probes,
   and rejects invocation with `503 agent_not_ready` before forwarding to an
   unhealthy runtime.
-- **Authorization** — the RBAC middleware runs on every request in every mode.
-- **Browser sessions** — local credential login for development and OIDC
-  authorization-code login with secure HttpOnly cookies when hosted.
-- **Live updates** — `GET /api/v1/events` streams a state digest over SSE.
-- **Serves the console** — the vanilla-JS UI is embedded via `go:embed`.
-- **Publishes engineering writing** — persisted Markdown posts, public
-  index/article pages, landing previews, and an admin authoring workflow.
+- **Authorization**: the RBAC middleware runs on every request in every mode.
+- **Browser sessions**: throttled local sign-in and single sign-on through an
+  OIDC broker (Dex locally), with HttpOnly cookies that are Secure over HTTPS.
+- **Response hardening**: `X-Content-Type-Options: nosniff`,
+  `Referrer-Policy: strict-origin-when-cross-origin`, and
+  `X-Frame-Options: SAMEORIGIN` on every response except proxied `/workspaces/`
+  paths.
+- **Live updates**: `GET /api/v1/events` streams a state digest over SSE.
+- **Serves the console**: the vanilla-JS UI is embedded via `go:embed`.
+- **Publishes engineering writing**: block-content posts written in the separate
+  editorial workspace (`/editorial.html`), public index and article pages, and
+  landing previews. See [Engineering blog](../guides/engineering-blog.md).
 
 ### The embedded console
 
 `platform/go/cmd/gateway/web/` holds the landing page (`index.html`, `landing.css`,
-`landing.js`) and console (`console.html`, `app.js`, `styles.css`), embedded into
-the binary. It is dependency-free (no framework build step). It renders role-aware
+`landing.js`), the console (`console.html`, `styles.css`, and scripts under `js/`),
+the login, workspace, blog, editorial, and API-docs pages, embedded into the
+binary. It is dependency-free (no framework build step). It renders role-aware
 views for workload lifecycle, functions, workspaces, access administration,
 settings/tokens, storage, catalog, and platform connections; includes DAG, chat,
 prediction, and object-browser interactions; and drives them from the same API
@@ -71,11 +77,11 @@ See the [gateway section of the configuration reference](../getting-started/conf
 The essentials: `DATABASE_URL`, `PREFECT_API_URL`, `SERVING_MANAGER_URL`,
 `AGENT_RUNTIME_URL` (Compose) or `MLAIOPS_AGENT_NAMESPACE` (Kubernetes),
 `STORAGE_PROXY_URL`, `LANGFUSE_*`, `MLAIOPS_LOCAL_ROLE`, `MLAIOPS_INTERNAL_TOKEN`,
-and (public) `OIDC_*`, `MLAIOPS_ALLOWED_ORIGIN`.
+`OIDC_*` (set for Dex in Compose), and (public) `MLAIOPS_ALLOWED_ORIGIN`.
 
 ## operator
 
-Kubernetes controller for the **scale path** — leader-elected reconcilers that turn
+Kubernetes controller for the **scale path**: leader-elected reconcilers that turn
 Kionga CRDs (`KiongaAgent`, `KiongaPipelineRun`, `KiongaTool`, `KiongaConnection`,
 `KiongaModelPromotion`, `KiongaWorkspace`) into workloads. Agent reconciliation
 uses the immutable-ID-derived name for its Deployment and Service, applies

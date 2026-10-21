@@ -6,27 +6,62 @@ document remains available at `GET /api/openapi.json`. Every request is authoriz
 [RBAC](rbac.md).
 
 - **Base URL (local):** `http://localhost:${GATEWAY_PORT:-8080}`; shell examples
-  can export `MLAIOPS_URL=http://localhost:8080`
+  in these docs use `MLAIOPS_URL=http://localhost:8080`
 - **Content type:** `application/json`
-- **Auth:** the browser console requires a signed-in session. Code running in a
-  provisioned Jupyter or browser IDE workspace uses its preconfigured loopback
-  `MLAIOPS_URL` without a personal key; the gateway authorizes it as the
-  workspace owner and rechecks current grants. Clients outside Kionga send
-  `Authorization: Bearer <token>` using OIDC or a scoped personal key. Internal
-  reporters use a separate service token. In the local profile, the workspace
-  maps to the bootstrap administrator only.
 - **Errors:** non-2xx responses return `{"error": "<code>", "message": "<detail>"}`.
 - **Lists:** most list endpoints return `{"items": [...], "total": N}`.
+
+## Authentication
+
+Only `/api/v1/health`, `/api/v1/ready`, `/api/openapi.json`, the public blog
+reads, and the `/auth/*` sign-in routes answer without a credential. Every other
+`/api/` request without one returns `401`. The gateway accepts:
+
+| Credential | How to send it | Acts as |
+| --- | --- | --- |
+| Browser session | `kionga_local_session` cookie (local sign-in) or `kionga_session` cookie (single sign-on) | The signed-in person with their role and access profile |
+| Personal API key | `Authorization: Bearer nxs_...`, created under **Settings → API keys** | A normal `user` limited to the key's services and projects and to the creator's access profile; never reaches `/api/v1/admin/*`, `/api/v1/settings/*`, the editorial API, or workspaces |
+| OIDC access or ID token | `Authorization: Bearer <JWT>` from the configured issuer | The token's subject and roles |
+| Workspace identity | Automatic inside the Jupyter workbench and browser IDE through their `MLAIOPS_URL` helper | The workspace owner; in Compose, the local bootstrap administrator |
+| Internal service token | `Authorization: Bearer $MLAIOPS_INTERNAL_TOKEN` | The `service` role (reporting paths only) |
+
+Most `curl` examples in these docs omit the credential for brevity. Locally, sign
+in once and pass the cookie jar:
+
+```bash
+curl -fsS -o /dev/null -c kionga.cookies \
+  --data-urlencode username=admin --data-urlencode password=mlaiops-local \
+  "$MLAIOPS_URL/auth/local/login"
+curl -s -b kionga.cookies "$MLAIOPS_URL/api/v1/me"
+```
+
+With a personal API key, add `-H "Authorization: Bearer $MLAIOPS_TOKEN"` instead.
+
+### Sign-in routes
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/auth/providers` | Sign-in options for the login page (`local` and single sign-on providers) |
+| `GET` | `/auth/login` | Start sign-in; redirects to the login page or the only provider |
+| `GET` | `/auth/sso/login?connector=<id>` | Start single sign-on with one Dex connector |
+| `GET` | `/auth/callback` | OIDC authorization-code callback |
+| `POST` | `/auth/local/login` | Local sign-in (form fields `username`, `password`, optional `return_to`); throttled per account after 5 failures |
+| `GET` | `/auth/logout` | End the session, including workspace sessions |
 
 ## Identity & health
 
 | Method | Path | Role | Purpose |
 | --- | --- | --- | --- |
 | `GET` | `/api/v1/health` | public | Liveness (`{"status":"ok",...}`) |
+| `GET` | `/api/v1/ready` | public | Readiness (checks the database) |
 | `GET` | `/api/v1/me` | any | Caller identity, roles, and effective permissions |
+| `GET` | `/api/v1/project-options` | any | Minimal list of assigned or owned projects for selectors |
+| `GET` | `/api/v1/workspaces` | any | Jupyter and IDE availability for the caller |
+| `POST` | `/api/v1/workspaces/{kind}/launch` | workbench or ide service | Launch `workbench` or `ide` (browser sessions only) |
 | `GET` | `/api/v1/admin/users` | admin/operator | List provisioned users |
 | `PUT` | `/api/v1/admin/users/{subject}` | admin/operator | Assign role, services, projects, storage, and compute quotas |
 | `DELETE` | `/api/v1/admin/users/{subject}` | admin/operator | Revoke all access |
+| `PUT` / `DELETE` | `/api/v1/admin/users/{subject}/local-password` | admin/operator | Set or remove a provisioned user's local password (local sign-in must be enabled) |
 | `GET` | `/api/v1/admin/resource-profiles` | admin/operator | List canonical starter/team/power/GPU/custom allocations |
 | `GET` | `/api/v1/access-requests` | authenticated user | List the caller's access requests |
 | `POST` | `/api/v1/access-requests` | authenticated user | Request one or more platform services |
@@ -35,6 +70,7 @@ document remains available at `GET /api/openapi.json`. Every request is authoriz
 | `GET` | `/api/v1/settings/tokens` | signed-in user | List personal API keys (secrets are never returned) |
 | `POST` | `/api/v1/settings/tokens` | signed-in user | Create a scoped, expiring personal API key |
 | `DELETE` | `/api/v1/settings/tokens/{id}` | key owner | Revoke a personal API key immediately |
+| `GET` / `PUT` / `DELETE` | `/api/v1/settings/huggingface` | signed-in user | Read, connect, or forget the caller's encrypted Hugging Face token |
 | `GET` | `/api/v1/blogs` | public | List published engineering posts |
 | `GET` | `/api/v1/blogs/{slug}` | public | Read a published post |
 | `GET` | `/media/blog/{id}/{480,960,1600}` | public once attached to a published post; editorial session otherwise | Blog image variant |
@@ -65,6 +101,9 @@ browser; `/api/openapi.json` remains intentionally machine-readable JSON.
 | `POST` | `/api/v1/projects` | engineer+ | Create a versioned template project, optionally connected to Git |
 | `GET` | `/api/v1/projects/{id}` | viewer+ | Read project and repository metadata |
 | `PUT` | `/api/v1/projects/{id}/repository` | Git service | Connect a credential-free HTTPS/SSH repository reference |
+| `GET` | `/api/v1/projects/{id}/scaffold-plan` | project access | What a scaffold job would run and where |
+| `GET` / `POST` | `/api/v1/projects/{id}/scaffold-jobs` | project access, browser identity | List jobs or start one ([Scaffolding](../guides/scaffolding.md)) |
+| `GET` | `/api/v1/projects/{id}/scaffold-jobs/{job}` | project access | One scaffold job |
 
 Create a heavyweight project with explicit execution intent:
 
@@ -98,11 +137,21 @@ provisioning checks.
 | `GET` | `/api/v1/pipelines/runs` | viewer+ | List runs |
 | `GET` / `POST` | `/api/v1/pipelines/definitions` | pipelines service | List or create versioned job DAGs |
 | `GET` / `PUT` | `/api/v1/pipelines/definitions/{id}` | pipelines service | Read or update a reusable flow |
+| `POST` | `/api/v1/pipelines/validate` | pipelines service | Validate a definition; returns canonical YAML, SHA-256, stages, and issues |
+| `POST` | `/api/v1/pipelines/definitions/yaml` | pipelines service | Create a flow from `kionga.dev/v1 Pipeline` YAML |
+| `GET` / `PUT` | `/api/v1/pipelines/definitions/{id}/yaml` | pipelines service | Export or update a flow as canonical YAML |
+| `GET` | `/api/v1/pipelines/definitions/{id}/revisions[/{revision}]` | pipelines service | Immutable revisions |
+| `POST` | `/api/v1/pipelines/definitions/{id}/revisions/{revision}/rollback` | pipelines service | Save an old revision as the new current one |
+| `POST` | `/api/v1/pipelines/definitions/{id}/triggers/{index}/{pause\|resume}` | pipelines service | Pause or resume a schedule |
+| `POST` | `/api/v1/pipelines/preflight` | pipelines service | Run-configuration preflight without starting a run |
 | `POST` | `/api/v1/pipelines/submit` | engineer+ | Submit a built-in or definition-backed run with parameters |
 | `GET` | `/api/v1/pipelines/runs/{id}` | viewer+ | Run detail: steps (DAG) + logs |
 | `POST` | `/api/v1/pipelines/runs/{id}/cancel` | engineer+ | Cancel (propagates to the engine) |
 | `POST` | `/api/v1/pipelines/runs/{id}/retry` | engineer+ | Retry |
 | `POST` | `/api/v1/pipelines/runs/{id}/steps` | service | Step transition (from the executing flow) |
+| `POST` | `/api/v1/pipelines/runs/{id}/logs` | service | Log lines from the runner |
+| `GET` | `/api/v1/logs` | pipelines service | Filtered, paginated logs ([Logs](../guides/logs.md)) |
+| `GET` | `/api/v1/logs/stream` | pipelines service | Server-Sent Events log tail |
 
 `jobs[].depends_on` is the graph contract. The gateway rejects duplicate names,
 missing dependencies, cycles, invalid resource quantities, and unresolved function
@@ -126,6 +175,8 @@ resource-admission check.
 | `POST` | `/api/v1/models/{id}/deploy` | engineer+ | Deploy → live endpoint (`canary_weight`) |
 | `POST` | `/api/v1/models/{id}/rollback` | engineer+ | Undeploy / roll back |
 | `POST` | `/api/v1/models/{id}/predict` | engineer+ | Proxy a prediction to the live endpoint |
+| `GET` | `/api/v1/models/huggingface` | models service | Search the Hugging Face Hub (`search`, `task`) |
+| `POST` | `/api/v1/models/huggingface/import` | models service | Register an immutable Hub revision in a project ([Hugging Face](../guides/huggingface.md)) |
 
 `serving_image` pins the model version to a framework-compatible OCI image. The
 image must provide the `mlflow` CLI, artifact-store support, and the exact runtime
@@ -191,6 +242,15 @@ when the runtime is unavailable.
 | `GET` | `/api/v1/features` | viewer+ | List feature views |
 | `POST` | `/api/v1/features` | engineer+ / service | Apply a feature view |
 | `POST` | `/api/v1/features/{name}/materialized` | service | Report a materialization (entity count) |
+| `POST` | `/api/v1/features/{name}/materializations` | service, engineer+ | Report a materialization run for lineage |
+| `GET` | `/api/v1/features/{name}/versions` | features service | Immutable definition versions |
+| `GET` | `/api/v1/features/{name}/lineage` | features service | Materialization lineage |
+| `GET` | `/api/v1/features/views` | features service | Views with store, freshness, version, and failures |
+| `GET` | `/api/v1/features/stores` | features service | Feature stores shared with the caller's projects |
+| `GET` / `POST` | `/api/v1/admin/feature-stores` | admin/operator | List or connect feature stores ([Feature stores](../guides/feature-stores.md)) |
+| `GET` / `PUT` / `DELETE` | `/api/v1/admin/feature-stores/{id}` | admin/operator | Read, change, or remove a feature store |
+| `POST` | `/api/v1/admin/feature-stores/{id}/test` | admin/operator | Check a feature store |
+| `GET` | `/api/v1/admin/feature-store-providers` | admin/operator | Supported providers and capabilities |
 
 ## Storage
 
@@ -199,14 +259,19 @@ when the runtime is unavailable.
 | `GET` | `/api/v1/storage/buckets` | viewer+ | List buckets |
 | `GET` | `/api/v1/storage/objects` | viewer+ | List objects (`bucket`, `prefix`) |
 | `GET` | `/api/v1/storage/object` | viewer+ | Bounded object preview (`bucket`, `key`) |
+| `GET` / `POST` | `/api/v1/admin/storage-connections` | admin/operator | List or register external S3-compatible buckets ([External object storage](../operations/external-storage.md)) |
+| `GET` / `PUT` / `DELETE` | `/api/v1/admin/storage-connections/{id}` | admin/operator | Read, change, or remove a storage connection |
+| `POST` | `/api/v1/admin/storage-connections/{id}/test` | admin/operator | Signed `HEAD` check of the bucket |
 
 ## Connections
 
 | Method | Path | Role | Purpose |
 | --- | --- | --- | --- |
 | `GET` | `/api/v1/connections` | viewer+ | List connections |
-| `POST` | `/api/v1/connections` | admin/operator | Create a secret-backed connection |
+| `POST` | `/api/v1/connections` | admin/operator | Create a connection (`secret_ref` is `none` or `env:VARIABLE`) |
 | `POST` | `/api/v1/connections/{id}/test` | admin/operator | Actively health-check a connection |
+| `POST` | `/api/v1/connections/{id}/activate` | admin/operator | Use a Prefect or OpenFaaS connection for new operations |
+| `GET` | `/api/v1/observability/log-export` | platform service | Log exporter state ([Log export](../operations/log-export.md)) |
 
 ## Components, catalog, prompts
 
@@ -239,6 +304,19 @@ quota. Admin/operator principals may provision beyond a user profile.
 | `GET` | `/api/v1/events` | viewer+ | SSE stream of the state digest (live updates) |
 | `GET` | `/api/v1/audit` | viewer+ | Immutable audit log |
 
+## Access control
+
+| Method | Path | Role | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/v1/iam/catalog` | any signed-in role | Actions, resource formats, condition keys, profiles |
+| `GET` | `/api/v1/iam/explain` | any signed-in role | Decision and trace for one action and resource |
+| `GET` | `/api/v1/iam/effective` | any signed-in role | Effective policies for a principal |
+| `GET` / `POST` | `/api/v1/admin/iam/groups`, `/api/v1/admin/iam/policies`, `/api/v1/admin/iam/attachments` | admin/operator | Groups, policies, attachments |
+| `GET` / `PUT` / `DELETE` | `/api/v1/admin/iam/groups/{id}`, `/api/v1/admin/iam/policies/{id}` | admin/operator | One group or policy (`DELETE` only for attachments by id) |
+| `GET` | `/api/v1/admin/iam/policies/{id}/revisions[/{version}]` | admin/operator | Immutable policy revisions |
+
+Request and response shapes are in [Access control](../guides/access-control.md#api).
+
 !!! note "Role column"
     "viewer+" means viewer and above. "engineer+" means engineer, operator, admin.
     "projects read" additionally includes a provisioned normal user assigned the
@@ -248,6 +326,8 @@ quota. Admin/operator principals may provision beyond a user profile.
 
 ## Attribution
 
-Mutations are attributed to an actor. In OIDC mode the actor is the token's
-email/subject. Otherwise the `X-MLAIOps-Actor` header is honored (used by internal
-services like `pipeline-engine`, `materializer`, `realtime-processor`).
+Mutations are attributed to the authenticated principal: its email when known,
+otherwise its subject. Internal services authenticate with the shared service
+token, so their actions are attributed to `internal-service`. The
+`X-MLAIOps-Actor` header that the SDK and CLI send is used only when no principal
+is attached to the request.

@@ -23,12 +23,14 @@ whose name is derived from the immutable control-plane agent ID.
 2. Loads the **Postgres checkpoint** for the session (state persists across turns,
    keyed per agent).
 3. Runs the LangGraph graph — reasoning, tool calls, feature/memory retrieval.
-4. Calls the LLM **through the trace-proxy** (`MLAIOPS_LLM_BASE_URL`).
+4. Calls the LLM. The `openai` and `openai-compatible` backends go **through the
+   trace proxy** (`MLAIOPS_LLM_BASE_URL`); `anthropic` calls Anthropic directly;
+   `mock` (the default) makes no network call.
 5. Reports the session (turns, current node, tokens, cost) back to the gateway via
    `POST /api/v1/traces`.
 
 Endpoints: `POST /invoke` (one turn) and `POST /stream` (SSE streaming). Token
-counts come from LangChain usage metadata — **measured, never estimated**. Cost is
+counts come from LangChain usage metadata: **measured, never estimated**. Cost is
 computed from `MLAIOPS_COST_PER_1K_INPUT/OUTPUT`.
 
 New agent applications should start from the versioned `production-agent` project
@@ -55,9 +57,11 @@ autoscaling.
 
 ## trace-proxy
 
-The **LLM egress**. All agent LLM calls point here; it forwards to the configured
-provider and publishes every call to Kafka. This gives complete, centralized capture
-without touching agent code — and provider keys never leak into traces or logs.
+The **LLM egress** for OpenAI-protocol backends. Compose points
+`MLAIOPS_LLM_BASE_URL` here, so `openai` and `openai-compatible` agent calls are
+forwarded to the configured provider and published to Kafka without changes to
+agent code. Provider keys never appear in traces or logs. The `anthropic` backend
+does not use it.
 
 | | |
 | --- | --- |
@@ -67,7 +71,7 @@ without touching agent code — and provider keys never leak into traces or logs
 
 | Config | Purpose |
 | --- | --- |
-| `LLM_UPSTREAM_URL` | Provider to forward to (`https://api.openai.com` / `.../anthropic`) |
+| `LLM_UPSTREAM_URL` | OpenAI-compatible provider to forward to (default `https://api.openai.com`) |
 | `TRACE_SINK_FORMAT` | `kafka-rest` |
 | `TRACE_SINK_URL` | `http://kafka-rest:8082/topics/mlaiops.llm.traces` |
 
@@ -77,7 +81,7 @@ setting its base URL to the proxy.
 ## langfuse
 
 LLM/agent **observability UI**. Pinned to v2, which self-hosts on the platform
-Postgres (v3 needs ClickHouse + Redis + workers — too heavy for one VM).
+Postgres (v3 needs ClickHouse, Redis, and workers, which is too heavy for one VM).
 
 | | |
 | --- | --- |
@@ -110,7 +114,7 @@ and publishes results.
 
 It reports live stats (throughput, latency, flagged counts) to
 `POST /api/v1/realtime/{demo}`, surfaced on the console's Real-Time panel. The poll
-loop is resilient to transient Kafka REST timeouts — it recreates its consumer and
+loop tolerates transient Kafka REST timeouts: it recreates its consumer and
 continues rather than crash-looping.
 
 Produce demo events:
@@ -122,12 +126,15 @@ docker compose -f deploy/compose.yaml exec jupyter \
 
 ## jupyter
 
-The development workbench — see the dedicated [workbench guide](../guides/workbench.md).
-JupyterLab (with a browser terminal) preloaded with the SDK and every connection,
-at <http://localhost:8888> (token `mlaiops-local`).
+The development workbench; see the [workbench guide](../guides/workbench.md).
+JupyterLab (with a browser terminal) preloaded with the SDK and every connection.
+Open it through the gateway at
+<http://localhost:8080/workspace.html?tool=workbench>; its own port (8888) binds
+to `127.0.0.1` for diagnostics only.
 
 Configured object-store buckets are mounted with S3FS under
-`/workspace/object-store/<bucket>`. The optional code-server IDE (`make -C deploy ide-up`,
-<http://localhost:13337>) mounts the same `jupyter-data` volume but does not receive
-FUSE privileges. Kubernetes replaces the shared development profile with isolated
+`/workspace/object-store/<bucket>`. The optional code-server IDE
+(`make -C deploy ide-up`, opened at
+<http://localhost:8080/workspace.html?tool=ide>) mounts the same `jupyter-data`
+volume, publishes no port, and does not receive FUSE privileges. Kubernetes replaces the shared development profile with isolated
 per-user `KiongaWorkspace` workloads.

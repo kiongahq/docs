@@ -1,6 +1,6 @@
 # RBAC & security
 
-Authorization runs on **every** API request, in **every** deployment profile — local
+Authorization runs on **every** API request, in **every** deployment profile, local
 and public alike. The rule table the console uses to enable/disable controls is
 derived from the exact same `Allowed` function the API enforces, so the UI can never
 drift from the backend.
@@ -11,9 +11,9 @@ drift from the backend.
 | --- | --- |
 | `admin`, `operator` | Everything, including user provisioning and platform connections |
 | `user` | Only explicitly assigned services and projects, within assigned quotas |
-| `engineer` | Full ML lifecycle — projects, pipelines, models, agents, tools, features, functions, realtime — but **not** platform connections |
+| `engineer` | Full ML lifecycle (projects, pipelines, models, agents, tools, features, functions, realtime) but **not** platform connections |
 | `viewer` | Read-only (all `GET` requests) |
-| `service` | Internal reporting only — traces, pipeline step transitions, materialization reports, realtime stats |
+| `service` | Internal reporting only: traces, pipeline step transitions, materialization reports, realtime stats |
 
 The `engineer` write scope is the ML lifecycle paths; connections stay
 admin/operator-only. The `service` role is deliberately narrow: it can report state
@@ -47,7 +47,7 @@ approved; rejection records the reviewer and note. Both actions are audited.
 
 ## Personal API keys
 
-Signed-in users create personal API keys from **Settings → Personal API keys**
+Signed-in users create personal API keys from **Settings → API keys**
 for CLI, SDK, and automation running outside Kionga. The in-platform Jupyter
 workbench and browser IDE do not need a personal key. A key:
 
@@ -56,6 +56,9 @@ workbench and browser IDE do not need a personal key. A key:
 - has explicit service/project scopes that cannot exceed the creator's access;
 - must expire within 1–365 days;
 - records last use and can be revoked immediately;
+- acts as a normal `user` with the key's services and projects; its creator
+  must have a provisioned access profile for quota-checked actions such as
+  creating a project;
 - cannot call settings/admin APIs or expand its own scope.
 
 Use it as a bearer token:
@@ -101,29 +104,43 @@ normal `user` role never does.
 
 ## Where identity comes from
 
-The gateway resolves a principal in this order:
+Every request except the public health, OpenAPI, blog, and `/auth/*` routes needs
+a credential. The gateway resolves the principal in this order:
 
-1. **OIDC principal** — when `OIDC_ISSUER` is set, the auth middleware verifies the
-   bearer JWT (RS256, JWKS from `OIDC_JWKS_URL`) and extracts roles.
-2. **Internal service token** — a bearer equal to `MLAIOPS_INTERNAL_TOKEN`
-   (constant-time compared) yields the `service` role.
-3. **Local development session** — without OIDC, sign in with the configured
-   local username/password. The session identifies that username with
-   `MLAIOPS_LOCAL_ROLE` (default `admin`). Both console and non-public API routes
-   require authentication; anonymous requests no longer become administrators.
-   Logout invalidates the session for API calls as well.
+1. **Personal API key**: a bearer token starting with `nxs_`, resolved first and
+   kept to its scoped permissions.
+2. **Bearer token**: a bearer equal to `MLAIOPS_INTERNAL_TOKEN` (constant-time
+   compared) yields the `service` role; otherwise, when `OIDC_ISSUER` is set,
+   the gateway verifies the JWT (RS256, JWKS from `OIDC_JWKS_URL`, issuer,
+   audience, expiry) and takes roles from its claims. An invalid bearer token
+   fails; it never falls back to a cookie.
+3. **Local session**: when local sign-in is enabled (no `OIDC_ISSUER`, or
+   `KIONGA_LOCAL_LOGIN=true` next to single sign-on), the `kionga_local_session`
+   cookie from `/auth/local/login`. The configured local username gets
+   `MLAIOPS_LOCAL_ROLE` (default `admin`); other local accounts are `user`.
+4. **Single sign-on session**: the `kionga_session` cookie set after the OIDC
+   callback.
 
-Personal API keys are resolved before browser authentication and retain their
-scoped permissions. Create a key in Settings for local SDK/CLI use. API keys
-and internal service credentials cannot open interactive developer workspaces.
-Workspace requests require a browser identity and the matching service grant.
+Anonymous `/api/` requests get `401`; other anonymous pages redirect to sign-in.
+Logout invalidates the session for API calls as well. An administrator-managed
+access profile for the subject then replaces the roles above.
+
+Local sign-in is throttled per account: after 5 failed attempts each further
+attempt waits a doubling delay (1 s, 2 s, 4 s, up to 60 s), and the login page
+shows "Too many failed attempts for this account. Wait a minute and try again."
+Failures are forgotten after 15 minutes or on success.
+
+API keys and internal service credentials cannot open interactive developer
+workspaces. Workspace requests require a browser identity and the matching
+service grant.
 
 ### Roles from OIDC claims
 
-In public mode, roles come from the token's `roles` claim, falling back to the
-`groups` claim when no `roles` claim is present. This means **Dex group membership
-maps directly to platform roles** — put a user in a `viewer` group and they get
-read-only access. Configure the mapping in Dex or your IdP.
+Roles come from the token's `roles` claim. Without one, each `groups` entry is
+mapped through `KIONGA_SSO_GROUP_ROLES`, and a group named exactly like a role
+(`admin`, `operator`, `engineer`, `user`, `viewer`) counts as that role. Groups
+never grant `service`. A signed-in person with no mapped group is an
+unprovisioned `user`. See [Single sign-on](../operations/single-sign-on.md).
 
 ## Checking your identity
 
@@ -154,38 +171,47 @@ allocation, quotas, and suspension/provisioning status.
 
 ## Trying it locally
 
-Preview the read-only console by starting the gateway as a viewer:
+Preview the read-only console by giving the local account the viewer role:
 
 ```bash
 export MLAIOPS_URL="${MLAIOPS_URL:-http://localhost:8080}"
 MLAIOPS_LOCAL_ROLE=viewer docker compose -f deploy/compose.yaml up -d gateway
+curl -fsS -o /dev/null -c kionga.cookies \
+  --data-urlencode username=admin --data-urlencode password=mlaiops-local \
+  "$MLAIOPS_URL/auth/local/login"
 ```
 
 Then a write is denied and a read succeeds:
 
 ```bash
-curl -s -o /dev/null -w "%{http_code}\n" -X POST "$MLAIOPS_URL/api/v1/projects" \
+curl -s -b kionga.cookies -o /dev/null -w "%{http_code}\n" -X POST "$MLAIOPS_URL/api/v1/projects" \
   -H 'Content-Type: application/json' -d '{"name":"x","template":"blank"}'   # 403
-curl -s -o /dev/null -w "%{http_code}\n" "$MLAIOPS_URL/api/v1/projects"  # 200
+curl -s -b kionga.cookies -o /dev/null -w "%{http_code}\n" "$MLAIOPS_URL/api/v1/projects"  # 200
 ```
 
-Restore admin by removing the override and restarting the gateway.
+Restore admin by recreating the gateway without the override
+(`docker compose -f deploy/compose.yaml up -d gateway`) and signing in again.
 
 ## The internal service token
 
-In public mode, in-platform reporters (agent runtime, pipeline flows, materializer,
-realtime processor) authenticate with `MLAIOPS_INTERNAL_TOKEN` and get the `service`
-role — enough to report sessions, steps, materializations, and stats, and nothing
-more. Generate it with `openssl rand -hex 24` and set it in `.env`.
+In-platform reporters (agent runtime, pipeline flows, materializer, realtime
+processor) authenticate with `MLAIOPS_INTERNAL_TOKEN` and get the `service` role:
+enough to report sessions, steps, materializations, and stats, and nothing more.
+Compose sets a development default (`kionga-local-service-token`). For anything
+shared, generate one with `openssl rand -hex 24` and set it in `deploy/.env`;
+production startup rejects tokens shorter than 24 characters or containing
+`local` or `change-me`.
 
 ## Other security controls
 
 | Control | Local | Public |
 | --- | --- | --- |
 | **Transport** | HTTP on localhost | HTTPS via Caddy (automatic Let's Encrypt) |
-| **AuthN** | Local console session; API local role | OIDC authorization-code session and bearer tokens |
+| **AuthN** | Local account session and single sign-on through Dex | OIDC authorization-code session and bearer tokens; optional break-glass local account |
+| **Session cookies** | HttpOnly, SameSite=Lax | Also Secure: the local session cookie when the request arrives over HTTPS (directly or with `X-Forwarded-Proto: https`), the single sign-on cookie when `OIDC_REDIRECT_URL` is https |
+| **Response headers** | `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, and `X-Frame-Options: SAMEORIGIN` (except proxied `/workspaces/` paths) | Same |
 | **CORS** | `*` | Pinned to `MLAIOPS_ALLOWED_ORIGIN` (your domain) |
-| **Ports** | All published | Only Caddy (80/443); everything else internal-only |
+| **Ports** | Published on `127.0.0.1` only (`KIONGA_BIND_ADDRESS` widens them) | Only Caddy (80/443); everything else internal-only |
 | **Secrets** | Development defaults | `.env` on the VM; connections store only a secret *reference* |
 | **LLM keys** | Environment only | Environment only — never written to traces, logs, or the store |
 | **Object-store credentials** | Storage proxy and Jupyter mount | Storage proxy is the application credential holder; isolate per-user mounts |

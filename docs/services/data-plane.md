@@ -21,7 +21,7 @@ pgvector table for long-term memory / RAG.
 
 ## redis
 
-The **online feature store** — low-latency reads for real-time scoring.
+The **online feature store**: low-latency reads for real-time scoring.
 
 | | |
 | --- | --- |
@@ -42,7 +42,8 @@ the JVM proxy image it replaces.
 | **Images** | `apache/kafka:3.9.1`, `ghcr.io/aiven-open/karapace:6.1.4` |
 | **Host ports** | `9092` (broker), `8082` (REST) |
 
-Topics (created by `deploy/scripts/local-topics.sh`): audit/lifecycle command topics,
+Topics (created by `deploy/scripts/local-topics.sh`): `mlaiops.audit.operations`,
+the lifecycle command topics (`mlaiops.{pipeline,model,agent,tool,connection,workspace}.commands`),
 `mlaiops.llm.traces`, `mlaiops.feature.updates`, and the real-time demo topics
 (`mlaiops.transactions` → `mlaiops.fraud.alerts`, `mlaiops.callcenter.transcripts` →
 `mlaiops.callcenter.insights`, `mlaiops.user.activity` → `mlaiops.recs.results`).
@@ -68,7 +69,7 @@ The local hostname is `objectstore`. See
 | | |
 | --- | --- |
 | **Image** | `rustfs/rustfs:1.0.1` (pinned by digest) |
-| **Host ports** | `9000` (S3 API), `9001` (web console) |
+| **Host ports** | `9000` (S3 API), `9001` (web console), on `KIONGA_BIND_ADDRESS` |
 | **Credentials** | `mlaiops` / `mlaiops-local-secret` |
 | **Volume** | `objectstore-data` |
 | **Health** | `GET http://objectstore:9000/health` |
@@ -96,7 +97,7 @@ trainer, and the serving containers agree — preventing training-serving skew.
 ## feature-gateway
 
 Go service exposing an online feature-retrieval API with a Feast-compatible request
-shape, backed by Redis.
+shape, backed by Redis (or a Feast feature server when `FEAST_URL` is set).
 
 | | |
 | --- | --- |

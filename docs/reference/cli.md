@@ -1,8 +1,8 @@
 # CLI reference
 
-`mlaiops` is a single static Go binary for quick operator/engineer tasks against the
-control plane. It's intentionally small — a thin, scriptable wrapper over the REST
-API. For anything richer, use the [Python SDK](../modules/python.md).
+`mlaiops` is a single static Go binary for quick operator and engineer tasks
+against the control plane. It is intentionally small: a thin, scriptable wrapper
+over the REST API. For anything richer, use the [Python SDK](../modules/python.md).
 
 The development workspaces also contain a separate `kionga` command. `mlaiops`
 operates control-plane resources; `kionga` generates/synchronizes project source and
@@ -11,18 +11,22 @@ can invoke a configured coding agent inside the generated directory.
 ## Build
 
 ```bash
-make -C platform build          # produces bin/mlaiops-cli (and every other binary)
+make -C platform build          # produces platform/bin/mlaiops-cli (and every other binary)
 # or
-cd go && go build -o mlaiops ./cmd/cli
+(cd platform/go && go build -o ../bin/mlaiops ./cmd/cli)
 ```
+
+The examples below call the binary `mlaiops`; put `platform/bin` on your `PATH`
+or call `platform/bin/mlaiops-cli` directly.
 
 ## Configuration
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `MLAIOPS_URL` | `http://localhost:8080` | Gateway base URL |
-| `MLAIOPS_TOKEN` | *(unset)* | Personal API key created under Console → Settings |
-| `USER` | `cli` | Sent as `X-MLAIOps-Actor` for audit attribution |
+| `MLAIOPS_TOKEN` | *(unset)* | Personal API key created under **Settings → API keys** |
+| `USER` | `cli` | Sent as `X-MLAIOps-Actor`; used for attribution only when no principal is attached |
+| `MLAIOPS_FUNCTION_PAYLOAD` | `{}` | JSON body for `function invoke` and `function invoke-async` |
 
 ## Commands
 
@@ -40,7 +44,8 @@ mlaiops connection list
 mlaiops audit list
 ```
 
-Submit a pipeline for a project (runs `training-pipeline`):
+Submit a pipeline for a project (without a definition id it runs the built-in
+`training-pipeline`):
 
 ```bash
 mlaiops pipeline submit <project-id>
@@ -86,9 +91,11 @@ template selected by the control plane. See
 [Project templates](../guides/project-templates.md).
 
 !!! tip "Auth"
-    Set `MLAIOPS_TOKEN` to a scoped personal key from **Console → Settings**.
-    The CLI sends it as a bearer token and the gateway enforces the same service,
-    project, and quota boundaries as the console.
+    Every command needs a credential: set `MLAIOPS_TOKEN` to a
+    scoped personal key from **Settings → API keys**. The CLI sends it as a
+    bearer token and the gateway enforces the key's services and projects plus
+    your quotas. Keys act as a normal `user`; see
+    [personal API keys](rbac.md#personal-api-keys).
 
 ## Pipeline definitions as files
 
