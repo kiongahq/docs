@@ -84,7 +84,7 @@ the bounded storage proxy.
 ## mlflow
 
 Experiment tracking and the model registry. Custom image (`mlaiops-mlflow`) pinning
-`mlflow==3.1.1`, `scikit-learn==1.7.0`, and `uvicorn` so the tracking server, the
+`mlflow==3.16.1`, `scikit-learn==1.7.0`, and `uvicorn` so the tracking server, the
 trainer, and the serving containers agree, preventing training-serving skew.
 
 | | |
@@ -93,6 +93,8 @@ trainer, and the serving containers agree, preventing training-serving skew.
 | **Host port** | `15000` (container listens on 5000) |
 | **Backend** | PostgreSQL |
 | **Artifacts** | `s3://mlaiops-models` in the object store |
+| **Schema** | `mlflow db upgrade` runs before the server starts, so an older database migrates on the first start after an upgrade |
+| **Allowed hosts** | `MLFLOW_SERVER_ALLOWED_HOSTS`: `mlflow`, `mlflow:5000`, `localhost:*`, `127.0.0.1:*`. Other `Host` headers get `403` (DNS-rebinding protection). Add your hostname there to reach MLflow by another name. |
 
 ## feature-gateway
 

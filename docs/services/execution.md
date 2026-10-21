@@ -26,9 +26,9 @@ them**. This is where real training happens.
 
 | | |
 | --- | --- |
-| **Build** | `pipeline-runner/Dockerfile` (Python 3.10) |
+| **Build** | `pipeline-runner/Dockerfile` (Python 3.11) |
 | **Entrypoint** | `python -m pipelines.serve` |
-| **Pins** | `mlflow==3.1.1`, `scikit-learn==1.7.0` in `pipeline-runner/requirements.txt`, identical to the serving image |
+| **Pins** | `mlflow==3.16.1`, `scikit-learn==1.7.0` in `pipeline-runner/requirements.txt`, identical to the serving image |
 | **Config** | `PREFECT_API_URL`, `MLAIOPS_URL`, `MLFLOW_TRACKING_URI`, `MLFLOW_S3_ENDPOINT_URL`, `AWS_*` |
 
 The bundled `training_pipeline` flow (deployment `training-pipeline/mlaiops`) runs

@@ -114,7 +114,7 @@ console (**Jupyter**) or at
 - The platform SDK (`mlaiops_sdk`) and modules (`pipelines`, `features`,
   `realtime`, `agents`) preinstalled.
 - ML pins identical to the serving image (`scikit-learn==1.7.0`,
-  `mlflow==3.1.1`), so models trained in a notebook serve without skew.
+  `mlflow==3.16.1`), so models trained in a notebook serve without skew.
 - Every connection preconfigured via environment: `MLAIOPS_URL`,
   `MLFLOW_TRACKING_URI`, `MLFLOW_S3_ENDPOINT_URL` + `AWS_*`,
   `MLAIOPS_FEATURE_GATEWAY_URL`, `KAFKA_REST_URL`, `PREFECT_API_URL`,

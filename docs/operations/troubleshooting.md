@@ -59,7 +59,7 @@ You crossed the two DNS worlds. **Inside the stack** use service names
 
 Almost always **training-serving skew**: the model was trained under different
 library versions than the serving image. The trainer, serving image, and workbench
-must pin identical versions (`mlflow==3.1.1`, `scikit-learn==1.7.0`). Check:
+must pin identical versions (`mlflow==3.16.1`, `scikit-learn==1.7.0`). Check:
 
 ```bash
 docker compose -f deploy/compose.yaml logs serving-manager
@@ -67,7 +67,17 @@ docker compose -f deploy/compose.yaml logs mlflow
 ```
 
 If you changed a pin, change it in `pipeline-runner/requirements.txt`,
-`deploy/mlflow/Dockerfile`, and `workspace/jupyter/Dockerfile`.
+`deploy/mlflow/Dockerfile` (`ARG MLFLOW_VERSION`), and
+`workspace/jupyter/Dockerfile`. `deploy/tests/test_mlflow_server.py` fails when
+they disagree.
+
+## MLflow returns 403 "Invalid Host header"
+
+The tracking server accepts only the hosts in `MLFLOW_SERVER_ALLOWED_HOSTS`
+(`deploy/compose.yaml`): `mlflow:5000` inside the stack and `localhost` or
+`127.0.0.1` on any port from this machine. To reach it by another name, add that
+name to the list and recreate the service with
+`docker compose -f deploy/compose.yaml up -d mlflow`.
 
 ## Serving-manager: "permission denied" on the Docker socket
 
@@ -139,9 +149,15 @@ macOS), wait for the daemon, then `make -C deploy local-up`.
 
 ## Port already in use
 
-Another process holds a published port. Override it in `deploy/.env` (for example
-`GATEWAY_PORT=8090`) and run `make -C deploy local-up`, or stop the conflicting
-process.
+`make -C deploy local-up` moves a busy default port to default + 10000 (5432 becomes
+15432) and prints the new port. It stops instead when the busy port was set
+explicitly, or when the five fallback ports are also taken. Then override it in
+`deploy/.env` (for example `GATEWAY_PORT=8090`) and run `make -C deploy local-up`,
+or stop the conflicting process.
+
+A native PostgreSQL or Redis on `127.0.0.1` is the usual cause. Tools on this
+machine that connect to `localhost:5432` reach that native server, not Kionga's;
+use the port `local-up` printed.
 
 Identify the owner before stopping anything:
 

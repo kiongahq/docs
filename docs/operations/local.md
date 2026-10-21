@@ -79,9 +79,16 @@ agent and workspace reconcilers.
 ## Changing ports
 
 Every published port has a `*_PORT` override. Put them in `deploy/.env` (or export
-them), then `make -C deploy local-up`. If 8080 is occupied and no gateway override
-is set, the script chooses a free port in 18080-18084 and prints it. For example,
-to move the console off 8080:
+them), then `make -C deploy local-up`.
+
+When a default port is already taken (a native PostgreSQL on 5432, Redis on 6379,
+another app on 8080), `make -C deploy local-up` moves only that service to the first
+free port of default + 10000 to + 10004 and prints the change, for example
+`Port 5432 is in use; postgres uses 15432 instead (POSTGRES_PORT=15432)`. A port
+you set yourself is never moved: the script stops and names the variable to change.
+A running stack keeps the ports it already holds.
+
+To pin a port, for example to move the console off 8080:
 
 ```bash
 echo "GATEWAY_PORT=8090" >> deploy/.env

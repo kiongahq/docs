@@ -66,8 +66,9 @@ Every published port binds to `127.0.0.1`, so the stack is reachable only from
 this machine. To open it to other machines on a trusted network, set
 `KIONGA_BIND_ADDRESS` (see [Local operations](../operations/local.md#network-exposure)).
 
-If port 8080 is already used, `make -C deploy local-up` selects a free port in 18080–18084
-and prints the URL. To choose a port yourself without changing the container network:
+If a default port is already used (8080, or 5432 by a native PostgreSQL),
+`make -C deploy local-up` moves that service to a free port 10000 higher (18080,
+15432) and prints it; see [Changing ports](../operations/local.md#changing-ports). To choose a port yourself without changing the container network:
 
 ```bash
 GATEWAY_PORT=18080 make -C deploy local-up
@@ -124,6 +125,10 @@ make -C deploy local-rebuild  # rebuild changed local source images, then start
 Durable state lives in named volumes (`postgres-data`, `objectstore-data`, `redis-data`,
 `prefect-data`, `jupyter-data`), so your projects, models, and notebooks survive
 restarts.
+
+Long-running services use `restart: unless-stopped`: after Docker Desktop or the
+machine restarts, the whole stack comes back as it was. `make -C deploy local-down`
+removes the containers, so a stopped stack stays stopped.
 
 ## Alternative: build and run the Go control plane only
 

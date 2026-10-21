@@ -69,7 +69,7 @@ S3FS; these permissions must not be copied to other platform services.
 - **The platform SDK** (`mlaiops_sdk`) and the runnable modules (`pipelines`,
   `features`, `realtime`, `agents`).
 - **ML libraries pinned to the serving image** (`scikit-learn==1.7.0`,
-  `mlflow==3.1.1`), so a model you train in a notebook deploys to a live endpoint
+  `mlflow==3.16.1`), so a model you train in a notebook deploys to a live endpoint
   without training-serving skew.
 - **Every connection, preconfigured via environment:**
 
