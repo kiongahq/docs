@@ -1,4 +1,4 @@
-.PHONY: docs-install docs-serve docs-serve-engineering docs-build docs-check docs-test
+.PHONY: docs-install docs-serve docs-serve-engineering docs-build docs-check docs-lint docs-test
 
 # Workspace folder holding the sibling Kionga checkouts (deploy, platform, ...).
 KIONGA_SRC ?= ..
@@ -21,6 +21,10 @@ docs-build:          ## both sites, strict; the handbook is published under /eng
 docs-check:          ## references against the code; product pages also keep code internals out
 	python scripts/check_references.py --root $(KIONGA_SRC) --product
 	python scripts/check_references.py --root $(KIONGA_SRC) --docs engineering/docs
+
+docs-lint:           ## prose: Google developer documentation style via Vale (errors fail)
+	vale sync >/dev/null
+	vale --minAlertLevel=error docs engineering/docs
 
 docs-test:           ## gate tests: reference checker and legacy URL redirects
 	python -m pytest -q tests
