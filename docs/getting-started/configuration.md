@@ -255,13 +255,14 @@ Read by the operator and integration worker only:
 | `MLFLOW_URL` | in-cluster MLflow | Model lifecycle integration |
 | `WORKBENCH_IMAGE` | `ghcr.io/kiongahq/jupyter:latest` | Image for provisioned Jupyter containers |
 | `IDE_IMAGE` | `ghcr.io/kiongahq/ide:latest` | Image for provisioned IDE containers |
+| `KIONGA_IMAGE_PULL_SECRETS` | unset | Comma-separated Secret names referenced by every workspace and agent pod (private registries). The Secrets must exist in the workload namespace. Helm sets it from `imagePullSecrets` |
 | `WORKSPACE_STORAGE_CLASS` | cluster default | Storage class for per-user PVCs |
 | `WORKSPACE_FEATURE_URL` / `WORKSPACE_STORAGE_URL` | in-cluster platform services | Feature and object access injected into each workspace |
 | `WORKSPACE_MLFLOW_URL` / `WORKSPACE_PREFECT_URL` | in-cluster upstreams | Experiment and orchestration endpoints injected into each workspace |
 | `WORKSPACE_LANGFUSE_URL` / `WORKSPACE_KAFKA_REST_URL` | in-cluster upstreams | Observability and event endpoints injected into each workspace |
 | `MLAIOPS_TARGET_NAMESPACE` | `default` | Namespace where lifecycle CRDs and workspaces are created |
 | `MLAIOPS_AGENT_NAMESPACE` | `default` | Namespace the gateway uses for ID-derived agent Service DNS; keep equal to the agent lifecycle target namespace |
-| `TRACE_PROXY_IMAGE` | `ghcr.io/mlaiops/trace-proxy:latest` | Sidecar image reconciled into every Kubernetes agent pod |
+| `TRACE_PROXY_IMAGE` | `ghcr.io/kiongahq/trace-proxy:latest` | Sidecar image reconciled into every Kubernetes agent pod |
 
 These configure the Kubernetes fidelity path and are not needed for local or
 single-VM use. If `AGENT_RUNTIME_URL` remains set in a Kubernetes gateway it

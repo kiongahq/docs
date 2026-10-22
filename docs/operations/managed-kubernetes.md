@@ -69,6 +69,30 @@ gateway to permit only the console origin while preserving its other CSP rules.
 
 ## 2. Configure identity and secrets
 
+### Registry access
+
+The `ghcr.io/kiongahq` images are private. Create a pull Secret from a GitHub
+token with only the `read:packages` scope, in the release namespace (platform
+pods) and in `workspaceNamespace` (workspace and agent pods the operator creates):
+
+```bash
+for ns in kionga-system kionga-workloads; do
+  kubectl -n "$ns" create secret docker-registry ghcr-pull \
+    --docker-server=ghcr.io --docker-username=<github-user> --docker-password="$GHCR_TOKEN"
+done
+```
+
+Then set `imagePullSecrets: [{name: ghcr-pull}]` in the values overlay. The chart
+adds it to every platform pod and passes the name to the operator
+(`KIONGA_IMAGE_PULL_SECRETS`), which adds it to every workspace and agent pod.
+The operator only references the Secret and never reads it. If you manage
+secrets with External Secrets, create the same `kubernetes.io/dockerconfigjson`
+Secret in both namespaces that way instead. Pipeline step images run by the
+Kubernetes executor use your own registries; give their namespace's service
+account the pull Secrets those need.
+
+### Identity
+
 Use an OIDC provider compatible with the gateway's RS256 validation. Set issuer,
 JWKS, authorization/token URLs, audience and client ID in the values overlay.
 Map controlled identity-provider claims to platform roles; reserve administrator

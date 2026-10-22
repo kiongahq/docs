@@ -20,6 +20,18 @@ Copy the examples under `deploy/vm/` to an administrator-controlled `/etc/kionga
 - `config.example.json` becomes `config.json`: non-secret HTTPS OIDC endpoints,
   client/audience, matching public origin and callback, plus service URLs as needed.
 
+The `ghcr.io/kiongahq` images are private. As the user that runs the launcher,
+log in once with a GitHub token that has only the `read:packages` scope:
+
+```bash
+echo "$GHCR_TOKEN" | docker login ghcr.io -u <github-user> --password-stdin
+```
+
+Docker stores the credential in `~/.docker/config.json` (or `$DOCKER_CONFIG`,
+which the launcher passes through). A failed pull stops the launcher with these
+instructions. Use a token for a dedicated machine account and rotate it like any
+other secret.
+
 Every JSON value in the application configuration must be a string. The launcher
 rejects mutable image tags and disables Compose's repository `.env` loading.
 It passes only an allowlist of host settings to Docker. Do not put credentials
