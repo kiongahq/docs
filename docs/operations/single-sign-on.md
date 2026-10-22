@@ -172,7 +172,7 @@ deployment use connectors like these, then set the gateway variables.
         orgs: [{name: your-org, teams: [ml-admins, data-team]}]
     ```
 
-Gateway settings (see [Configuration](../getting-started/configuration.md#rbac)):
+Gateway settings (see [Configuration](../reference/configuration.md#rbac)):
 
 ```bash
 OIDC_ISSUER=https://kionga.example.com/dex

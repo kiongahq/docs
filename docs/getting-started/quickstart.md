@@ -174,7 +174,7 @@ field is recorded but not pulled.
     The local stack defaults to a `mock` backend, so this step does not need a
     provider key. To use a real provider in development, configure
     `MLAIOPS_LLM_BACKEND` and its key as described in
-    [Configuration](configuration.md#llm-providers). Do not reuse local secrets
+    [Configuration](../reference/configuration.md#llm-providers). Do not reuse local secrets
     in a public deployment.
 
 ## Explore features, storage, and real-time data
@@ -215,9 +215,9 @@ into isolated `KiongaWorkspace` workloads.
 
 ## Where to go next
 
-- [Connecting all services](../connecting-services.md): the full connection map.
+- [Connecting all services](../reference/service-endpoints.md): the full connection map.
 - [Models & serving](../guides/models-serving.md), [Agents](../guides/agents.md),
   [Feature store](../guides/features.md), [Real-time](../guides/realtime.md).
 - [REST API reference](../reference/api.md) and [CLI](../reference/cli.md).
-- [Implementation status](../reference/implementation-status.md): bundled versus
+- [Implementation status](https://kiongahq.github.io/docs/engineering/status/implementation-status/): bundled versus
   optional, external, and scale-path capabilities.

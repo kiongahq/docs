@@ -10,7 +10,7 @@ one workspace folder.
 1. [Install the local stack](installation.md) and confirm the gateway is healthy.
 2. [Follow the quickstart](quickstart.md) to create a project, run a pipeline,
    serve a model, and inspect an agent session.
-3. [Connect to the bundled services](../connecting-services.md) from a notebook,
+3. [Connect to the bundled services](../reference/service-endpoints.md) from a notebook,
    a local client, or another container.
 
 The local profile uses development credentials and shared workspaces; those

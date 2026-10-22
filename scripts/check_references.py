@@ -802,6 +802,27 @@ def check_style(page: list[Segment], facts: Facts, rel: str) -> list[Finding]:
     return found
 
 
+# Product pages describe what Kionga does and how to use it. How it is built
+# (Go packages, source files) belongs in the engineering handbook.
+INTERNALS = re.compile(
+    r"\b(?:platform/)?go/(?:internal|cmd|pkg)/[\w./-]*"
+    r"|\binternal/[a-z]+/[\w./-]*"
+    r"|\b[\w/-]+\.go\b"
+    r"|\bpkg/(?:api|kube)[\w./-]*"
+)
+ENGINEERING_URL = "https://kiongahq.github.io/docs/engineering/"
+
+
+def check_boundary(page: list[Segment], facts: Facts, rel: str) -> list[Finding]:
+    found = []
+    for seg in page:
+        for match in INTERNALS.finditer(seg.text):
+            found.append(Finding(rel, seg.line, "boundary", match.group(0),
+                                 "code internals belong in the engineering handbook; "
+                                 f"describe the behavior or link to {ENGINEERING_URL}"))
+    return found
+
+
 CHECKS = {
     "make": check_make,
     "path": check_paths,
@@ -811,6 +832,7 @@ CHECKS = {
     "sdk": check_sdk,
     "style": check_style,
 }
+PRODUCT_CHECKS = {"boundary": check_boundary}
 
 
 # --------------------------------------------------------------------------
@@ -838,7 +860,9 @@ def allowed(finding: Finding, allowlist: set[tuple[str, str]]) -> bool:
 
 def run(docs: Path, root: Path, allowlist: set[tuple[str, str]] | None = None,
         checks: dict | None = None) -> list[Finding]:
-    facts = load_facts(root, docs.parent)
+    # The docs repository holds both sites (docs/, engineering/docs/).
+    repo = next((p for p in docs.parents if (p / ".git").exists()), docs.parent)
+    facts = load_facts(root, repo)
     allowlist = allowlist or set()
     findings: list[Finding] = []
     for page_path in sorted(docs.rglob("*.md")):
@@ -856,7 +880,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--docs", type=Path, default=DOCS_REPO / "docs")
     parser.add_argument("--allowlist", type=Path,
                         default=DOCS_REPO / "scripts" / "reference-allowlist.txt")
-    parser.add_argument("--only", choices=sorted(CHECKS), action="append",
+    parser.add_argument("--product", action="store_true",
+                        help="also keep code internals out (the product site)")
+    parser.add_argument("--only", choices=sorted({**CHECKS, **PRODUCT_CHECKS}), action="append",
                         help="run only these checks (repeatable)")
     args = parser.parse_args(argv)
 
@@ -871,7 +897,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"note: not checked out, references into them are skipped: {', '.join(absent)}",
               file=sys.stderr)
 
-    checks = {k: v for k, v in CHECKS.items() if not args.only or k in args.only}
+    available = {**CHECKS, **(PRODUCT_CHECKS if args.product else {})}
+    checks = {k: v for k, v in available.items() if not args.only or k in args.only}
     findings = run(args.docs.resolve(), root, load_allowlist(args.allowlist), checks)
     for finding in findings:
         print(finding)

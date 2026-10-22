@@ -11,7 +11,7 @@ the packages have different trust and availability boundaries.
 | Distributed team | Managed Kubernetes with workload isolation and external dependencies | [Managed Kubernetes](managed-kubernetes.md) |
 
 For a first team rollout on Amazon EKS, the
-[first-iteration deployment plan](first-iteration-deployment.md) sets the scope,
+[first-iteration deployment plan](https://kiongahq.github.io/docs/engineering/plans/first-iteration-deployment/) sets the scope,
 topology, phased runbook, and release gates.
 
 Read [public hosting](../hosting.md) for the comparison, then complete the

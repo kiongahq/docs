@@ -1,0 +1,88 @@
+/* Kionga brand for Material for MkDocs: deep teal primary, warm accent. */
+:root,
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: #0b4f5c;
+  --md-primary-fg-color--light: #1c6b79;
+  --md-primary-fg-color--dark: #073841;
+  --md-accent-fg-color: #e07b2f;
+  --md-accent-fg-color--transparent: rgba(224, 123, 47, 0.1);
+  --md-typeset-a-color: #0e6a7a;
+  --kg-hero-bg: linear-gradient(135deg, #0b4f5c 0%, #0f6f7f 55%, #13889a 100%);
+  --kg-card-border: rgba(11, 79, 92, 0.14);
+}
+
+[data-md-color-scheme="slate"] {
+  --md-hue: 200;
+  --md-primary-fg-color: #0b4f5c;
+  --md-primary-fg-color--light: #1c6b79;
+  --md-primary-fg-color--dark: #073841;
+  --md-accent-fg-color: #f2994a;
+  --md-accent-fg-color--transparent: rgba(242, 153, 74, 0.12);
+  --md-typeset-a-color: #5cc6d6;
+  --kg-hero-bg: linear-gradient(135deg, #062f37 0%, #0b4f5c 60%, #0f6f7f 100%);
+  --kg-card-border: rgba(92, 198, 214, 0.18);
+}
+
+.md-header__title { font-weight: 700; letter-spacing: 0.01em; }
+
+/* Landing page */
+.kg-hero {
+  margin: -1.2rem -0.8rem 2.4rem;
+  padding: 3.2rem 1.6rem 2.8rem;
+  background: var(--kg-hero-bg);
+  border-radius: 0 0 0.8rem 0.8rem;
+  color: #fff;
+}
+.md-typeset .kg-hero h1 {
+  margin: 0 0 0.8rem;
+  max-width: 22em;
+  color: #fff;
+  font-size: 2.3rem;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+.md-typeset .kg-hero p {
+  max-width: 38em;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 0.95rem;
+}
+.md-typeset .kg-hero .md-button {
+  margin: 0.4rem 0.4rem 0 0;
+  border-color: rgba(255, 255, 255, 0.7);
+  color: #fff;
+}
+.md-typeset .kg-hero .md-button--primary {
+  border-color: var(--md-accent-fg-color);
+  background-color: var(--md-accent-fg-color);
+}
+.md-typeset .kg-hero .md-button:hover {
+  border-color: #fff;
+  background-color: #fff;
+  color: var(--md-primary-fg-color);
+}
+.md-typeset .kg-eyebrow {
+  margin: 0 0 0.6rem;
+  color: #ffd2ad;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.md-typeset .grid.cards > ul > li,
+.md-typeset .grid > .card {
+  border-color: var(--kg-card-border);
+  border-radius: 0.6rem;
+}
+.md-typeset .grid.cards > ul > li:hover {
+  border-color: var(--md-accent-fg-color);
+  box-shadow: 0 0.2rem 0.8rem rgba(0, 0, 0, 0.08);
+}
+
+@media screen and (min-width: 76.25em) {
+  .kg-hero { margin: -1.2rem 0 2.4rem; padding: 4rem 3rem 3.4rem; border-radius: 0.8rem; }
+}
+
+/* The landing page has no source to edit; keep the pencil off the hero. */
+.md-content:has(.kg-hero) .md-content__button { display: none; }

@@ -1,7 +1,7 @@
 # Installation
 
 Kionga runs as one Docker Compose stack built from its component repositories
-(see [Repositories](../overview/repositories.md)). You clone them side by side into
+(see [Repositories](https://kiongahq.github.io/docs/engineering/components/)). You clone them side by side into
 one workspace folder; every path and command in these docs is relative to that
 folder.
 
@@ -109,8 +109,8 @@ failures. OpenFaaS is skipped until an external gateway is configured.
 | Langfuse | <http://localhost:3000> | `admin@local.dev` / `mlaiops-local-admin` |
 | RustFS console | <http://localhost:9001> | `mlaiops` / `mlaiops-local-secret` |
 
-See [Configuration reference](configuration.md) for every port and setting, and
-[Connecting all services](../connecting-services.md) for the full connection map.
+See [Configuration reference](../reference/configuration.md) for every port and setting, and
+[Connecting all services](../reference/service-endpoints.md) for the full connection map.
 
 ## Stopping and restarting
 
@@ -164,7 +164,7 @@ with `make -C serving build` and `make -C trace-proxy build`.
 
 The platform's Go services build from `platform/go/Dockerfile` with a `SERVICE`
 build arg; every other image builds from its own repository's `Dockerfile` (see
-[Repositories](../overview/repositories.md)):
+[Repositories](https://kiongahq.github.io/docs/engineering/components/)):
 
 ```bash
 docker build --build-arg SERVICE=gateway -t kionga/gateway platform/go

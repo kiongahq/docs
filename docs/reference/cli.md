@@ -2,7 +2,7 @@
 
 `mlaiops` is a single static Go binary for quick operator and engineer tasks
 against the control plane. It is intentionally small: a thin, scriptable wrapper
-over the REST API. For anything richer, use the [Python SDK](../modules/python.md).
+over the REST API. For anything richer, use the [Python SDK](https://kiongahq.github.io/docs/engineering/components/python-modules/).
 
 The development workspaces also contain a separate `kionga` command. `mlaiops`
 operates control-plane resources; `kionga` generates/synchronizes project source and

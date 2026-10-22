@@ -5,7 +5,7 @@ author pages via `/blogs.html?author=<name>`) and `/blog.html?slug=<slug>`
 (article). The landing page shows the three newest posts. Writing, review and
 publishing happen in the **editorial workspace** at `/editorial.html`, which is
 separate from the ML console. Design rationale:
-[Decision: blog editor and editorial identity](../reference/decisions/blog-editor.md).
+[Decision: blog editor and editorial identity](https://kiongahq.github.io/docs/engineering/decisions/0002-blog-editor/).
 
 ## Roles
 

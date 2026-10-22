@@ -1,65 +1,141 @@
-# Kionga documentation
+---
+title: Kionga
+description: Kionga is a self-hosted platform for machine learning, data and AI agents on infrastructure you control.
+hide:
+  - navigation
+  - toc
+---
 
-Kionga is an open-source, self-hosted platform that brings projects, pipelines,
-models, features, and AI agents into one control plane. It connects the tools
-your team already uses and gives
-engineers a shared place to build, run, and inspect their work.
+<div class="kg-hero" markdown>
 
-Start with the local Compose stack to explore the platform. For a team deployment,
-plan around managed Kubernetes and complete the
-[production acceptance checks](operations/production-operations.md) before
-admitting users. The [implementation status](reference/implementation-status.md)
-distinguishes bundled features from optional integrations and paths that have not
-been verified on a live cluster.
+<p class="kg-eyebrow">Open source &middot; Self-hosted</p>
 
-<div class="grid cards" markdown>
+# Machine learning, data and AI agents on infrastructure you control
 
-- :material-rocket-launch: **[Install locally](getting-started/installation.md)**
+Kionga gives your team one platform to build, train, serve and observe models
+and AI agents: workspaces, pipelines, a model registry, feature stores and agent
+operations behind a single console and API, running in your own environment.
 
-    Clone the component repositories and start the development stack.
-
-- :material-play-circle: **[Follow the quickstart](getting-started/quickstart.md)**
-
-    Create a project, run a pipeline, and explore the connected services.
-
-- :material-sitemap: **[Understand the architecture](overview/architecture.md)**
-
-    See how the gateway, workloads, and data services fit together.
-
-- :material-cloud-check: **[Plan a deployment](hosting.md)**
-
-    Compare the public VM pilot with the managed Kubernetes path.
+[Get started](getting-started/index.md){ .md-button .md-button--primary }
+[See how it works](concepts/how-it-works.md){ .md-button }
 
 </div>
 
-## What is included
+## One platform for the whole lifecycle
 
-The local stack includes the gateway and console, PostgreSQL, Redis, Kafka,
-RustFS object storage, MLflow, Prefect, Jupyter, and the Kionga workload services.
-You can create projects, define and run pipelines, register and serve models,
-work with features, and develop agents. The optional browser IDE shares the
-Jupyter workspace.
+<div class="grid cards" markdown>
 
-Some capabilities need infrastructure you provide. For example, function
-deployment needs an OpenFaaS gateway, and real LLM responses need a provider
-account. The console should show these integrations as unavailable until they are
-configured. See [connecting services](connecting-services.md) for the local
-service map and [implementation status](reference/implementation-status.md) for
-the current boundaries.
+-   :material-notebook-outline:{ .lg .middle } **Workspaces**
 
-## Find the right guide
+    ---
 
-| If you want to… | Start here |
-| --- | --- |
-| Learn the platform's terminology | [Core concepts](overview/concepts.md) |
-| Use notebooks or the browser IDE | [Workbench](guides/workbench.md) |
-| Define a pipeline or inspect a run | [Pipelines](guides/pipelines.md) |
-| Provision users and resources | [Access control](guides/access-control.md) |
-| Integrate from a script or application | [REST API](reference/api.md) or [Python SDK](modules/python.md) |
-| Operate or troubleshoot the stack | [Local operations](operations/local.md) and [troubleshooting](operations/troubleshooting.md) |
+    Personal JupyterLab and browser IDE workspaces with Git, project templates
+    and resource limits set by your administrators.
 
-!!! warning "Local credentials are for development only"
-    The passwords and tokens shown in local examples are defaults for a private
-    development stack. Do not use them on a public deployment. Use the
-    [hosting guide](hosting.md) and [production checklist](operations/production-operations.md)
-    when preparing an environment for other users.
+    [:octicons-arrow-right-24: Workspaces](guides/workbench.md)
+
+-   :material-graph-outline:{ .lg .middle } **Pipelines**
+
+    ---
+
+    Define container DAGs once and run them with parameters, retries, timeouts,
+    resource limits and a live run view.
+
+    [:octicons-arrow-right-24: Pipelines](guides/pipelines.md)
+
+-   :material-rocket-launch-outline:{ .lg .middle } **Models and serving**
+
+    ---
+
+    Track experiments, register models, promote them through quality gates and
+    serve them with canary releases and rollback.
+
+    [:octicons-arrow-right-24: Models and serving](guides/models-serving.md)
+
+-   :material-database-outline:{ .lg .middle } **Features**
+
+    ---
+
+    Online and offline features with a Feast-compatible API, or connect the
+    feature store you already run.
+
+    [:octicons-arrow-right-24: Features](guides/features.md)
+
+-   :material-robot-outline:{ .lg .middle } **AI agents**
+
+    ---
+
+    Deploy agents with persistent sessions, tools, tracing and token cost
+    accounting, built with LangGraph or your own framework.
+
+    [:octicons-arrow-right-24: Agents](guides/agents.md)
+
+-   :material-lightning-bolt-outline:{ .lg .middle } **Real-time processing**
+
+    ---
+
+    Stream events through Kafka to online features and live models or agents,
+    with runnable fraud, call-center and recommendation examples.
+
+    [:octicons-arrow-right-24: Real-time processing](guides/realtime.md)
+
+</div>
+
+## Built for teams that run their own platform
+
+<div class="grid cards" markdown>
+
+-   :material-shield-lock-outline:{ .lg .middle } **Secure by default**
+
+    ---
+
+    Single sign-on, role and policy based access, deny-by-default quotas and an
+    immutable audit trail.
+
+    [:octicons-arrow-right-24: Access control](guides/access-control.md)
+
+-   :material-server-network:{ .lg .middle } **Your infrastructure**
+
+    ---
+
+    Run on a laptop, a single server or managed Kubernetes on AWS, Google Cloud
+    or Azure. Your data stays in your environment.
+
+    [:octicons-arrow-right-24: Deployment options](operations/index.md)
+
+-   :material-puzzle-outline:{ .lg .middle } **Open standards**
+
+    ---
+
+    Built on MLflow, Prefect, Kafka, PostgreSQL and S3-compatible storage, with
+    an OpenAI-compatible LLM gateway. MIT licensed.
+
+    [:octicons-arrow-right-24: Open source](concepts/open-source.md)
+
+</div>
+
+## Start here
+
+<div class="grid cards" markdown>
+
+-   **New to Kionga?**
+
+    Install the platform on your machine and take your first project from
+    notebook to served model.
+
+    [:octicons-arrow-right-24: Install Kionga](getting-started/installation.md)
+
+-   **Evaluating for your team?**
+
+    Understand the concepts, the architecture and what a production deployment
+    requires.
+
+    [:octicons-arrow-right-24: What is Kionga](concepts/what-is-kionga.md)
+
+-   **Integrating with Kionga?**
+
+    Use the REST API, the CLI or the Python SDK from your own tools.
+
+    [:octicons-arrow-right-24: Reference](reference/index.md)
+
+</div>

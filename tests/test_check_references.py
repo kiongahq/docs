@@ -295,3 +295,18 @@ def test_style_flags_prose_but_not_code(workspace: Path) -> None:
         ```
     """, style=True)
     assert sorted(values(findings)) == ["robust", "\u2014"]
+
+
+def test_boundary_flags_code_internals_on_product_pages():
+    page = cr.segments(textwrap.dedent("""
+        The gateway reads `go/internal/auth/session.go` and `pkg/api/types`.
+
+        Edit `deploy/compose.yaml` and run `make -C deploy local-up`.
+    """))
+    values = [f.value for f in cr.check_boundary(page, None, "docs/x.md")]
+    assert "go/internal/auth/session.go" in values and "pkg/api/types" in values
+    assert not any("compose.yaml" in v or "local-up" in v for v in values)
+
+
+def test_boundary_runs_only_for_the_product_site():
+    assert "boundary" not in cr.CHECKS and "boundary" in cr.PRODUCT_CHECKS

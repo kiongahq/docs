@@ -1,49 +1,81 @@
 site_name: Kionga
 site_description: >-
-  Documentation for the open-source Kionga ML and AI platform: onboarding,
-  development workflows, APIs, and self-hosted deployment operations.
-site_author: Kionga platform team
+  Kionga is a self-hosted platform for machine learning, data and AI agents:
+  workspaces, pipelines, model serving, feature stores and agent operations
+  on infrastructure you control.
+site_author: Kionga contributors
 site_url: https://kiongahq.github.io/docs/
-repo_name: kiongahq/docs
-repo_url: https://github.com/kiongahq/docs
-edit_uri: edit/main/docs/
+repo_name: kiongahq
+repo_url: https://github.com/kiongahq
+edit_uri: https://github.com/kiongahq/docs/edit/main/docs/
 docs_dir: docs
-copyright: Kionga is a self-hosted platform. Local credentials in this documentation are development defaults; override every one for public deployments.
+copyright: Copyright &copy; 2026 Kionga contributors. Released under the MIT License.
 
 theme:
   name: material
+  language: en
+  logo: assets/logo.svg
+  favicon: assets/favicon.svg
+  font:
+    text: Inter
+    code: JetBrains Mono
   palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: indigo
-      accent: blue
+      primary: custom
+      accent: custom
       toggle:
         icon: material/weather-night
         name: Switch to dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: indigo
-      accent: blue
+      primary: custom
+      accent: custom
       toggle:
-        icon: material/weather-sunny
-        name: Switch to light mode
+        icon: material/brightness-auto
+        name: Use system preference
   features:
     - navigation.instant
+    - navigation.instant.progress
     - navigation.tracking
     - navigation.tabs
+    - navigation.tabs.sticky
     - navigation.sections
-    - navigation.top
     - navigation.indexes
+    - navigation.path
+    - navigation.top
+    - navigation.footer
     - toc.follow
     - search.suggest
     - search.highlight
+    - search.share
     - content.code.copy
     - content.code.annotate
     - content.tabs.link
+    - content.action.edit
   icon:
     repo: fontawesome/brands/github
+    edit: material/pencil-outline
+
+extra_css:
+  - stylesheets/kionga.css
+
+extra:
+  generator: false
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/kiongahq
+      name: Kionga on GitHub
+    - icon: material/book-cog-outline
+      link: https://kiongahq.github.io/docs/engineering/
+      name: Engineering handbook
 
 markdown_extensions:
+  - abbr
   - admonition
   - attr_list
   - def_list
@@ -64,95 +96,102 @@ markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.inlinehilite
-  - pymdownx.snippets
   - pymdownx.keys
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
 
-plugins:
-  - search
-
-# Strict builds fail on broken links, unlisted pages, and missing anchors.
 validation:
   omitted_files: warn
   absolute_links: warn
   unrecognized_links: warn
   anchors: warn
 
+plugins:
+  - search
+  - redirects:
+      redirect_maps:
+        "getting-started/configuration.md": "reference/configuration.md"
+        "connecting-services.md": "reference/service-endpoints.md"
+        "services/index.md": "reference/services.md"
+        "overview/index.md": "concepts/index.md"
+        "overview/what-is-kionga.md": "concepts/what-is-kionga.md"
+        "overview/concepts.md": "concepts/core-concepts.md"
+        "overview/open-source.md": "concepts/open-source.md"
+        "overview/architecture.md": "https://kiongahq.github.io/docs/engineering/architecture/"
+        "overview/technology.md": "https://kiongahq.github.io/docs/engineering/architecture/technology/"
+        "overview/repositories.md": "https://kiongahq.github.io/docs/engineering/components/"
+        "services/gateway.md": "https://kiongahq.github.io/docs/engineering/components/gateway/"
+        "services/data-plane.md": "https://kiongahq.github.io/docs/engineering/components/data-plane/"
+        "services/execution.md": "https://kiongahq.github.io/docs/engineering/components/execution/"
+        "services/ai-observability.md": "https://kiongahq.github.io/docs/engineering/components/ai-observability/"
+        "modules/go-packages.md": "https://kiongahq.github.io/docs/engineering/components/go-packages/"
+        "modules/python.md": "https://kiongahq.github.io/docs/engineering/components/python-modules/"
+        "reference/backend.md": "https://kiongahq.github.io/docs/engineering/contracts/backend/"
+        "reference/implementation-status.md": "https://kiongahq.github.io/docs/engineering/status/implementation-status/"
+        "reference/kionga-migration.md": "https://kiongahq.github.io/docs/engineering/status/identifier-migration/"
+        "operations/first-iteration-deployment.md": "https://kiongahq.github.io/docs/engineering/plans/first-iteration-deployment/"
+        "reference/decisions/graph-library.md": "https://kiongahq.github.io/docs/engineering/decisions/0001-dag-layout-library/"
+        "reference/decisions/blog-editor.md": "https://kiongahq.github.io/docs/engineering/decisions/0002-blog-editor/"
+        "reference/decisions/object-store.md": "https://kiongahq.github.io/docs/engineering/decisions/0003-object-store/"
+
 nav:
   - Home: index.md
-  - Getting started:
-      - Overview: getting-started/index.md
-      - Installation: getting-started/installation.md
+  - Get started:
+      - getting-started/index.md
+      - Install Kionga: getting-started/installation.md
       - Quickstart: getting-started/quickstart.md
-      - Connect local services: connecting-services.md
-  - Understand:
-      - Overview: overview/index.md
-      - What is Kionga: overview/what-is-kionga.md
-      - Core concepts: overview/concepts.md
-      - Architecture: overview/architecture.md
-      - Repositories: overview/repositories.md
-      - Open source and licensing: overview/open-source.md
-      - Technology: overview/technology.md
-  - Build:
-      - Overview: guides/index.md
-      - Projects and workspaces:
+  - Concepts:
+      - concepts/index.md
+      - What is Kionga: concepts/what-is-kionga.md
+      - Core concepts: concepts/core-concepts.md
+      - How Kionga works: concepts/how-it-works.md
+      - Open source and licensing: concepts/open-source.md
+  - Guides:
+      - guides/index.md
+      - Workspaces and projects:
           - Project templates: guides/project-templates.md
           - Scaffold a project: guides/scaffolding.md
           - Jupyter workbench: guides/workbench.md
-          - Browser IDE and coding tools: guides/coding-workspace.md
-          - Git, functions, and distributed workspaces: guides/distributed-workspaces.md
-      - ML and data:
+          - Browser IDE and coding agents: guides/coding-workspace.md
+          - Git, functions and distributed workspaces: guides/distributed-workspaces.md
+          - Navigate the console: guides/console-navigation.md
+      - Machine learning and data:
           - Pipelines: guides/pipelines.md
           - Models and serving: guides/models-serving.md
           - Hugging Face models: guides/huggingface.md
           - Features: guides/features.md
           - Feature store integrations: guides/feature-stores.md
           - Real-time processing: guides/realtime.md
-      - Agents:
+      - AI agents:
           - Build agents: guides/agents.md
-          - Framework adapters: guides/agent-frameworks.md
-      - Console and collaboration:
-          - Console navigation: guides/console-navigation.md
-          - Access control and policies: guides/access-control.md
-          - Logs and events: guides/logs.md
+          - Agent frameworks: guides/agent-frameworks.md
+      - Collaboration:
           - Engineering blog: guides/engineering-blog.md
-  - Reference:
-      - Overview: reference/index.md
-      - Implementation status: reference/implementation-status.md
-      - REST API: reference/api.md
-      - CLI: reference/cli.md
-      - Configuration: getting-started/configuration.md
-      - RBAC and security: reference/rbac.md
-      - Backend contracts: reference/backend.md
-      - Services:
-          - Service inventory: services/index.md
-          - Gateway: services/gateway.md
-          - Data and messaging: services/data-plane.md
-          - Execution and serving: services/execution.md
-          - AI and observability: services/ai-observability.md
-      - Code modules:
-          - Go packages: modules/go-packages.md
-          - Python SDK and workloads: modules/python.md
-      - Design decisions:
-          - DAG layout library: reference/decisions/graph-library.md
-          - Blog editor and editorial identity: reference/decisions/blog-editor.md
-          - Object store: reference/decisions/object-store.md
-      - Identifier migration: reference/kionga-migration.md
-  - Operations:
-      - Overview: operations/index.md
-      - First-iteration deployment plan: operations/first-iteration-deployment.md
-      - Local operations: operations/local.md
-      - Public hosting: hosting.md
-      - Managed Kubernetes:
-          - Deployment guide: operations/managed-kubernetes.md
+          - Logs and events: guides/logs.md
+      - Administration:
+          - Users, roles and policies: guides/access-control.md
+          - Single sign-on: operations/single-sign-on.md
+  - Deploy and operate:
+      - operations/index.md
+      - Run locally: operations/local.md
+      - Single server: operations/public-vm.md
+      - Public hosting with Compose: hosting.md
+      - Kubernetes:
+          - Deploy on Kubernetes: operations/managed-kubernetes.md
           - Amazon EKS: operations/providers/aws-eks.md
           - Google GKE: operations/providers/gcp-gke.md
           - Azure AKS: operations/providers/azure-aks.md
-      - Public VM: operations/public-vm.md
-      - Single sign-on: operations/single-sign-on.md
-      - Production operations: operations/production-operations.md
-      - Log export: operations/log-export.md
-      - External object storage: operations/external-storage.md
+      - Integrations:
+          - External object storage: operations/external-storage.md
+          - Log export: operations/log-export.md
+      - Production readiness: operations/production-operations.md
       - Troubleshooting: operations/troubleshooting.md
+  - Reference:
+      - reference/index.md
+      - REST API: reference/api.md
+      - CLI: reference/cli.md
+      - Configuration: reference/configuration.md
+      - Permissions: reference/rbac.md
+      - Services and ports: reference/services.md
+      - Service endpoints: reference/service-endpoints.md

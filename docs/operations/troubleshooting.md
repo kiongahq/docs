@@ -46,14 +46,14 @@ docker run --rm --network mlaiops_default curlimages/curl:8.10.1 \
   -fsS http://mlflow:5000/health
 ```
 
-See [Connecting all services](../connecting-services.md) for the correct endpoints.
+See [Connecting all services](../reference/service-endpoints.md) for the correct endpoints.
 
 ## Works in the console, fails from my laptop (or vice versa)
 
 You crossed the two DNS worlds. **Inside the stack** use service names
 (`http://objectstore:9000`); **from your machine** use localhost ports
 (`http://localhost:9000`). See the table in
-[Connecting services](../connecting-services.md).
+[Connecting services](../reference/service-endpoints.md).
 
 ## Model deploy fails or the endpoint won't serve
 

@@ -30,5 +30,5 @@ These guides are task-oriented. Start with the workflow you need, then use the
   [engineering blog](engineering-blog.md).
 
 External engines and credentials are not provisioned by every guide. Check each
-guide's prerequisites and the [implementation status](../reference/implementation-status.md)
+guide's prerequisites and the [implementation status](https://kiongahq.github.io/docs/engineering/status/implementation-status/)
 before using a workflow in a team environment.
