@@ -1,159 +1,172 @@
-# Build agents with your framework
+---
+description: Run agents built with Agno, NVIDIA-labs OO-Agents (NOOA) or your own framework on the Kionga agent runtime, through the same deployment API as LangGraph agents.
+---
 
-Kionga retains the existing agent deployment API and `graph_module` field while
-allowing factories to return framework adapters. No framework code runs in the
-Go gateway. Each runtime image supplies the code and dependencies it needs.
+# Run agents built with other frameworks
 
-| Integration | Entry point | State and telemetry |
+Deploy an agent written with Agno, NVIDIA-labs OO-Agents (NOOA) or any other
+Python framework, through the same agent record, `graph_module` field and API as
+a LangGraph agent. Your factory returns an adapter, and the runtime calls it for
+each turn. Kionga does not convert agents between frameworks, and no framework
+code runs in the gateway: each runtime image brings its own code and
+dependencies.
+
+| Framework | Entry point | State and telemetry |
 | --- | --- | --- |
-| LangGraph | Compiled graph or `build(model, checkpointer)` | Existing platform model factory, checkpoints and Langfuse callbacks |
-| Agno | `AgnoAdapter(factory)` | Passes session/user IDs to `arun`; normalizes response and run token metrics |
-| NOOA | `NooaAdapter(factory, "method")` | Calls one typed async method; no invented token counts or automatic state storage |
-| Other frameworks | `CallableAdapter(run)` | Plain request/result contract; your handler owns provider calls and persistence |
+| LangGraph | A compiled graph, or `build(model, checkpointer)` | Kionga's model factory, checkpoints and Langfuse callbacks |
+| Agno | `AgnoAdapter(factory)` | Passes the session and user IDs to `arun`, and reports Agno's token metrics |
+| NOOA | `NooaAdapter(factory, "method")` | Calls one async method; reports no token counts and stores no state |
+| Any other | `CallableAdapter(run)` | Plain request and result; your handler owns provider calls and persistence |
 
-These are **runtime adapter integrations**, not automatic conversions between
-frameworks. The `production-agent` project template still generates
-LangGraph; use the checked-in factories below or add your own module to your
-project/image for other frameworks. The console offers entrypoint presets in
-**Agents → Deploy agent**, but choosing one does not install dependencies.
+The `production-agent` template generates LangGraph. For another framework, add
+your own module to the project and image.
 
-## The common contract
+## Before you begin
 
-```python
-from mlaiops_sdk.agent_adapters import (
-    AgentResult, CallableAdapter, agent_factory,
-)
+- The permissions in [Build and deploy an agent](agents.md#before-you-begin).
+- A runtime image that contains your module and your framework's dependencies.
+- Provider credentials delivered through your deployment's environment or
+  secret manager. The agent form does not accept secret values.
 
-@agent_factory("my-framework")
-def build():
-    async def run(request):
-        # request.message, request.session_id, request.user_id
-        # Call your framework here; this echo is a runnable offline example.
-        return AgentResult(reply=f"Received: {request.message}")
-    return CallableAdapter(run)
-```
+## Write an adapter for your framework
 
-Set `MLAIOPS_GRAPH_MODULE=my_project.agent:build`. The decorator tells the runtime
-**not** to construct a LangChain LLM or a LangGraph checkpointer. Your factory
-owns that configuration. Do not select an arbitrary provider in the console and
-expect it to configure another framework's client.
+1. Write a factory that returns an adapter. This example runs offline:
 
-Handlers may be asynchronous or synchronous; synchronous work is offloaded to a
-thread. Results can contain text, JSON-serializable structures, or Pydantic
-objects. Provide `input_tokens` and `output_tokens` only when measured. Missing
-usage is represented as `usage_available=false`; compatibility counters remain
-zero, not a measurement of free inference. Costs are calculated using configured
-per-token rates, not a provider billing ledger.
+    ```python
+    from mlaiops_sdk.agent_adapters import AgentResult, CallableAdapter, agent_factory
 
-The adapters intentionally buffer responses. `/stream` announces
-`streaming_mode=buffered`, emits the completed reply as one delta, then a summary.
-It does not pretend that a completed reply is token streaming. LangGraph retains
-its incremental path. Native tool events, vendor trace trees, async generators,
-multimodal inputs, and interactive approval pauses are not automatically mapped.
+    @agent_factory("my-framework")
+    def build():
+        async def run(request):
+            # request.message, request.session_id, request.user_id
+            # Call your framework here.
+            return AgentResult(reply=f"Received: {request.message}")
+        return CallableAdapter(run)
+    ```
 
-## Agno
+2. Point the runtime at it with `MLAIOPS_GRAPH_MODULE=my_project.agent:build`.
 
-Install the optional integration alongside the runtime dependencies:
+The `@agent_factory` decorator tells the runtime not to build a LangChain model or
+a LangGraph checkpointer, so your factory owns its provider and state. Choosing an
+LLM backend in the console does not configure another framework's client.
 
-```sh
-pip install './sdk-python[runtime,agno]'
-```
+How the adapter behaves:
 
-The ready factory is `agents.framework_examples:build_agno`. Set `AGNO_MODEL`
-and `OPENAI_API_KEY` in the runtime environment. This example uses Agno's
-OpenAI client; replace its factory for other Agno providers, Teams, or tools.
-Each request gets a fresh object and explicit `session_id` / `user_id` arguments.
+- Handlers can be `async` or regular functions; regular functions run on a worker
+  thread.
+- A reply can be text, a JSON-serializable value or a Pydantic object.
+- Set `input_tokens` and `output_tokens` only when you measured them. Without
+  them, the turn reports `usage_available=false`, and cost uses your configured
+  per-token rates, not a provider bill.
+- Replies are buffered. The `/stream` route announces `streaming_mode=buffered`,
+  sends the completed reply as one delta, and then a summary. LangGraph keeps its
+  incremental streaming.
+- Native tool events, vendor trace trees, async generators, image or audio inputs and
+  interactive approval pauses are not mapped automatically.
 
-For the Compose demo, configure the uncommitted `deploy/.env`:
+**Verify:** a chat turn with the agent returns `Received: <your message>`.
 
-```dotenv
-AGENT_RUNTIME_EXTRAS=runtime,agno
-MLAIOPS_GRAPH_MODULE=agents.framework_examples:build_agno
-AGNO_MODEL=your-provider-model-id
-# Supply OPENAI_API_KEY privately; never include it in an image or contract.
-```
+## Run an Agno agent
 
-Rebuild/recreate `agent-runtime`. Register exactly the same factory in the
-console's agent record. Compose serves **one configured factory**; it does not
-dynamically import the factory from every incoming request. A mismatched
-entrypoint is rejected instead of silently running the demo agent.
+The ready-made factory `agents.framework_examples:build_agno` uses Agno's OpenAI
+client. Replace it for other Agno providers, teams or tools. Each request gets a
+fresh Agno object with explicit `session_id` and `user_id`.
 
-For durable Agno conversation history, configure its native database in your
-factory. The example is deliberately stateless across calls. Kionga's turn
-records are observability data, not a replacement for framework memory.
+1. Install the integration where you develop:
 
-## NVIDIA-labs OO-Agents (NOOA)
+    ```bash
+    pip install './sdk-python[runtime,agno]'
+    ```
 
-NOOA's object-oriented methods fit the same boundary. The example factory is
-`agents.framework_examples:build_nooa`; it builds a fresh object and invokes its
-`answer(message)` method. For richer typed arguments, map `AgentRequest` to those
-arguments with `CallableAdapter` instead.
+2. On Compose, add the runtime settings to `deploy/.env` (never committed):
 
-NOOA currently requires Python 3.12–3.13, so it is not installed into the default
-Python 3.11 runtime or Jupyter image. Build a separate image:
+    ```dotenv
+    AGENT_RUNTIME_EXTRAS=runtime,agno
+    MLAIOPS_GRAPH_MODULE=agents.framework_examples:build_agno
+    AGNO_MODEL=your-provider-model-id
+    # Set OPENAI_API_KEY here too; never put it in an image or a contract.
+    ```
 
-```sh
-docker build \
-  --build-arg PYTHON_VERSION=3.12 \
-  --build-arg SDK_SOURCE=local --build-context sdk=sdk-python \
-  --build-arg SDK_EXTRAS=runtime,nooa \
-  -t your-registry/nooa-agent:dev agent-runtime
-```
+3. Rebuild and recreate the runtime:
 
-Run it from the workspace folder. `SDK_SOURCE=local` installs the SDK from your
-`sdk-python` checkout; omit both SDK source flags to install the SDK release
-pinned by `SDK_VERSION` instead.
+    ```bash
+    docker compose -f deploy/compose.yaml up -d --build agent-runtime
+    ```
 
-Provide `NOOA_MODEL`, the chosen provider's credentials, and
-`MLAIOPS_GRAPH_MODULE=agents.framework_examples:build_nooa` through your deployment
-configuration. Pin tested dependency versions and image digests for releases.
-The runtime Dockerfile supports selectable extras; it is not a dependency lock.
+4. [Deploy the agent](agents.md#deploy-an-agent) with the same graph module,
+   `agents.framework_examples:build_agno`.
 
-### Isolation is mandatory for generated code
+The Compose runtime serves one configured factory. It rejects a request for an
+agent whose entry point differs, instead of silently running the demo agent.
 
-NOOA can execute model-generated Python. Run it in an operator-provisioned,
-dedicated container sandbox or VM with restricted egress, resource/time limits,
-minimal secrets, and no Docker socket or sensitive host/workspace mounts.
-Do not run the example in the gateway process or in a shared notebook with broad
-credentials. In-process code checks are not a containment boundary.
+The example keeps no history between calls. For durable conversation history,
+configure Agno's own database in your factory. Kionga's turn records are for
+observability, not a replacement for framework memory.
 
-Only after provisioning that boundary, set `KIONGA_ALLOW_CODE_EXECUTION=1` to
-enable the example factory. **This flag acknowledges configuration; it neither
-creates nor proves a sandbox.** The standard Kionga pod security settings alone
-are not a claim of safe isolation for arbitrary generated code. NOOA integration
-is opt-in and experimental. The adapter does not automatically export NOOA's
-native trace tree or persist its live Python objects between turns.
+**Verify:** the agent reaches `ready`, and **Chat** returns a reply from your
+Agno model.
 
-## Deployment and team workflows
+## Run a NOOA agent
 
-Package your module and framework dependencies in your own image. The existing
-SDK `deploy_agent(..., graph_module="my_project.agent:build", image=...)`, REST
-API, and administrator CPU/memory/GPU grants remain applicable. The Kubernetes
-operator creates one workload per agent ID. Provider secrets and custom framework
-environment need an administrator-managed deployment/secret-injection mechanism;
-the agent form does not accept arbitrary secret values or configure a sandbox.
+The example factory `agents.framework_examples:build_nooa` creates a fresh object
+and calls its async `answer(message)` method. For richer typed arguments, map the
+request yourself with `CallableAdapter`.
 
-The default Compose override cannot host multiple different factories at once.
-Use dedicated runtimes/Kubernetes for mixed-framework deployments. Tests ensure
-the bundled runtime rejects a gateway request for a different configured factory.
-Third-party HTTP runtimes must implement equivalent routing checks themselves.
+!!! warning "Isolate generated code"
+    NOOA can run Python code that the model writes. Run it only in a dedicated
+    container sandbox or VM that you provision, with restricted network egress,
+    resource and time limits, minimal secrets, and no Docker socket or sensitive
+    host or workspace mounts. Never run it in the gateway or in a shared notebook
+    with broad credentials. Kionga's standard pod security settings are not a
+    sandbox for generated code.
 
-Use separate framework stores or namespaces for teams/tenants. Treat client-supplied
-session and user IDs as routing context, **not authorization proof**. The adapter
-does not make a framework's memory multi-tenant-safe automatically. Configure your
-application's identity mapping and data access at the authenticated boundary.
+1. Provision the isolated environment described above.
+2. Build a separate image. NOOA needs Python 3.12 or 3.13, so it is not in the
+   default Python 3.11 runtime or the Jupyter image. From the folder that holds
+   your Kionga checkouts:
 
-## Validation and sources
+    ```bash
+    docker build \
+      --build-arg PYTHON_VERSION=3.12 \
+      --build-arg SDK_SOURCE=local --build-context sdk=sdk-python \
+      --build-arg SDK_EXTRAS=runtime,nooa \
+      -t your-registry/nooa-agent:dev agent-runtime
+    ```
 
-Offline tests cover Agno-shaped results, NOOA-style methods, custom sync/async
-handlers, context forwarding, fresh instances, usage normalization, buffered SSE,
-startup without LangGraph provider configuration, and mismatched-runtime refusal.
-They do not call paid models or verify a production sandbox. Real Agno/NOOA
-provider runs and image builds require your configured environment.
+    `SDK_SOURCE=local` installs the SDK from your `sdk-python` checkout. Leave out
+    both SDK source options to install the released SDK set by `SDK_VERSION`.
 
-- [Agno running agents](https://docs.agno.com/agents/running-agents)
-- [Agno run metrics](https://docs.agno.com/reference/run/metrics)
+3. Configure the runtime with `NOOA_MODEL`, your provider's credentials,
+   `MLAIOPS_GRAPH_MODULE=agents.framework_examples:build_nooa`, and
+   `KIONGA_ALLOW_CODE_EXECUTION=1`. The example refuses to start without that
+   flag. The flag records that you provisioned a sandbox; it does not create or
+   check one.
+4. Pin tested dependency versions and the image digest, then
+   [deploy the agent](agents.md#deploy-an-agent).
+
+NOOA support is opt-in and experimental. The adapter does not export NOOA's trace
+tree or keep its Python objects between turns.
+
+**Verify:** the agent reaches `ready`, and **Chat** returns the result of
+`answer`.
+
+## Deploy agents from several frameworks
+
+- Package each framework's module and dependencies in its own image, and deploy
+  it with the SDK's `deploy_agent(..., graph_module=..., image=...)`, the API or
+  the console. Your administrator's CPU, memory and GPU grants still apply.
+- On Kubernetes, the operator creates one workload per agent, so each agent can
+  run a different framework. The Compose runtime hosts only one factory at a time.
+- Third-party HTTP runtimes must reject requests for an entry point they do not
+  serve, as the bundled runtime does.
+- Use separate framework stores or namespaces for each team or tenant. The session
+  and user IDs a client sends are routing context, not proof of identity, and an
+  adapter does not make a framework's memory multi-tenant. Map identities and data
+  access at your authenticated boundary.
+
+## Related
+
+- [Agno: running agents](https://docs.agno.com/agents/running-agents) and
+  [run metrics](https://docs.agno.com/reference/run/metrics)
 - [NOOA source and safety guidance](https://github.com/NVIDIA-NeMo/labs-OO-Agents)
-- [NOOA Python requirements](https://github.com/NVIDIA-NeMo/labs-OO-Agents/blob/main/pyproject.toml)
-- [NVIDIA-labs OO Agents paper](https://arxiv.org/abs/2607.20709)
-- [Paper HTML](https://arxiv.org/html/2607.20709v1)
+- [Build and deploy an agent](agents.md)
