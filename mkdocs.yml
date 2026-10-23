@@ -191,6 +191,7 @@ nav:
       - reference/index.md
       - REST API: reference/api.md
       - CLI: reference/cli.md
+      - Python SDK: reference/python-sdk.md
       - Configuration: reference/configuration.md
       - Permissions: reference/rbac.md
       - Services and ports: reference/services.md
