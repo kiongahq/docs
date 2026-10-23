@@ -8,7 +8,7 @@ hide:
 
 <div class="kg-hero" markdown>
 
-<p class="kg-eyebrow">:material-book-open-page-variant-outline: Kionga documentation</p>
+<p class="kg-eyebrow">Kionga documentation</p>
 
 # Your platform. Your infrastructure.
 
