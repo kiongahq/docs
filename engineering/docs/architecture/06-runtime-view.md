@@ -38,7 +38,7 @@ sequenceDiagram
     G->>D: Exchange code with PKCE verifier (OIDC_TOKEN_URL)
     D-->>G: ID token
     G->>D: Fetch signing keys (OIDC_JWKS_URL, cached 10 minutes)
-    G->>G: Verify signature, issuer, audience, tenant; check nonce
+    G->>G: Verify signature, issuer, audience and tenant, then check nonce
     G->>G: Sign-up policy (KIONGA_SIGNUP) for a first-time subject
     G-->>U: Set kionga_session (ID token, HttpOnly, 8 hours)<br/>302 to return_to
     U->>G: GET /api/v1/me (cookie)

@@ -19,3 +19,5 @@ __pycache__/
 .aider*
 .vale/styles/*
 !.vale/styles/config/
+scripts/node_modules/
+scripts/package-lock.json

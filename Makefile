@@ -1,4 +1,4 @@
-.PHONY: docs-install docs-serve docs-serve-engineering docs-build docs-check docs-lint docs-test
+.PHONY: docs-install docs-serve docs-serve-engineering docs-build docs-check docs-lint docs-diagrams docs-test
 
 # Workspace folder holding the sibling Kionga checkouts (deploy, platform, ...).
 KIONGA_SRC ?= ..
@@ -25,6 +25,10 @@ docs-check:          ## references against the code; product pages also keep cod
 docs-lint:           ## prose: Google developer documentation style via Vale (errors fail)
 	vale sync >/dev/null
 	vale --minAlertLevel=error docs engineering/docs
+
+docs-diagrams:       ## every mermaid diagram parses (needs Node)
+	npm install --prefix scripts --no-audit --no-fund --silent
+	node scripts/check_mermaid.mjs docs engineering/docs
 
 docs-test:           ## gate tests: reference checker and legacy URL redirects
 	python -m pytest -q tests

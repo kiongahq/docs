@@ -1,0 +1,6 @@
+{
+  "private": true,
+  "type": "module",
+  "description": "Diagram check for the docs: node check_mermaid.mjs ../docs ../engineering/docs",
+  "dependencies": {"mermaid": "11.4.1", "jsdom": "25.0.1"}
+}

@@ -54,6 +54,16 @@ jobs:
       - run: vale sync
       - run: vale --minAlertLevel=error docs engineering/docs README.md CONTRIBUTING.md
 
+  # Every mermaid diagram must parse; a syntax error publishes as raw text.
+  diagrams:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 22}
+      - run: npm install --prefix scripts --no-audit --no-fund
+      - run: node scripts/check_mermaid.mjs docs engineering/docs
+
   references:
     runs-on: ubuntu-latest
     env:
