@@ -115,6 +115,18 @@ nav:
   - Home: index.md
   - Architecture:
       - architecture/index.md
+      - 1. Introduction and goals: architecture/01-introduction-and-goals.md
+      - 2. Constraints: architecture/02-constraints.md
+      - 3. Context and scope: architecture/03-context-and-scope.md
+      - 4. Solution strategy: architecture/04-solution-strategy.md
+      - 5. Building block view: architecture/05-building-block-view.md
+      - 6. Runtime view: architecture/06-runtime-view.md
+      - 7. Deployment view: architecture/07-deployment-view.md
+      - 8. Crosscutting concepts: architecture/08-crosscutting-concepts.md
+      - 9. Architecture decisions: architecture/09-architecture-decisions.md
+      - 10. Quality requirements: architecture/10-quality-requirements.md
+      - 11. Risks and technical debt: architecture/11-risks-and-technical-debt.md
+      - 12. Glossary: architecture/12-glossary.md
       - Technology: architecture/technology.md
   - Components:
       - components/index.md
@@ -122,6 +134,8 @@ nav:
       - Data and messaging: components/data-plane.md
       - Execution and serving: components/execution.md
       - AI and observability: components/ai-observability.md
+      - Workspace: components/workspace.md
+      - Contracts repository: components/contracts.md
       - Go packages: components/go-packages.md
       - Python modules: components/python-modules.md
   - Contracts:
@@ -131,6 +145,17 @@ nav:
       - "0001 DAG layout library": decisions/0001-dag-layout-library.md
       - "0002 Blog editor": decisions/0002-blog-editor.md
       - "0003 Bundled object store": decisions/0003-object-store.md
+      - "0004 Go and Python": decisions/0004-go-control-plane-python-ml.md
+      - "0005 PostgreSQL and the outbox": decisions/0005-postgresql-kafka-outbox.md
+      - "0006 Single sign-on with Dex": decisions/0006-oidc-single-sign-on-dex.md
+      - "0007 Per-user workspaces": decisions/0007-per-user-workspaces.md
+      - "0008 Loopback local ports": decisions/0008-loopback-local-ports.md
+      - "0009 Private images": decisions/0009-private-images-and-pull-secrets.md
+      - "0010 Repository per component": decisions/0010-repository-per-component.md
+      - Template: decisions/template.md
+  - Contributing:
+      - contributing/index.md
+      - Documentation standard: contributing/documentation.md
   - Status and plans:
       - Implementation status: status/implementation-status.md
       - Identifier migration: status/identifier-migration.md
