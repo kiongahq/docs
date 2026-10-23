@@ -1,9 +1,14 @@
+---
+description: Every environment variable and configuration file setting Kionga services read, with defaults and purpose.
+---
+
 # Configuration reference
 
-The local Compose stack uses environment variables and development defaults. This
-page lists those settings and service-specific variables. The recommended public
-VM and managed Kubernetes packages use versioned non-secret configuration plus
-mounted secret files; see [Public hosting](../hosting.md) for their requirements.
+Kionga services are configured with environment variables. Defaults in this page
+are the values the local stack (`deploy/compose.yaml`) uses. The single-server and
+Kubernetes packages use a non-secret configuration file plus mounted secret files;
+see [Configuration files and secret files](#configuration-files-and-secret-files)
+and [Production readiness](../operations/production-operations.md).
 
 !!! danger "Secrets"
     Never commit `.env` or put provider API keys or internal tokens in Compose
@@ -55,7 +60,7 @@ public overlay (`compose.public.yaml`) only Caddy publishes ports (80 and 443).
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `PORT` | `8080` | Listen port |
-| `DATABASE_URL` | *(set in compose)* | Postgres DSN. When unset, the gateway uses a **local JSON file** instead |
+| `DATABASE_URL` | *(set in compose)* | PostgreSQL DSN. When unset, the gateway uses a **local JSON file** instead |
 | `MLAIOPS_DATA_PATH` | `data/platform.json` | File-store path (file mode only) |
 | `MLAIOPS_TENANT` | `local` | Tenant scoping |
 | `KAFKA_REST_URL` | `http://kafka-rest:8082` | Outbox delivery target |
@@ -105,6 +110,67 @@ Personal API keys for local CLI/SDK use are managed in the console under
 **Settings**. They are separate from the internal service token and OIDC
 browser session.
 
+## Gateway: deployment and security
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `KIONGA_ENVIRONMENT` | *(unset)* | `production` turns on startup validation (see below) |
+| `KIONGA_CONFIG_FILE` | *(unset)* | Path to a JSON object of non-secret settings |
+| `KIONGA_CREDENTIAL_KEY` | *(empty)* | Base64-encoded 32-byte key that encrypts stored Hugging Face tokens; required in production |
+| `KIONGA_TRUSTED_PROXY` | *(unset)* | `true` trusts `X-Forwarded-For` for policy source-IP conditions |
+| `KIONGA_TRUSTED_WORKSPACE_PROXY` | *(unset)* | `true` when a trusted proxy in front of Kionga serves workspaces |
+| `KIONGA_WORKSPACE_BASE_DOMAIN` | *(unset)* | Separate DNS base domain for isolated per-user workspaces (Kubernetes) |
+| `KIONGA_SCHEDULER` | *(on)* | `off` disables the pipeline scheduler and scheduled blog publishing on this replica |
+| `KIONGA_LOG_RETENTION_DAYS` | `30` | Days of logs Kionga keeps |
+| `KIONGA_LOG_EXPORTER_URL` | `http://log-exporter:8086` | Log exporter status endpoint |
+| `KIONGA_IMAGE_REGISTRIES` | *(unset)* | Comma-separated registries allowed for per-run image overrides |
+| `KIONGA_EXECUTOR` | *(unset)* | `kubernetes` runs container pipeline steps as Kubernetes Jobs |
+| `KAFKA_REST_TOKEN` | *(empty)* | Optional bearer token for Kafka REST |
+| `METRICS_PORT` | *(unset)* | Port for a separate metrics listener |
+| `KIONGA_BLOG_MEDIA_BACKEND` | `s3` | Blog image storage; with `s3`, set `KIONGA_BLOG_MEDIA_S3_ENDPOINT`, `KIONGA_BLOG_MEDIA_S3_ACCESS_KEY`, `KIONGA_BLOG_MEDIA_S3_SECRET_KEY`, `KIONGA_BLOG_MEDIA_BUCKET` (`kionga-blog-media`) and optionally `KIONGA_BLOG_MEDIA_S3_REGION` |
+
+### Configuration files and secret files
+
+`KIONGA_CONFIG_FILE` points to a JSON object of string values, at most 64 KiB.
+Keys must be uppercase variable names; a key already set in the environment wins.
+Secrets are rejected in this file: names containing `PASSWORD`, `SECRET`,
+`TOKEN` (except `OIDC_TOKEN_URL`) or `API_KEY`, names ending in `_FILE`, and the
+secret variables below.
+
+Each secret variable can instead be read from a file named by `<NAME>_FILE`
+(set only one of the two): `DATABASE_URL`, `OIDC_CLIENT_SECRET`,
+`MLAIOPS_INTERNAL_TOKEN`, `KIONGA_CREDENTIAL_KEY`, `S3_ACCESS_KEY`,
+`S3_SECRET_KEY`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `REDIS_URL`,
+`KAFKA_REST_TOKEN`, `KFP_TOKEN`, `MLFLOW_TOKEN`, `OPENFAAS_PASSWORD`,
+`LANGFUSE_SECRET_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`,
+`LLM_UPSTREAM_API_KEY`, `KIONGA_JUPYTER_TOKEN`, `KIONGA_IDE_PASSWORD`,
+`TRACE_SINK_TOKEN`, `MLAIOPS_LOCAL_PASSWORD`.
+
+### Production validation
+
+With `KIONGA_ENVIRONMENT=production`, the gateway refuses to start unless:
+
+- `DATABASE_URL`, every `OIDC_*` sign-in setting, `MLAIOPS_INTERNAL_TOKEN`,
+  `KIONGA_CREDENTIAL_KEY` and `MLAIOPS_ALLOWED_ORIGIN` are set;
+- the OIDC URLs and `MLAIOPS_ALLOWED_ORIGIN` use HTTPS, and `OIDC_REDIRECT_URL`
+  is the allowed origin plus `/auth/callback`;
+- `DATABASE_URL` is PostgreSQL with `sslmode=verify-full`;
+- `OIDC_CLIENT_SECRET` and `MLAIOPS_INTERNAL_TOKEN` are at least 24 characters
+  and contain neither `local` nor `change-me`;
+- with `KIONGA_LOCAL_LOGIN=true`, `MLAIOPS_LOCAL_PASSWORD` is at least 16
+  characters and contains none of `local`, `change-me` or `password`;
+- `KIONGA_CREDENTIAL_KEY` decodes to 32 bytes.
+
+## Pipeline runner
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `MLAIOPS_PIPELINE_JOB_TIMEOUT_SECONDS` | `3600` | Default timeout per container step (maximum 86400) |
+| `MLAIOPS_PIPELINE_LOG_LIMIT_BYTES` | `65536` | Log bytes kept per step (maximum 1 MiB) |
+| `MLAIOPS_PIPELINE_PIDS_LIMIT` | `256` | Process limit per step container (maximum 4096) |
+| `MLAIOPS_PIPELINE_MAX_PARALLEL` | `8` | Steps run at the same time (maximum 64) |
+| `MLAIOPS_PIPELINE_NETWORK` | `mlaiops_default` | Docker network for step containers |
+
 ## LLM providers
 
 Used by the agent runtime and trace proxy.
@@ -141,7 +207,7 @@ Langfuse tracing still records them when its keys are set.
 | `MLAIOPS_GRAPH_MODULE` | `agents.customer_support.graph:build` | The graph to serve (`module:function`) |
 | `MLAIOPS_AGENT_NAME` / `MLAIOPS_AGENT_ID` | `customer-support` / *(empty)* | Default identity (overridden per request by the gateway) |
 | `MLAIOPS_URL` | `http://gateway:8080` | Where the runtime reports sessions |
-| `DATABASE_URL` / `MLAIOPS_CHECKPOINT_DSN` | Postgres DSN | Session checkpoint storage |
+| `DATABASE_URL` / `MLAIOPS_CHECKPOINT_DSN` | PostgreSQL DSN | Session checkpoint storage |
 | `MLAIOPS_FEATURE_GATEWAY_URL` | `http://feature-gateway:8083` | Feature retrieval for tools/memory |
 | `LANGFUSE_HOST` / `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` | local defaults | Tracing |
 | `MLAIOPS_RUNTIME_HOST` / `MLAIOPS_RUNTIME_PORT` | `0.0.0.0` / `9000` | Bind address |
@@ -194,18 +260,17 @@ Langfuse tracing still records them when its keys are set.
 | `OPENFAAS_URL` | *(unset)* | faasd/OpenFaaS gateway; unset means serverless is "not configured" |
 | `OPENFAAS_USER` / `OPENFAAS_PASSWORD` | *(unset)* | Basic auth |
 
-## Legacy Compose/Dex demo overlay
+## Compose public overlay
 
-The variables below apply only to `deploy/compose.public.yaml`, retained for
-compatibility testing. Do not use this overlay as the recommended public
-deployment. Use the [public VM](../operations/public-vm.md) or
+The variables below apply only to the `deploy/compose.public.yaml` overlay. Do
+not use this overlay for a production deployment. Use the [public VM](../operations/public-vm.md) or
 [managed Kubernetes](../operations/managed-kubernetes.md) package instead.
 
 | Variable | Purpose |
 | --- | --- |
 | `MLAIOPS_DOMAIN` | DNS name; Caddy provisions TLS for it |
 | `MLAIOPS_ACME_EMAIL` | Let's Encrypt account email |
-| `DEX_ADMIN_EMAIL` / `DEX_ADMIN_PASSWORD_HASH` | Console login (bcrypt hash) |
+| `DEX_ADMIN_EMAIL` / `DEX_ADMIN_PASSWORD_HASH` | Console login (a `bcrypt` hash) |
 | `DEX_CLIENT_SECRET` | Console OAuth client secret |
 | `MLAIOPS_LOCAL_PASSWORD` | Break-glass local administrator password (required) |
 | `MLAIOPS_INTERNAL_TOKEN` | Protects internal service APIs |
@@ -237,13 +302,13 @@ deployment. Use the [public VM](../operations/public-vm.md) or
 context; users should not override it. The platform API remains configured by
 `MLAIOPS_URL` and `MLAIOPS_TOKEN`.
 
-## Local file mode & tests
+## Tests
 
 | Variable | Purpose |
 | --- | --- |
-| `TEST_DATABASE_URL` | Postgres DSN for the Go integration lane (`make -C platform test-integration` sets it) |
+| `TEST_DATABASE_URL` | PostgreSQL DSN for the Go integration lane (`make -C platform test-integration` sets it) |
 | `TEST_MEMORY_DSN` | pgvector DSN for the SDK's agent-memory round-trip test (`sdk-python`) |
-| `MLAIOPS_RUN_EVALS` | Set to `1` to run the paid agent eval lane (needs a real provider key) |
+| `MLAIOPS_RUN_EVALS` | Set to `1` to run the paid agent evaluation lane (needs a real provider key) |
 
 ## Kubernetes scale path (optional)
 

@@ -1,20 +1,18 @@
+---
+description: Exact reference for Kionga's API, SDK, CLI, configuration, permissions, services and endpoints.
+---
+
 # Reference
 
-Use these pages when you need precise interfaces, configuration names, security
-behavior, or implementation boundaries. For step-by-step tasks, start with the
-[guides](../guides/index.md).
+Use these pages when you need exact names, routes, defaults and rules. For
+step-by-step tasks, start with the [guides](../guides/index.md).
 
-| Need | Reference |
+| Need | Page |
 | --- | --- |
-| Current capability and verification scope | [Implementation status](https://kiongahq.github.io/docs/engineering/status/implementation-status/) |
-| HTTP endpoints and request shapes | [REST API](api.md) |
-| Local and service configuration variables | [Configuration](configuration.md) |
+| HTTP routes, credentials and errors | [REST API](api.md) |
 | Command-line usage | [CLI](cli.md) |
-| Roles, permissions, and security boundaries | [RBAC and security](rbac.md) |
-| Validation, persistence, and orchestration semantics | [Backend contracts](https://kiongahq.github.io/docs/engineering/contracts/backend/) |
-| Container responsibilities and ports | [Service inventory](services.md) |
-| Go and Python code organization | [Go packages](https://kiongahq.github.io/docs/engineering/components/go-packages/) and [Python modules](https://kiongahq.github.io/docs/engineering/components/python-modules/) |
-
-Design decisions document why major dependencies were chosen. They are not
-deployment instructions. For release and recovery procedures, use
-[operations](../operations/index.md).
+| Python client and agent helpers | [Python SDK](python-sdk.md) |
+| Environment variables and configuration files | [Configuration](configuration.md) |
+| Roles, services, quotas, API keys and policy actions | [Permissions](rbac.md) |
+| Every service, image and port | [Services and ports](services.md) |
+| Addresses and local credentials | [Service endpoints](service-endpoints.md) |

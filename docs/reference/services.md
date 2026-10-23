@@ -1,74 +1,97 @@
-# Services overview
+---
+description: Every service in the Kionga local stack and Kubernetes package, with its role, image, published port and health check.
+---
 
-The default stack declares 21 regular and one-shot services on one Compose network
-(`deploy/compose.yaml`), plus four optional profiles (`ide`, `log-export`,
-`log-export-es`, `log-export-os`) and dynamically launched model-serving
-containers. This section documents each one.
+# Services and ports
 
-Host ports bind to `127.0.0.1` by default (`KIONGA_BIND_ADDRESS` widens them; see
-[Network exposure](../operations/local.md#network-exposure)).
+The local stack is defined in `deploy/compose.yaml`. It runs 21 services by
+default, adds optional services through Compose profiles, and starts one model
+server container for each deployed model. To connect to these services, see
+[Service endpoints](service-endpoints.md).
 
-## Full inventory
+## Local stack
 
-| Service | Image / build | Host port | Group | Role |
-| --- | --- | --- | --- | --- |
-| **gateway** | `platform/go/Dockerfile` (`SERVICE=gateway`) | 8080 | Control plane | REST API + embedded console |
-| **dex** | `ghcr.io/dexidp/dex:v2.46.0` | 5556 | Control plane | Single sign-on broker (OIDC issuer) |
-| **glauth** | `glauth/glauth:v2.5.4` | none | Control plane | Local LDAP test directory for Dex |
-| **postgres** | `pgvector/pgvector:pg16` | 5432 | Data plane | Control-plane, MLflow, Langfuse, checkpoints, vectors |
-| **redis** | `redis:7.4.5-alpine` | 6379 | Data plane | Online feature store |
-| **kafka** | `apache/kafka:3.9.1` | 9092 | Data plane | Events, traces, real-time topics |
-| **kafka-rest** | `ghcr.io/aiven-open/karapace:6.1.4` | 8082 | Data plane | Confluent-compatible HTTP access to Kafka |
-| **objectstore** | `rustfs/rustfs:1.0.1` | 9000 / 9001 | Data plane | S3 object storage + console |
-| **objectstore-init** | `mlaiops-mlflow` (boto3) | none | Data plane | One-shot bucket creation |
-| **mlflow** | `mlaiops-mlflow` (`deploy/mlflow/Dockerfile`) | 15000 | Data plane | Tracking + registry |
-| **feature-gateway** | `platform/go/Dockerfile` (`SERVICE=feature-gateway`) | 8083 | Data plane | Online feature retrieval |
-| **storage-proxy** | `platform/go/Dockerfile` (`SERVICE=storage-proxy`) | 8084 | Data plane | SigV4 S3 URLs + browse |
-| **prefect-server** | `prefecthq/prefect:3-latest` | 4200 | Execution | Pipeline engine |
-| **pipeline-runner** | `pipeline-runner/Dockerfile` | none | Execution | Serves + runs platform flows |
-| **serving-manager** | `serving/Dockerfile` | 8085 | Execution | Launches model-serving containers |
-| **agent-runtime** | `agent-runtime/Dockerfile` | 19000 | AI | Serves LangGraph agents |
-| **trace-proxy** | `trace-proxy/Dockerfile` | 8081 | AI | LLM egress + trace capture |
-| **langfuse** | `langfuse/langfuse:2` | 3000 | AI | LLM/agent observability |
-| **realtime-processor** | `agent-runtime/Dockerfile` | none | AI | Kafka stream scoring |
-| **feature-materializer** | `mlaiops-agent-runtime` (the agent-runtime image) | none | Data plane | One-shot feature materialization |
-| **jupyter** | `workspace/jupyter/Dockerfile` | 8888 (always `127.0.0.1`) | Dev | Notebooks + terminal, opened through the gateway |
-| **ide** *(profile `ide`)* | `workspace/ide/Dockerfile` | none (gateway proxy) | Dev | Browser IDE sharing the Jupyter workspace |
-| **log-exporter** *(profile `log-export`)* | `platform/go/Dockerfile` (`SERVICE=log-exporter`) | 8086 (always `127.0.0.1`) | Observability | Ships logs to Elasticsearch or OpenSearch |
+Host ports bind to `127.0.0.1` unless `KIONGA_BIND_ADDRESS` is set; see
+[Network exposure](../operations/local.md#network-exposure). Each port variable
+changes the host port only; services keep talking to each other on the
+container port.
 
-## The four groups
+| Service | Role | Image or build | Host port (variable) |
+| --- | --- | --- | --- |
+| `gateway` | Kionga console and API | Built from `platform` | 8080 (`GATEWAY_PORT`) |
+| `dex` | Single sign-on broker (OIDC issuer) | `ghcr.io/dexidp/dex:v2.46.0` | 5556 (`DEX_PORT`) |
+| `glauth` | Test LDAP directory for Dex | `glauth/glauth:v2.5.4` | None |
+| `postgres` | PostgreSQL with pgvector: Kionga records, MLflow, Langfuse, agent checkpoints and memory | `pgvector/pgvector:pg16` | 5432 (`POSTGRES_PORT`) |
+| `redis` | Online feature store | `redis:7.4.5-alpine` | 6379 (`REDIS_PORT`) |
+| `kafka` | Events, LLM traces and real-time streams | `apache/kafka:3.9.1` | 9092 (`KAFKA_PORT`) |
+| `kafka-rest` | HTTP access to Kafka (Karapace, Confluent-compatible) | `ghcr.io/aiven-open/karapace:6.1.4` | 8082 (`KAFKA_REST_PORT`) |
+| `objectstore` | S3-compatible object storage (RustFS) and its web console | `rustfs/rustfs:1.0.1` | 9000 (`OBJECTSTORE_PORT`), 9001 (`OBJECTSTORE_CONSOLE_PORT`) |
+| `objectstore-init` | Creates the storage buckets, then exits | `mlaiops-mlflow`, built from `deploy/mlflow` | None |
+| `mlflow` | Experiment tracking and model registry | `mlaiops-mlflow`, built from `deploy/mlflow` | 15000 (`MLFLOW_PORT`); container port 5000 |
+| `feature-gateway` | Online feature lookups | Built from `platform` | 8083 (`FEATURE_GATEWAY_PORT`) |
+| `storage-proxy` | Object storage browsing and signed URLs | Built from `platform` | 8084 (`STORAGE_PROXY_PORT`) |
+| `prefect-server` | Pipeline engine | `prefecthq/prefect:3-latest` | 4200 (`PREFECT_PORT`) |
+| `pipeline-runner` | Runs Kionga's pipeline flows, including container steps | Built from `pipeline-runner` | None |
+| `serving-manager` | Starts and stops model server containers | Built from `serving` | 8085 (`SERVING_MANAGER_PORT`) |
+| `agent-runtime` | Shared agent runtime | Built from `agent-runtime` | 19000 (`AGENT_RUNTIME_PORT`); container port 9000 |
+| `trace-proxy` | LLM egress that records OpenAI-protocol calls | Built from `trace-proxy` | 8081 (`TRACE_PROXY_PORT`) |
+| `langfuse` | LLM and agent observability, prompt library | `langfuse/langfuse:2` | 3000 (`LANGFUSE_PORT`) |
+| `realtime-processor` | Kafka stream scoring for the real-time examples | Built from `agent-runtime` | None |
+| `feature-materializer` | Applies feature definitions and fills the online store, then exits | The `agent-runtime` image | None |
+| `jupyter` | Jupyter workbench, opened through the console | Built from `workspace` | 8888 (`JUPYTER_PORT`), always `127.0.0.1` |
 
-- **[Gateway (control plane)](https://kiongahq.github.io/docs/engineering/components/gateway/)**: the single service that owns the API,
-  serves the console, and orchestrates everything else, plus the supporting Go
-  services (operator, integration worker, metrics collector) used on Kubernetes.
-- **[Data & messaging](https://kiongahq.github.io/docs/engineering/components/data-plane/)**: Postgres, Redis, Kafka, RustFS, MLflow,
-  and the two Go data services (feature gateway, storage proxy).
-- **[Execution & serving](https://kiongahq.github.io/docs/engineering/components/execution/)**: Prefect, the pipeline runner, and the
-  serving manager.
-- **[AI & observability](https://kiongahq.github.io/docs/engineering/components/ai-observability/)**: the agent runtime, trace proxy,
-  Langfuse, and the real-time processor.
+### Optional services
 
-Dex and GLAuth are covered in [Single sign-on](../operations/single-sign-on.md).
+| Service | Profile | Role | Host port |
+| --- | --- | --- | --- |
+| `ide` | `ide` | Browser IDE sharing the workbench files, opened through the console. Start it with `make -C deploy ide-up`. | None |
+| `log-exporter` | `log-export` | Ships Kionga logs to Elasticsearch or OpenSearch | 8086 (`LOG_EXPORTER_PORT`), always `127.0.0.1` |
+| `elasticsearch` | `log-export-es` | Local Elasticsearch to try log export | 9200, always `127.0.0.1` |
+| `opensearch` | `log-export-os` | Local OpenSearch to try log export | 9201, always `127.0.0.1` |
+
+See [Log export](../operations/log-export.md).
+
+### Services outside the stack
+
+- **Model servers** are containers that the serving manager starts for each
+  deployed model version. They do not appear in `deploy/compose.yaml`.
+- **OpenFaaS or faasd** runs functions. It is not part of the stack; connect one
+  with `OPENFAAS_URL`.
 
 ## Health checks
 
-Docker health checks cover postgres, redis, kafka, kafka-rest, objectstore, mlflow,
-dex, prefect-server, and jupyter. Go services expose `GET /healthz`; the gateway exposes
-`GET /api/v1/health`; the agent runtime exposes `GET /healthz`. Check everything at
-once:
+| Service | Health check |
+| --- | --- |
+| `gateway` | `GET /api/v1/health` (process is up) and `GET /api/v1/ready` (includes the database) |
+| `feature-gateway`, `storage-proxy`, `serving-manager`, `trace-proxy`, `agent-runtime` | `GET /healthz` |
+| `postgres`, `redis`, `kafka`, `kafka-rest`, `objectstore`, `mlflow`, `dex`, `prefect-server`, `jupyter` | Docker health check, shown by `docker compose ps` |
 
 ```bash
-docker compose -f deploy/compose.yaml ps
+make -C deploy local-status
 ```
 
-## Dependency & startup order
+## Startup order and restarts
 
-Compose `depends_on` enforces the boot order: Postgres, Kafka, the object store,
-and Dex come up first, then MLflow and the Go and Python services that need them. `objectstore-init` and
-`feature-materializer` are **one-shot** jobs (`restart: "no"`) that complete and
-exit. `pipeline-runner`, `realtime-processor`, `serving-manager`, and `agent-runtime`
-run continuously (`restart: unless-stopped` where applicable).
+Compose starts services in dependency order: PostgreSQL, Kafka, object storage
+and Dex first, then MLflow and the services that need them. `objectstore-init`
+and `feature-materializer` run once and exit; `make -C deploy local-status`
+shows them as exited. Every other service restarts automatically
+(`restart: unless-stopped`) unless you stop the stack.
 
-OpenFaaS/faasd is not a Compose service. It is an external function engine connected
-with `OPENFAAS_URL`. Model-serving containers are created dynamically by the
-serving manager and therefore do not appear as static Compose services.
+## Kubernetes package
+
+The Helm chart in `deploy/helm/kionga` runs these components. The database,
+identity provider, Kafka REST, MLflow, pipeline engine and object storage are
+prerequisites you provide.
+
+| Component | Replicas (default) | Port | Health, readiness |
+| --- | --- | --- | --- |
+| `gateway` | 3, autoscaling to 10 | 8080 | `/api/v1/health`, `/api/v1/ready` |
+| `operator` | 2 | 8082 | `/healthz`, `/readyz` |
+| `integration-worker` | 2 | 8086 | `/healthz`, `/readyz` |
+| `feature-gateway` | 2 | 8083 | `/healthz` |
+| `storage-proxy` | 2 | 8084 | `/healthz` |
+| `trace-proxy` | 2 | 8081 | `/healthz` |
+
+The operator also creates a workspace for each user and a runtime for each agent.
+See [Deploy on Kubernetes](../operations/managed-kubernetes.md).

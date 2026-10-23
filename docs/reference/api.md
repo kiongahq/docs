@@ -1,32 +1,42 @@
+---
+description: Every Kionga REST API route, with its method, who can call it, and what it does.
+---
+
 # REST API reference
 
-The gateway exposes a JSON REST API under `/api/v1`. A searchable human-facing
-reference is served at `GET /api-docs.html`; the machine-readable OpenAPI
-document remains available at `GET /api/openapi.json`. Every request is authorized by
-[RBAC](rbac.md).
+Kionga exposes one JSON API under `/api/v1`. The console, the
+[Python SDK](python-sdk.md) and the [CLI](cli.md) all use it. A running Kionga also
+serves an interactive explorer at `/api-docs.html` and the OpenAPI document at
+`/api/openapi.json`.
 
-- **Base URL (local):** `http://localhost:${GATEWAY_PORT:-8080}`; shell examples
-  in these docs use `MLAIOPS_URL=http://localhost:8080`
-- **Content type:** `application/json`
-- **Errors:** non-2xx responses return `{"error": "<code>", "message": "<detail>"}`.
-- **Lists:** most list endpoints return `{"items": [...], "total": N}`.
+## Conventions
+
+| Item | Value |
+| --- | --- |
+| Base URL | Your Kionga URL. Locally `http://localhost:8080`, or the port in `GATEWAY_PORT`. Examples use `$MLAIOPS_URL`. |
+| Request body | JSON with `Content-Type: application/json`. Unknown fields are rejected with `400 invalid_request`. |
+| Errors | Non-2xx responses return `{"error": "<code>", "message": "<detail>"}`. A policy denial (`403 access_denied`) also returns the `decision` that denied it. |
+| Common error codes | `400 invalid_request`, `401` (no or invalid credential), `403` (`Forbidden` when your role or services do not open the route, `access_denied` for a policy denial, `resource_not_provisioned` for a quota), `404 not_found`, `409 conflict`, `422 validation_error`, `502` when an engine fails, `503` when a runtime is not ready |
+| Lists | Most list routes return `{"items": [...], "total": N}`. `GET /api/v1/projects` and `GET /api/v1/pipelines/runs` return a JSON array. |
+| Scope | Lists contain only what the caller may see. A single resource outside the caller's scope returns `404`. |
 
 ## Authentication
 
-Only `/api/v1/health`, `/api/v1/ready`, `/api/openapi.json`, the public blog
-reads, and the `/auth/*` sign-in routes answer without a credential. Every other
-`/api/` request without one returns `401`. The gateway accepts:
+Only these routes answer without a credential: `/api/v1/health`,
+`/api/v1/ready`, `/api/openapi.json`, `/api-docs.html`, the published blog reads
+(`GET /api/v1/blogs`, `GET /api/v1/blogs/{slug}`, and attached blog media), and
+the `/auth/*` sign-in routes. Any other `/api/` request without a credential
+returns `401`.
 
 | Credential | How to send it | Acts as |
 | --- | --- | --- |
-| Browser session | `kionga_local_session` cookie (local sign-in) or `kionga_session` cookie (single sign-on) | The signed-in person with their role and access profile |
-| Personal API key | `Authorization: Bearer nxs_...`, created under **Settings → API keys** | A normal `user` limited to the key's services and projects and to the creator's access profile; never reaches `/api/v1/admin/*`, `/api/v1/settings/*`, the editorial API, or workspaces |
-| OIDC access or ID token | `Authorization: Bearer <JWT>` from the configured issuer | The token's subject and roles |
-| Workspace identity | Automatic inside the Jupyter workbench and browser IDE through their `MLAIOPS_URL` helper | The workspace owner; in Compose, the local bootstrap administrator |
-| Internal service token | `Authorization: Bearer $MLAIOPS_INTERNAL_TOKEN` | The `service` role (reporting paths only) |
+| Browser session | The `kionga_local_session` cookie (local sign-in) or the `kionga_session` cookie (single sign-on) | The signed-in person, with their role and access profile |
+| Personal API key | `Authorization: Bearer nxs_...`, created under **Settings → Personal API keys** | A normal `user` limited to the key's services and projects and to its creator's access profile. Never reaches `/api/v1/admin/*`, `/api/v1/settings/*`, the editorial API, or workspaces. |
+| OIDC token | `Authorization: Bearer <JWT>` from the configured issuer | The token's subject and roles |
+| Workspace identity | Automatic inside the Jupyter workbench and browser IDE, through their preset `MLAIOPS_URL` | The workspace owner. On the local stack, the local `admin` account. |
+| Internal service token | `Authorization: Bearer <MLAIOPS_INTERNAL_TOKEN>` | The `service` role, for Kionga's own services |
 
-Most `curl` examples in these docs omit the credential for brevity. Locally, sign
-in once and pass the cookie jar:
+To call the API with curl on the local stack, sign in once and reuse the cookie:
 
 ```bash
 curl -fsS -o /dev/null -c kionga.cookies \
@@ -35,77 +45,110 @@ curl -fsS -o /dev/null -c kionga.cookies \
 curl -s -b kionga.cookies "$MLAIOPS_URL/api/v1/me"
 ```
 
-With a personal API key, add `-H "Authorization: Bearer $MLAIOPS_TOKEN"` instead.
+With a personal API key, send `-H "Authorization: Bearer $MLAIOPS_TOKEN"` instead.
+Examples on other pages often leave the credential out for brevity.
 
 ### Sign-in routes
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `GET` | `/auth/providers` | Sign-in options for the login page (`local` and single sign-on providers) |
-| `GET` | `/auth/login` | Start sign-in; redirects to the login page or the only provider |
-| `GET` | `/auth/sso/login?connector=<id>` | Start single sign-on with one Dex connector |
+| `GET` | `/auth/providers` | Sign-in options for the sign-in page (`local` and single sign-on providers) |
+| `GET` | `/auth/login` | Start sign-in. Shows the sign-in page, or redirects to the only provider. |
+| `GET` | `/auth/sso/login?connector=<id>` | Start single sign-on with one provider |
 | `GET` | `/auth/callback` | OIDC authorization-code callback |
-| `POST` | `/auth/local/login` | Local sign-in (form fields `username`, `password`, optional `return_to`); throttled per account after 5 failures |
+| `POST` | `/auth/local/login` | Local sign-in with form fields `username`, `password` and optional `return_to`. Throttled per account after 5 failures. |
 | `GET` | `/auth/logout` | End the session, including workspace sessions |
 
-## Identity & health
+## Who can call a route
 
-| Method | Path | Role | Purpose |
+The **Access** column uses these terms. `admin` and `operator` can call every
+route. A normal `user` also needs the service named in the **Service** column in
+their access profile, and the project in their scope.
+
+| Term | Who |
+| --- | --- |
+| public | Anyone, without a credential |
+| signed-in | Any authenticated person, including a `user` without an access profile |
+| read | Every role: `viewer`, `engineer`, `user` (with the service), `admin`, `operator`, and `service` |
+| write | `engineer`, `admin`, `operator`, and a `user` with the service |
+| admin | `admin` and `operator` only |
+| reporting | The `service` role, used by Kionga's own services. `engineer`, `admin` and `operator` also pass; a normal `user` cannot call these routes. |
+
+Policies attached to a person or group can further allow or deny specific
+actions; see [Permissions](rbac.md).
+
+## Identity, access and settings
+
+| Method | Path | Access | Service | Purpose |
+| --- | --- | --- | --- | --- |
+| `GET` | `/api/v1/health` | public | | Health check: `{"status":"ok",...}` |
+| `GET` | `/api/v1/ready` | public | | Readiness, including the database |
+| `GET` | `/api/openapi.json` | public | | OpenAPI document |
+| `GET` | `/api/v1/me` | signed-in | | Caller identity, roles, services and effective permissions |
+| `GET` | `/api/v1/project-options` | signed-in | | Minimal list of the caller's projects, for selectors |
+| `GET` | `/api/v1/workspaces` | signed-in | | Jupyter and IDE availability for the caller |
+| `POST` | `/api/v1/workspaces/{kind}/launch` | `engineer`, `admin`, `operator`, or a `user` with the service; browser sessions only | `workbench` or `ide` | Launch the Jupyter workbench (`workbench`) or browser IDE (`ide`) |
+| `GET` | `/api/v1/access-requests` | signed-in | | The caller's access requests |
+| `POST` | `/api/v1/access-requests` | signed-in | | Request one or more services, with a reason |
+| `GET` | `/api/v1/settings/tokens` | signed-in, not with an API key | | List your personal API keys. Secrets are never returned. |
+| `POST` | `/api/v1/settings/tokens` | signed-in, not with an API key | | Create a scoped, expiring personal API key |
+| `DELETE` | `/api/v1/settings/tokens/{id}` | key owner | | Revoke a personal API key immediately |
+| `GET`, `PUT`, `DELETE` | `/api/v1/settings/huggingface` | signed-in, not with an API key | | Read, connect, or forget your encrypted Hugging Face token |
+| `GET` | `/api/v1/dashboard` | read | `overview` | Overview counts and recent runs |
+| `GET` | `/api/v1/onboarding/readiness` | read | `overview` | Onboarding readiness score and checklist |
+| `GET` | `/api/v1/events` | read | `overview` | Server-Sent Events stream that signals when data changed |
+| `GET` | `/api/v1/audit` | read, except a normal `user` | | Immutable audit log |
+
+## Administration
+
+All routes in this section require the `admin` or `operator` role.
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/v1/admin/users` | List access profiles |
+| `PUT` | `/api/v1/admin/users/{subject}` | Create or change an access profile: role, services, projects, buckets, compute and storage quotas, suspension |
+| `DELETE` | `/api/v1/admin/users/{subject}` | Revoke all access |
+| `PUT` | `/api/v1/admin/users/{subject}/local-password` | Set a provisioned user's local password (local sign-in must be enabled) |
+| `DELETE` | `/api/v1/admin/users/{subject}/local-password` | Remove a user's local password |
+| `GET` | `/api/v1/admin/resource-profiles` | The `starter`, `team`, `power`, `gpu` and `custom` resource profiles |
+| `GET` | `/api/v1/admin/access-requests` | The access-request approval queue |
+| `PATCH` | `/api/v1/admin/access-requests/{id}` | Approve or reject an access request |
+
+### Policies and groups
+
+| Method | Path | Access | Purpose |
 | --- | --- | --- | --- |
-| `GET` | `/api/v1/health` | public | Liveness (`{"status":"ok",...}`) |
-| `GET` | `/api/v1/ready` | public | Readiness (checks the database) |
-| `GET` | `/api/v1/me` | any | Caller identity, roles, and effective permissions |
-| `GET` | `/api/v1/project-options` | any | Minimal list of assigned or owned projects for selectors |
-| `GET` | `/api/v1/workspaces` | any | Jupyter and IDE availability for the caller |
-| `POST` | `/api/v1/workspaces/{kind}/launch` | workbench or ide service | Launch `workbench` or `ide` (browser sessions only) |
-| `GET` | `/api/v1/admin/users` | admin/operator | List provisioned users |
-| `PUT` | `/api/v1/admin/users/{subject}` | admin/operator | Assign role, services, projects, storage, and compute quotas |
-| `DELETE` | `/api/v1/admin/users/{subject}` | admin/operator | Revoke all access |
-| `PUT` / `DELETE` | `/api/v1/admin/users/{subject}/local-password` | admin/operator | Set or remove a provisioned user's local password (local sign-in must be enabled) |
-| `GET` | `/api/v1/admin/resource-profiles` | admin/operator | List canonical starter/team/power/GPU/custom allocations |
-| `GET` | `/api/v1/access-requests` | authenticated user | List the caller's access requests |
-| `POST` | `/api/v1/access-requests` | authenticated user | Request one or more platform services |
-| `GET` | `/api/v1/admin/access-requests` | admin/operator | List the organization approval queue |
-| `PATCH` | `/api/v1/admin/access-requests/{id}` | admin/operator | Approve or reject an access request |
-| `GET` | `/api/v1/settings/tokens` | signed-in user | List personal API keys (secrets are never returned) |
-| `POST` | `/api/v1/settings/tokens` | signed-in user | Create a scoped, expiring personal API key |
-| `DELETE` | `/api/v1/settings/tokens/{id}` | key owner | Revoke a personal API key immediately |
-| `GET` / `PUT` / `DELETE` | `/api/v1/settings/huggingface` | signed-in user | Read, connect, or forget the caller's encrypted Hugging Face token |
-| `GET` | `/api/v1/blogs` | public | List published engineering posts |
-| `GET` | `/api/v1/blogs/{slug}` | public | Read a published post |
-| `GET` | `/media/blog/{id}/{480,960,1600}` | public once attached to a published post; editorial session otherwise | Blog image variant |
-| `POST` / `GET` / `DELETE` | `/api/v1/editorial/session` | editorial members (verified identity) | Open, read, end the editorial session (`kionga_editorial` cookie) |
-| `GET` / `POST` | `/api/v1/editorial/bootstrap` | local bootstrap admin or ML admin, once | Grant the first editorial admin |
-| `GET` / `POST` | `/api/v1/editorial/posts` | editorial session | List visible posts; create a block-content draft |
-| `GET` / `PUT` | `/api/v1/editorial/posts/{id}` | editorial session | Read; autosave with `base_revision` (409 + `latest` on conflict) |
-| `POST` | `/api/v1/editorial/posts/{id}/transition` | editorial session, role-checked | `submit`, `withdraw`, `request_changes`, `publish`, `schedule`, `unpublish`, `archive`, `restore` |
-| `GET` / `POST` | `/api/v1/editorial/posts/{id}/revisions[/{n}[/restore]]`, `/compare?from=&to=` | editorial session | Immutable revisions, compare, restore |
-| `POST` | `/api/v1/editorial/preview`, `/api/v1/editorial/markdown` | editorial session | Server-rendered preview; optional Markdown import |
-| `GET` / `POST` / `PATCH` | `/api/v1/editorial/media[/{id}]` | editorial session | Media library, multipart upload (10 MB), alt/caption/attribution |
-| `GET` / `PUT` / `DELETE` | `/api/v1/editorial/members[/{subject}]` | editorial admin for writes | Editorial membership |
-| `GET` / `PUT` | `/api/v1/editorial/settings` | editorial admin for writes | Blog headline and description |
-| `GET` | `/api/v1/dashboard` | viewer+ | Workspace summary (counts + recent runs) |
-| `GET` | `/api/v1/onboarding/readiness` | viewer+ | Onboarding readiness score |
-| `GET` | `/api/openapi.json` | public | OpenAPI document |
+| `GET` | `/api/v1/iam/catalog` | signed-in | Actions, resource formats, condition keys and resource profiles |
+| `GET` | `/api/v1/iam/explain` | signed-in | The decision and its reasons for one action on one resource. Asking about another person needs `policy:Read`. |
+| `GET` | `/api/v1/iam/effective` | signed-in | The policies that apply to a principal |
+| `GET`, `POST` | `/api/v1/admin/iam/groups` | admin | List or create groups |
+| `GET`, `PUT`, `DELETE` | `/api/v1/admin/iam/groups/{id}` | admin | Read, change or delete a group |
+| `GET`, `POST` | `/api/v1/admin/iam/policies` | admin | List or create policies |
+| `GET`, `PUT`, `DELETE` | `/api/v1/admin/iam/policies/{id}` | admin | Read, change or delete a policy |
+| `GET` | `/api/v1/admin/iam/policies/{id}/revisions` | admin | A policy's immutable revisions |
+| `GET` | `/api/v1/admin/iam/policies/{id}/revisions/{version}` | admin | One policy revision |
+| `GET`, `POST` | `/api/v1/admin/iam/attachments` | admin | List attachments, or attach a policy to a user or group |
+| `DELETE` | `/api/v1/admin/iam/attachments/{id}` | admin | Detach a policy |
 
-The human API explorer is `/api-docs.html`. It renders the OpenAPI document in the
-browser; `/api/openapi.json` remains intentionally machine-readable JSON.
+Request and response bodies are in
+[Users, roles and policies](../guides/access-control.md#api).
 
 ## Projects
 
-| Method | Path | Role | Purpose |
-| --- | --- | --- | --- |
-| `GET` | `/api/v1/project-templates` | projects read | List versioned ML, distributed-training, agent, full-stack, and foundation templates |
-| `GET` | `/api/v1/project-templates/{id}` | projects read | Read frameworks, accelerators, capabilities, required services, and recommended profile |
-| `GET` | `/api/v1/projects` | viewer+ | List projects |
-| `POST` | `/api/v1/projects` | engineer+ | Create a versioned template project, optionally connected to Git |
-| `GET` | `/api/v1/projects/{id}` | viewer+ | Read project and repository metadata |
-| `PUT` | `/api/v1/projects/{id}/repository` | Git service | Connect a credential-free HTTPS/SSH repository reference |
-| `GET` | `/api/v1/projects/{id}/scaffold-plan` | project access | What a scaffold job would run and where |
-| `GET` / `POST` | `/api/v1/projects/{id}/scaffold-jobs` | project access, browser identity | List jobs or start one ([Scaffolding](../guides/scaffolding.md)) |
-| `GET` | `/api/v1/projects/{id}/scaffold-jobs/{job}` | project access | One scaffold job |
+| Method | Path | Access | Service | Purpose |
+| --- | --- | --- | --- | --- |
+| `GET` | `/api/v1/project-templates` | read | `projects` | List project templates |
+| `GET` | `/api/v1/project-templates/{id}` | read | `projects` | One template. Optional `version` query parameter. |
+| `GET` | `/api/v1/projects` | read | `projects` | List projects (JSON array) |
+| `POST` | `/api/v1/projects` | write | `projects` | Create a project from a template, optionally connected to Git |
+| `GET` | `/api/v1/projects/{id}` | read | `projects` | A project and its repository |
+| `PUT` | `/api/v1/projects/{id}/repository` | write | `git` | Connect a Git repository (`url`, `default_branch`). Credentials are never stored. |
+| `GET` | `/api/v1/projects/{id}/scaffold-plan` | read | `projects` | What a starter-code job would run, and where |
+| `GET` | `/api/v1/projects/{id}/scaffold-jobs` | read | `projects` | List starter-code jobs |
+| `POST` | `/api/v1/projects/{id}/scaffold-jobs` | write, browser sessions only | `projects` | Generate starter code in your workspace ([Scaffolding](../guides/scaffolding.md)) |
+| `GET` | `/api/v1/projects/{id}/scaffold-jobs/{job}` | read | `projects` | One starter-code job |
 
-Create a heavyweight project with explicit execution intent:
+Create a project with explicit framework, accelerator and profile:
 
 ```bash
 curl -s -X POST "$MLAIOPS_URL/api/v1/projects" \
@@ -122,212 +165,216 @@ curl -s -X POST "$MLAIOPS_URL/api/v1/projects" \
   }'
 ```
 
-The response pins `template_version`, resolved framework/accelerator/profile,
-capabilities, and `scaffold_command`. Unsupported combinations return `422
-validation_error` rather than creating unusable desired state. For normal users,
-missing required services or profile/GPU capacity returns `403
-resource_not_provisioned`; `single-gpu` requires one provisioned GPU and
-`multi-gpu` requires at least two. Admin/operator principals bypass these
-provisioning checks.
+| Field | Default |
+| --- | --- |
+| `template` | `production-ml` |
+| `template_version` | The template's current version |
+| `framework` | The template's first framework |
+| `accelerator` | The template's first accelerator |
+| `requested_profile` | The template's recommended profile; one of `starter`, `team`, `power`, `gpu`, `custom` |
 
-## Pipelines
+The response pins `template_version`, the resolved framework, accelerator and
+profile, the template's capabilities, and a `scaffold_command`. An unsupported
+combination returns `422 validation_error`. For a normal user, a missing required
+service or too little compute or GPU capacity returns `403
+resource_not_provisioned`: `single-gpu` needs one provisioned GPU and `multi-gpu`
+needs at least two. Administrators and operators are not subject to these checks.
 
-| Method | Path | Role | Purpose |
-| --- | --- | --- | --- |
-| `GET` | `/api/v1/pipelines/runs` | viewer+ | List runs |
-| `GET` / `POST` | `/api/v1/pipelines/definitions` | pipelines service | List or create versioned job DAGs |
-| `GET` / `PUT` | `/api/v1/pipelines/definitions/{id}` | pipelines service | Read or update a reusable flow |
-| `POST` | `/api/v1/pipelines/validate` | pipelines service | Validate a definition; returns canonical YAML, SHA-256, stages, and issues |
-| `POST` | `/api/v1/pipelines/definitions/yaml` | pipelines service | Create a flow from `kionga.dev/v1 Pipeline` YAML |
-| `GET` / `PUT` | `/api/v1/pipelines/definitions/{id}/yaml` | pipelines service | Export or update a flow as canonical YAML |
-| `GET` | `/api/v1/pipelines/definitions/{id}/revisions[/{revision}]` | pipelines service | Immutable revisions |
-| `POST` | `/api/v1/pipelines/definitions/{id}/revisions/{revision}/rollback` | pipelines service | Save an old revision as the new current one |
-| `POST` | `/api/v1/pipelines/definitions/{id}/triggers/{index}/{pause\|resume}` | pipelines service | Pause or resume a schedule |
-| `POST` | `/api/v1/pipelines/preflight` | pipelines service | Run-configuration preflight without starting a run |
-| `POST` | `/api/v1/pipelines/submit` | engineer+ | Submit a built-in or definition-backed run with parameters |
-| `GET` | `/api/v1/pipelines/runs/{id}` | viewer+ | Run detail: steps (DAG) + logs |
-| `POST` | `/api/v1/pipelines/runs/{id}/cancel` | engineer+ | Cancel (propagates to the engine) |
-| `POST` | `/api/v1/pipelines/runs/{id}/retry` | engineer+ | Retry |
-| `POST` | `/api/v1/pipelines/runs/{id}/steps` | service | Step transition (from the executing flow) |
-| `POST` | `/api/v1/pipelines/runs/{id}/logs` | service | Log lines from the runner |
-| `GET` | `/api/v1/logs` | pipelines service | Filtered, paginated logs ([Logs](../guides/logs.md)) |
-| `GET` | `/api/v1/logs/stream` | pipelines service | Server-Sent Events log tail |
+## Pipelines and logs
 
-`jobs[].depends_on` is the graph contract. The gateway rejects duplicate names,
-missing dependencies, cycles, invalid resource quantities, and unresolved function
-references before persistence. Run detail returns the validated steps and logs used
-by the console's Dagre renderer; visual coordinates are not part of the API and have
-no scheduling meaning.
+| Method | Path | Access | Service | Purpose |
+| --- | --- | --- | --- | --- |
+| `GET` | `/api/v1/pipelines/runs` | read | `pipelines` | List runs (JSON array) |
+| `GET` | `/api/v1/pipelines/runs/{id}` | read | `pipelines` | One run with its steps and logs. Logs are removed when `logs:Read` is denied. |
+| `POST` | `/api/v1/pipelines/submit` | write | `pipelines` | Start a run of the built-in pipeline (`name`) or a flow (`definition_id`), with `parameters` and optional `overrides` |
+| `POST` | `/api/v1/pipelines/preflight` | write | `pipelines` | Check a run's configuration without starting it |
+| `POST` | `/api/v1/pipelines/runs/{id}/cancel` | write | `pipelines` | Cancel a run, including in the engine |
+| `POST` | `/api/v1/pipelines/runs/{id}/retry` | write | `pipelines` | Retry a run |
+| `POST` | `/api/v1/pipelines/runs/{id}/steps` | reporting | | Report a step transition |
+| `POST` | `/api/v1/pipelines/runs/{id}/logs` | reporting | | Report log lines |
+| `GET` | `/api/v1/pipelines/definitions` | read | `pipelines` | List flows |
+| `POST` | `/api/v1/pipelines/definitions` | write | `pipelines` | Create a flow from JSON |
+| `POST` | `/api/v1/pipelines/definitions/yaml` | write | `pipelines` | Create a flow from `kionga.dev/v1` `Pipeline` YAML |
+| `GET` | `/api/v1/pipelines/definitions/{id}` | read | `pipelines` | One flow |
+| `PUT` | `/api/v1/pipelines/definitions/{id}` | write | `pipelines` | Save a new revision from JSON |
+| `GET` | `/api/v1/pipelines/definitions/{id}/yaml` | read | `pipelines` | Export the current revision as canonical YAML |
+| `PUT` | `/api/v1/pipelines/definitions/{id}/yaml` | write | `pipelines` | Save a new revision from YAML |
+| `POST` | `/api/v1/pipelines/validate` | write | `pipelines` | Validate a flow; returns canonical YAML, SHA-256, stages and issues |
+| `GET` | `/api/v1/pipelines/definitions/{id}/revisions` | read | `pipelines` | List immutable revisions |
+| `GET` | `/api/v1/pipelines/definitions/{id}/revisions/{revision}` | read | `pipelines` | One revision |
+| `POST` | `/api/v1/pipelines/definitions/{id}/revisions/{revision}/rollback` | write | `pipelines` | Save an old revision as the new current revision |
+| `POST` | `/api/v1/pipelines/definitions/{id}/triggers/{index}/pause` | write | `pipelines` | Pause a schedule |
+| `POST` | `/api/v1/pipelines/definitions/{id}/triggers/{index}/resume` | write | `pipelines` | Resume a schedule |
+| `GET` | `/api/v1/logs` | read | `pipelines` | Filtered, paginated logs ([Logs and events](../guides/logs.md)) |
+| `GET` | `/api/v1/logs/stream` | read | `pipelines` | Server-Sent Events log tail |
 
-For a normal user, the gateway calculates dependency depth and sums CPU, memory,
-and GPU requests for every concurrently runnable layer. A definition whose widest
-layer exceeds the user's grant returns `403 resource_not_provisioned`. Sequential
-layers are not incorrectly added together. Admin/operator principals bypass the
-resource-admission check.
+A flow's steps form a dependency graph through `jobs[].depends_on`. Kionga
+rejects duplicate step names, missing dependencies, cycles, invalid resource
+quantities and unknown function references before saving.
+
+For a normal user, Kionga adds up the CPU, memory and GPU of the steps that can
+run at the same time. If the widest such group exceeds the user's grant, the
+request returns `403 resource_not_provisioned`. Steps that run one after another
+are not added together. See [Pipelines](../guides/pipelines.md).
 
 ## Models
 
-| Method | Path | Role | Purpose |
-| --- | --- | --- | --- |
-| `GET` | `/api/v1/models` | viewer+ | List models |
-| `POST` | `/api/v1/models` | engineer+ | Register (`project_id`, `name`, `version`, `artifact_uri`, optional `serving_image`, `metrics`) |
-| `POST` | `/api/v1/models/{id}/promote` | engineer+ | Promote (`stage`) |
-| `POST` | `/api/v1/models/{id}/deploy` | engineer+ | Deploy → live endpoint (`canary_weight`) |
-| `POST` | `/api/v1/models/{id}/rollback` | engineer+ | Undeploy / roll back |
-| `POST` | `/api/v1/models/{id}/predict` | engineer+ | Proxy a prediction to the live endpoint |
-| `GET` | `/api/v1/models/huggingface` | models service | Search the Hugging Face Hub (`search`, `task`) |
-| `POST` | `/api/v1/models/huggingface/import` | models service | Register an immutable Hub revision in a project ([Hugging Face](../guides/huggingface.md)) |
+| Method | Path | Access | Service | Purpose |
+| --- | --- | --- | --- | --- |
+| `GET` | `/api/v1/models` | read | `models` | List models |
+| `POST` | `/api/v1/models` | write, or the `service` role | `models` | Register a model version: `project_id`, `name`, `version`, `artifact_uri`, `metrics`, optional `serving_image` |
+| `POST` | `/api/v1/models/{id}/promote` | write | `models` | Move to `stage`: `staging`, `production` or `archived` |
+| `POST` | `/api/v1/models/{id}/deploy` | write | `models` | Start a model server; `canary_weight` from 0 to 100 |
+| `POST` | `/api/v1/models/{id}/rollback` | write | `models` | Return to the previous stage and remove the model server |
+| `POST` | `/api/v1/models/{id}/predict` | write | `models` | Send a prediction request to the live endpoint (MLflow `/invocations` format) |
+| `GET` | `/api/v1/models/huggingface` | read | `models` | Search the Hugging Face Hub (`search`, `task`) |
+| `POST` | `/api/v1/models/huggingface/import` | write | `models` | Register a pinned Hub revision in a project ([Hugging Face models](../guides/huggingface.md)) |
 
-`serving_image` pins the model version to a framework-compatible OCI image. The
-image must provide the `mlflow` CLI, artifact-store support, and the exact runtime
-dependencies needed to load the model. When omitted, the serving manager uses its
-configured `SERVE_IMAGE` fallback.
+Registering the same project, name and version twice returns `409 conflict`. A
+model whose registered `accuracy` is below `0.8` gets the gate `failed`, and a
+Hugging Face import gets `needs_evaluation`. Only a model with the gate `passed`
+can be promoted to `production` or deployed. `predict` returns `409 not_serving`
+when the model has no live endpoint.
 
-## Agents
+`serving_image` pins the version to a container image that provides the `mlflow`
+command and the exact libraries needed to load the model. Without it, the serving
+manager uses its `SERVE_IMAGE`.
 
-| Method | Path | Role | Purpose |
-| --- | --- | --- | --- |
-| `GET` | `/api/v1/agents` | viewer+ | List agents with live `status` and `endpoint_url` readiness enrichment |
-| `POST` | `/api/v1/agents` | engineer+ | Deploy an agent |
-| `PUT` | `/api/v1/agents/{id}/traffic` | engineer+ | Set canary weight |
-| `POST` | `/api/v1/agents/{id}/invoke` | engineer+ | Health-gate and run one turn through the selected runtime |
-| `GET` | `/api/v1/agents/{id}/sessions` | viewer+ | List sessions |
-| `GET` | `/api/v1/agents/{id}/traces` | viewer+ | List traces |
-| `GET` | `/api/v1/agents/{id}/usage` | viewer+ | Aggregated tokens/cost/active sessions |
-| `POST` | `/api/v1/traces` | service | Record a session/trace (from the runtime) |
+## Agents and tools
 
-`POST /api/v1/agents` accepts the project, name, version, immutable image, graph
-entry point (`module:function`), LLM backend, registered tools, an `autoscaling`
-object (`min_replicas`, `max_replicas`), and a `resources` object (`cpu`, `memory`,
-optional `gpu`, optional `gpu_type`). The defaults are one fixed replica, `500m`
-CPU, `1Gi` memory, and no GPU. A positive GPU count defaults `gpu_type` to
-`nvidia.com/gpu`. The top-level `replicas` field remains a compatibility input;
-`autoscaling` is canonical. The maximum must be at least the minimum and no more
-than 100. A non-default GPU type must be a domain-qualified Kubernetes extended
-resource name. Native resource keys (`cpu`, `memory`, `storage`, and
-`ephemeral-storage`), invalid qualified names, and Kubernetes-reserved domains are
-rejected rather than copied into a workload resource map.
+| Method | Path | Access | Service | Purpose |
+| --- | --- | --- | --- | --- |
+| `GET` | `/api/v1/agents` | read | `agents` | List agents with live `status` and `endpoint_url` |
+| `POST` | `/api/v1/agents` | write | `agents` | Deploy an agent |
+| `PUT` | `/api/v1/agents/{id}/traffic` | write | `agents` | Set `canary_weight` |
+| `POST` | `/api/v1/agents/{id}/invoke` | write, or the `service` role | `agents` | Run one turn: `message`, optional `session_id` and `user_id` |
+| `GET` | `/api/v1/agents/{id}/sessions` | read | `agents` | List sessions |
+| `GET` | `/api/v1/agents/{id}/traces` | read | `agents` | List traces |
+| `GET` | `/api/v1/agents/{id}/usage` | read | `agents` | Session count, active sessions, tokens and cost |
+| `POST` | `/api/v1/traces` | reporting | | Record a session turn or trace |
+| `GET` | `/api/v1/tools` | read | `catalog` | List tools |
+| `POST` | `/api/v1/tools` | write | `catalog` | Register a tool: `name`, `version`, `description`, `tags`, `input_schema` |
 
-For a normal user, admission reserves every agent they own at its maximum replica
-count, then evaluates the new request together with that existing capacity. Each
-possible pod includes the agent request plus the trace sidecar's `100m` CPU and
-`128Mi` memory request; GPUs and maximum replicas are aggregated as well. The total
-must fit the provisioned compute/workload grant, and a typed GPU grant must match.
-Violations return `403 resource_not_provisioned`; invalid quantities, resource
-names, or replica bounds return `422 validation_error`. Admin/operator principals
-bypass capacity admission. Use the `production-agent` project template for a
-runnable graph/runtime, tests, evaluation fixtures, and container boundary before
-deployment.
+`POST /api/v1/agents` fields:
 
-`GET /api/v1/agents` does not repeat a stale persisted `pending`/`ready` value. It
-sets each `endpoint_url`, probes `/healthz` through a bounded worker pool and request
-deadline, and returns `ready` only when the selected runtime responds successfully.
-On Kubernetes the endpoint is the immutable-ID-derived Service in
-`MLAIOPS_AGENT_NAMESPACE`; a non-empty `AGENT_RUNTIME_URL` is the Compose shared
-runtime override. `POST /api/v1/agents/{id}/invoke` performs its own bounded health
-gate and returns `503` with `error: "agent_not_ready"` without forwarding the turn
-when the runtime is unavailable.
+| Field | Required | Default and rules |
+| --- | --- | --- |
+| `project_id` | Yes | A project in your scope |
+| `name` | Yes | Lowercase DNS label |
+| `version` | Yes | Letters, digits, `.`, `_`, `+` and `-` |
+| `image` | Yes | Container image reference, up to 512 characters |
+| `graph_module` | Yes | `package.module:attribute` |
+| `llm_backend` | No | `mock`, `openai`, `anthropic`, `openai-compatible` or `self-hosted` |
+| `tools` | No | Names of tools registered in Kionga |
+| `autoscaling` | No | `min_replicas` and `max_replicas`; default 1 and 1. The maximum must be at least the minimum and at most 100. |
+| `resources` | No | `cpu` (default `500m`), `memory` (default `1Gi`), `gpu` (default 0), `gpu_type` (default `nvidia.com/gpu` when `gpu` is above 0) |
+| `replicas` | No | Older form of `autoscaling.min_replicas` |
 
-## Tools
+`gpu_type` must be a domain-qualified extended resource name. Kubernetes-reserved
+domains and native names such as `cpu` and `memory` are rejected. Invalid values
+return `422 validation_error`.
 
-| Method | Path | Role | Purpose |
-| --- | --- | --- | --- |
-| `GET` | `/api/v1/tools` | viewer+ | List tools |
-| `POST` | `/api/v1/tools` | engineer+ | Register a tool |
+For a normal user, Kionga reserves every agent the user owns at its maximum
+replica count. Each possible replica counts the agent's request plus `100m` CPU and
+`128Mi` memory for its trace sidecar. The total, including GPUs and replicas, must
+fit the user's compute and workload grant, or the request returns `403
+resource_not_provisioned`.
+
+`GET /api/v1/agents` reports `ready` only when the agent's runtime answers its
+health check at request time. `invoke` checks health again and returns `503
+agent_not_ready` without sending the turn when the runtime is unavailable.
 
 ## Features
 
-| Method | Path | Role | Purpose |
-| --- | --- | --- | --- |
-| `GET` | `/api/v1/features` | viewer+ | List feature views |
-| `POST` | `/api/v1/features` | engineer+ / service | Apply a feature view |
-| `POST` | `/api/v1/features/{name}/materialized` | service | Report a materialization (entity count) |
-| `POST` | `/api/v1/features/{name}/materializations` | service, engineer+ | Report a materialization run for lineage |
-| `GET` | `/api/v1/features/{name}/versions` | features service | Immutable definition versions |
-| `GET` | `/api/v1/features/{name}/lineage` | features service | Materialization lineage |
-| `GET` | `/api/v1/features/views` | features service | Views with store, freshness, version, and failures |
-| `GET` | `/api/v1/features/stores` | features service | Feature stores shared with the caller's projects |
-| `GET` / `POST` | `/api/v1/admin/feature-stores` | admin/operator | List or connect feature stores ([Feature stores](../guides/feature-stores.md)) |
-| `GET` / `PUT` / `DELETE` | `/api/v1/admin/feature-stores/{id}` | admin/operator | Read, change, or remove a feature store |
-| `POST` | `/api/v1/admin/feature-stores/{id}/test` | admin/operator | Check a feature store |
-| `GET` | `/api/v1/admin/feature-store-providers` | admin/operator | Supported providers and capabilities |
+| Method | Path | Access | Service | Purpose |
+| --- | --- | --- | --- | --- |
+| `GET` | `/api/v1/features` | read | `features` | List feature views |
+| `POST` | `/api/v1/features` | write, or the `service` role | `features` | Apply a feature view |
+| `POST` | `/api/v1/features/{name}/materialized` | reporting | | Report online materialization and entity count |
+| `POST` | `/api/v1/features/{name}/materializations` | write, or the `service` role | `features` | Report a materialization run for lineage |
+| `GET` | `/api/v1/features/{name}/versions` | read | `features` | Immutable definition versions |
+| `GET` | `/api/v1/features/{name}/lineage` | read | `features` | Materialization lineage |
+| `GET` | `/api/v1/features/views` | read | `features` | Views with store, freshness, version and failures |
+| `GET` | `/api/v1/features/stores` | read | `features` | Feature stores shared with the caller's projects |
+| `GET`, `POST` | `/api/v1/admin/feature-stores` | admin | | List or connect feature stores ([Feature store integrations](../guides/feature-stores.md)) |
+| `GET`, `PUT`, `DELETE` | `/api/v1/admin/feature-stores/{id}` | admin | | Read, change or remove a feature store |
+| `POST` | `/api/v1/admin/feature-stores/{id}/test` | admin | | Check a feature store |
+| `GET` | `/api/v1/admin/feature-store-providers` | admin | | Supported providers and their capabilities |
 
 ## Storage
 
-| Method | Path | Role | Purpose |
+| Method | Path | Access | Service | Purpose |
+| --- | --- | --- | --- | --- |
+| `GET` | `/api/v1/storage/buckets` | read | `storage` | List buckets |
+| `GET` | `/api/v1/storage/objects` | read | `storage` | List objects (`bucket`, `prefix`) |
+| `GET` | `/api/v1/storage/object` | read | `storage` | Preview the start of an object (`bucket`, `key`) |
+| `GET`, `POST` | `/api/v1/admin/storage-connections` | admin | | List or register external S3-compatible buckets ([External object storage](../operations/external-storage.md)) |
+| `GET`, `PUT`, `DELETE` | `/api/v1/admin/storage-connections/{id}` | admin | | Read, change or remove a storage connection |
+| `POST` | `/api/v1/admin/storage-connections/{id}/test` | admin | | Check access to the bucket |
+
+A normal user sees only the buckets in their access profile.
+
+## Platform, catalog and prompts
+
+| Method | Path | Access | Service | Purpose |
+| --- | --- | --- | --- | --- |
+| `GET` | `/api/v1/connections` | read | `platform` | List connections |
+| `POST` | `/api/v1/connections` | admin | | Create a connection: `name`, `type`, `endpoint`, `secret_ref` (`none` or `env:VARIABLE`) |
+| `POST` | `/api/v1/connections/{id}/test` | admin | | Health-check a connection now |
+| `POST` | `/api/v1/connections/{id}/activate` | admin | | Use a Prefect or OpenFaaS connection for new operations |
+| `GET` | `/api/v1/components` | read | `platform` | Live health of each platform component |
+| `GET` | `/api/v1/observability/log-export` | read | `platform` | Log exporter state ([Log export](../operations/log-export.md)) |
+| `GET` | `/api/v1/catalog` | read | `catalog` | Shared catalog; `kind` filter: `model`, `feature`, `agent`, `tool` |
+| `GET` | `/api/v1/prompts` | read | `catalog` | Langfuse prompt library |
+
+## Real-time and functions
+
+| Method | Path | Access | Service | Purpose |
+| --- | --- | --- | --- | --- |
+| `GET` | `/api/v1/realtime` | read | `realtime` | Live statistics for the real-time examples |
+| `POST` | `/api/v1/realtime/{demo}` | reporting | | Report stream statistics |
+| `GET` | `/api/v1/functions` | read | `functions` | List functions and whether OpenFaaS is configured |
+| `POST` | `/api/v1/functions` | write | `functions` | Deploy a function: `project_id`, `name`, `image`, optional `cpu`, `memory`, `env_vars`, `labels`, `annotations` |
+| `DELETE` | `/api/v1/functions/{name}` | write | `functions` | Remove a function |
+| `POST` | `/api/v1/functions/{name}/invoke` | write | `functions` | Invoke a function with the request body as payload |
+| `POST` | `/api/v1/functions/{name}/invoke-async` | write | `functions` | Queue an invocation and return its call ID |
+
+For a normal user, a function's CPU or memory above the user's grant returns
+`403 resource_not_provisioned`, and the function count is limited by the user's
+quota.
+
+## Engineering blog
+
+Published posts are public. Writing uses a separate editorial membership and
+session, not platform roles; personal API keys and the `service` role cannot
+use it. See [Engineering blog](../guides/engineering-blog.md).
+
+| Method | Path | Access | Purpose |
 | --- | --- | --- | --- |
-| `GET` | `/api/v1/storage/buckets` | viewer+ | List buckets |
-| `GET` | `/api/v1/storage/objects` | viewer+ | List objects (`bucket`, `prefix`) |
-| `GET` | `/api/v1/storage/object` | viewer+ | Bounded object preview (`bucket`, `key`) |
-| `GET` / `POST` | `/api/v1/admin/storage-connections` | admin/operator | List or register external S3-compatible buckets ([External object storage](../operations/external-storage.md)) |
-| `GET` / `PUT` / `DELETE` | `/api/v1/admin/storage-connections/{id}` | admin/operator | Read, change, or remove a storage connection |
-| `POST` | `/api/v1/admin/storage-connections/{id}/test` | admin/operator | Signed `HEAD` check of the bucket |
-
-## Connections
-
-| Method | Path | Role | Purpose |
-| --- | --- | --- | --- |
-| `GET` | `/api/v1/connections` | viewer+ | List connections |
-| `POST` | `/api/v1/connections` | admin/operator | Create a connection (`secret_ref` is `none` or `env:VARIABLE`) |
-| `POST` | `/api/v1/connections/{id}/test` | admin/operator | Actively health-check a connection |
-| `POST` | `/api/v1/connections/{id}/activate` | admin/operator | Use a Prefect or OpenFaaS connection for new operations |
-| `GET` | `/api/v1/observability/log-export` | platform service | Log exporter state ([Log export](../operations/log-export.md)) |
-
-## Components, catalog, prompts
-
-| Method | Path | Role | Purpose |
-| --- | --- | --- | --- |
-| `GET` | `/api/v1/components` | viewer+ | Live component-health grid |
-| `GET` | `/api/v1/catalog` | viewer+ | Shared catalog (`kind` filter: model/feature/agent/tool) |
-| `GET` | `/api/v1/prompts` | viewer+ | Langfuse prompt library (proxy) |
-
-## Real-time & serverless
-
-| Method | Path | Role | Purpose |
-| --- | --- | --- | --- |
-| `GET` | `/api/v1/realtime` | viewer+ | Live stream-demo statistics |
-| `POST` | `/api/v1/realtime/{demo}` | service | Report stream stats (from the processor) |
-| `GET` | `/api/v1/functions` | viewer+ | List serverless functions |
-| `POST` | `/api/v1/functions` | functions service | Deploy an OCI function with resource limits and event annotations |
-| `DELETE` | `/api/v1/functions/{name}` | functions service | Remove an owned function |
-| `POST` | `/api/v1/functions/{name}/invoke` | engineer+ | Invoke a function |
-| `POST` | `/api/v1/functions/{name}/invoke-async` | functions service | Queue an invocation and return its call ID |
-
-Normal-user function deployment rejects CPU or memory above the assigned compute
-grant as `403 resource_not_provisioned`, independently of the maximum function-count
-quota. Admin/operator principals may provision beyond a user profile.
-
-## Events & audit
-
-| Method | Path | Role | Purpose |
-| --- | --- | --- | --- |
-| `GET` | `/api/v1/events` | viewer+ | SSE stream of the state digest (live updates) |
-| `GET` | `/api/v1/audit` | viewer+ | Immutable audit log |
-
-## Access control
-
-| Method | Path | Role | Purpose |
-| --- | --- | --- | --- |
-| `GET` | `/api/v1/iam/catalog` | any signed-in role | Actions, resource formats, condition keys, profiles |
-| `GET` | `/api/v1/iam/explain` | any signed-in role | Decision and trace for one action and resource |
-| `GET` | `/api/v1/iam/effective` | any signed-in role | Effective policies for a principal |
-| `GET` / `POST` | `/api/v1/admin/iam/groups`, `/api/v1/admin/iam/policies`, `/api/v1/admin/iam/attachments` | admin/operator | Groups, policies, attachments |
-| `GET` / `PUT` / `DELETE` | `/api/v1/admin/iam/groups/{id}`, `/api/v1/admin/iam/policies/{id}` | admin/operator | One group or policy (`DELETE` only for attachments by id) |
-| `GET` | `/api/v1/admin/iam/policies/{id}/revisions[/{version}]` | admin/operator | Immutable policy revisions |
-
-Request and response shapes are in [Access control](../guides/access-control.md#api).
-
-!!! note "Role column"
-    "viewer+" means viewer and above. "engineer+" means engineer, operator, admin.
-    "projects read" additionally includes a provisioned normal user assigned the
-    `projects` service.
-    "service" means the internal token identity (used by in-platform reporters).
-    Connections are admin/operator only. The exact matrix is in [RBAC](rbac.md).
+| `GET` | `/api/v1/blogs` | public | List published posts |
+| `GET` | `/api/v1/blogs/{slug}` | public | Read a published post |
+| `GET` | `/media/blog/{id}/{variant}` | public once attached to a published post | Image variant: `480`, `960` or `1600` pixels wide |
+| `GET`, `POST` | `/api/v1/editorial/bootstrap` | local `admin` or an ML admin, once | Check or grant the first editorial admin |
+| `POST`, `GET`, `DELETE` | `/api/v1/editorial/session` | editorial member with a verified identity | Open, read or end the editorial session (`kionga_editorial` cookie) |
+| `GET`, `POST` | `/api/v1/editorial/posts` | editorial session | List posts, or create a draft |
+| `GET`, `PUT` | `/api/v1/editorial/posts/{id}` | editorial session | Read, or save with `base_revision`. A conflict returns `409` with the `latest` revision. |
+| `POST` | `/api/v1/editorial/posts/{id}/transition` | editorial session, role-checked | `submit`, `withdraw`, `request_changes`, `publish`, `schedule`, `unpublish`, `archive` or `restore` |
+| `GET` | `/api/v1/editorial/posts/{id}/revisions` | editorial session | List revisions |
+| `GET` | `/api/v1/editorial/posts/{id}/revisions/{number}` | editorial session | One revision |
+| `POST` | `/api/v1/editorial/posts/{id}/revisions/{number}/restore` | editorial session | Restore a revision |
+| `GET` | `/api/v1/editorial/posts/{id}/compare` | editorial session | Compare revisions (`from`, `to`) |
+| `GET` | `/api/v1/editorial/posts/{id}/markdown` | editorial session | Export a post as Markdown |
+| `POST` | `/api/v1/editorial/markdown` | editorial session | Import Markdown |
+| `POST` | `/api/v1/editorial/preview` | editorial session | Render a preview |
+| `GET`, `POST` | `/api/v1/editorial/media` | editorial session | List media, or upload an image (up to 10 MB) |
+| `PATCH` | `/api/v1/editorial/media/{id}` | editorial session | Change alt text, caption or attribution |
+| `GET` | `/api/v1/editorial/members` | editorial session | List editorial members |
+| `PUT`, `DELETE` | `/api/v1/editorial/members/{subject}` | editorial admin | Add, change or remove a member |
+| `GET`, `PUT` | `/api/v1/editorial/settings` | editorial session; editorial admin to change | Blog headline and description |
 
 ## Attribution
 
-Mutations are attributed to the authenticated principal: its email when known,
-otherwise its subject. Internal services authenticate with the shared service
-token, so their actions are attributed to `internal-service`. The
-`X-MLAIOps-Actor` header that the SDK and CLI send is used only when no principal
-is attached to the request.
+Changes are attributed to the authenticated caller: the email when known,
+otherwise the subject. Kionga's own services are recorded as `internal-service`.
+The `X-MLAIOps-Actor` header that the SDK and CLI can send is used only when the
+request has no authenticated identity.
