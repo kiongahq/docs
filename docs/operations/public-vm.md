@@ -1,120 +1,258 @@
-# Public VM deployment without .env
+---
+description: Deploy the Kionga gateway behind Caddy on one Linux server from digest-pinned images, with configuration in JSON and secrets delivered as files.
+---
 
-This package runs **the gateway and Caddy only**, using managed or separately
-operated identity, PostgreSQL and ML services. It is suitable for a pilot or an
-edge gateway, not an HA replacement for the managed Kubernetes workload plane.
-Notebook/IDE provisioning requires the Kubernetes path and appropriate routing.
+# Deploy on a single server
 
-## Prepare the host
+This guide shows you how to run the Kionga gateway (console and API) on one
+Linux server with the single-server installer, `deploy/vm/up.py`. The installer
+runs two containers from images pinned by digest: the gateway, and Caddy as the
+TLS edge. Your identity provider, PostgreSQL and ML engines run elsewhere.
 
-Use a maintained Linux host with Docker Engine, Compose plugin and Python 3.
-Point a public DNS hostname at it and allow inbound 80/443. Restrict SSH to your
-administrators; do not expose database/engine ports. Provide private connectivity
-to dependencies and HTTPS egress for identity and ACME. Establish patching, disk
-monitoring, backups and a recovery owner before hosting users.
+Use this deployment for a pilot or as a control plane in front of
+infrastructure you already operate. It has no workload plane: it cannot
+provision notebooks, IDE workspaces or agents, and it has no gateway failover. For those,
+see [Deploy on Kubernetes](managed-kubernetes.md).
 
-Copy the examples under `deploy/vm/` to an administrator-controlled `/etc/kionga/`:
+## Before you begin
 
-- `deployment.example.json` becomes `deployment.json`: real hostname, ACME email,
-  verified gateway and Caddy image digests, config path and secret directory.
-- `config.example.json` becomes `config.json`: non-secret HTTPS OIDC endpoints,
-  client/audience, matching public origin and callback, plus service URLs as needed.
+**Server**
 
-The `ghcr.io/kiongahq` images are private. As the user that runs the launcher,
-log in once with a GitHub token that has only the `read:packages` scope:
+- A maintained Linux host with Docker Engine, the Docker Compose plugin,
+  Python 3 and Git. Make is optional.
+- Inbound TCP 80 and 443 open to your users and to Let's Encrypt. Restrict SSH
+  to administrators. Expose no other ports.
+- Outbound HTTPS to `ghcr.io`, Let's Encrypt and your identity provider, and
+  private network access to PostgreSQL and any engines you connect.
+- An owner for patching, disk monitoring, backups and recovery.
 
-```bash
-echo "$GHCR_TOKEN" | docker login ghcr.io -u <github-user> --password-stdin
-```
+**DNS**
 
-Docker stores the credential in `~/.docker/config.json` (or `$DOCKER_CONFIG`,
-which the launcher passes through). A failed pull stops the launcher with these
-instructions. Use a token for a dedicated machine account and rotate it like any
-other secret.
+- A public DNS name (for example `kionga.example.org`) that resolves to the
+  server. Caddy requests the certificate for this name on first start.
 
-Every JSON value in the application configuration must be a string. The launcher
-rejects mutable image tags and disables Compose's repository `.env` loading.
-It passes only an allowlist of host settings to Docker. Do not put credentials
-into either JSON file, Git, cloud-init user data, shell history or command arguments.
+**Identity provider and database**
 
-## Deliver secret files
+- An OIDC identity provider with an HTTPS issuer. Register a client for Kionga
+  with the callback `https://<your-domain>/auth/callback`.
+- A PostgreSQL database the gateway can reach over TLS with certificate
+  verification (`sslmode=verify-full`).
 
-Use the VM's cloud identity and your cloud secret agent or configuration management
-to materialize these files under `/run/kionga/secrets`:
+**Access**
 
-```text
-DATABASE_URL
-OIDC_CLIENT_SECRET
-MLAIOPS_INTERNAL_TOKEN
-KIONGA_CREDENTIAL_KEY
-```
+- A GitHub account with access to the `ghcr.io/kiongahq` packages and a token
+  with only the `read:packages` scope. Use a dedicated machine account.
+- `sudo` on the server to create `/etc/kionga` and the secret directory.
+- The image digests of the release you are deploying, for the gateway
+  (`ghcr.io/kiongahq/gateway@sha256:...`) and for Caddy (`caddy@sha256:...`).
 
-This repository does not install a provider-specific agent or grant its IAM role.
-Grant that role read access only to the required secrets. Configure atomic file
-replacement, retry/alert behavior and service ordering. `/run` is ephemeral: after
-reboot, the secret agent must populate files before containers start.
+**Secrets**
 
-On a conventional rootful Linux Docker host, use root-owned files with group 65532,
-mode 0640 and a protected directory (0750); ensure the deploying identity and
-container UID/GID 65532 can read the files and config. Rootless/user-namespace
-Docker requires matching mapped ownership instead. Compose file secrets are
-mounts, not an encrypted secret manager. Do not rely on Compose `uid`/`gid` fields
-to change ownership of bind-mounted host files.
+Four values, delivered as files by your secret manager or configuration
+management (never in Git, cloud-init user data, shell history or command
+arguments):
 
-Use `sslmode=verify-full` in the PostgreSQL URI. For a private database CA, extend
-the Compose service with a read-only CA mount and reference it with `sslrootcert`.
-Use independently generated strong client/internal credentials, and a stable
-base64-encoded 32-byte encryption key. Back up that key securely with your recovery
-plan; replacing it invalidates access to previously encrypted personal credentials.
+| File | Value | Requirement in production |
+| --- | --- | --- |
+| `DATABASE_URL` | PostgreSQL connection URI | `postgres://` or `postgresql://` with `sslmode=verify-full` |
+| `OIDC_CLIENT_SECRET` | The identity provider's client secret | At least 24 characters, not a development value |
+| `MLAIOPS_INTERNAL_TOKEN` | Shared token for platform services | At least 24 characters, not a development value; generate with `openssl rand -hex 24` |
+| `KIONGA_CREDENTIAL_KEY` | Key that encrypts users' stored personal credentials | Base64 encoding of exactly 32 bytes; generate with `openssl rand -base64 32` |
 
-For optional authenticated engine integrations, explicitly add their secret file
-mount and corresponding supported `NAME_FILE` environment variable to the VM
-Compose definition. The default package deliberately mounts only four secrets.
+Back up `KIONGA_CREDENTIAL_KEY` with your recovery plan. Replacing it makes
+previously stored personal credentials unreadable.
 
-## Validate and start
+## Steps
 
-From the workspace folder (the one holding `deploy/`):
+1. **Get the deployment files.** The installer needs only the `deploy`
+   repository; it never builds from source.
 
-```bash
-python3 deploy/vm/up.py /etc/kionga/deployment.json --validate-only
-make -C deploy public-up DEPLOYMENT=/etc/kionga/deployment.json
-```
+    ```bash
+    mkdir ~/kionga && cd ~/kionga
+    git clone https://github.com/kiongahq/deploy.git
+    ```
 
-If `make` is unavailable, run `bash deploy/public-up.sh /etc/kionga/deployment.json`.
-Validation checks the deployment inputs and Compose configuration, not cloud IAM
-or database credentials. Startup pulls pinned images, recreates services and waits
-for the public HTTPS readiness endpoint. Only Caddy publishes host ports; gateway
-runs non-root, with a read-only root filesystem and dropped capabilities. Caddy
-maintains certificate data in named volumes and requires working DNS/ACME access.
+    Run the remaining commands from `~/kionga`.
 
-Readiness success is not full acceptance. Test login, provisioning authorization,
-engine connectivity and recovery using the [shared checklist](production-operations.md).
+2. **Sign in to the registry.** The `ghcr.io/kiongahq` images are private. As
+   the user that runs the installer, sign in once:
 
-## Updates, rotation and shutdown
+    ```bash
+    echo "$GHCR_TOKEN" | docker login ghcr.io -u <github-user> --password-stdin
+    ```
 
-Update reviewed digests in deployment JSON, materialize new secret versions, then
-rerun the start command. It forces recreation so atomically replaced secret files
-are remounted. Expect downtime: this is a single gateway deployment. Coordinate
-internal-token changes with every dependent service. Roll back by restoring the
-previous reviewed digests/configuration and rerunning; this does not undo data
-migrations or restore secrets automatically.
+    Docker stores the credential in `~/.docker/config.json` (or
+    `$DOCKER_CONFIG`, which the installer passes through). Rotate the token
+    like any other secret.
+
+3. **Write the deployment file.** Copy `deploy/vm/deployment.example.json` to
+   `/etc/kionga/deployment.json` and replace every value:
+
+    | Field | Value |
+    | --- | --- |
+    | `domain` | Your DNS name, without a scheme or port. Example domains are rejected. |
+    | `acme_email` | Contact address for Let's Encrypt |
+    | `gateway_image` | `ghcr.io/kiongahq/gateway@sha256:<digest>` |
+    | `caddy_image` | `caddy@sha256:<digest>` |
+    | `config_file` | Path of the application configuration, for example `/etc/kionga/config.json` |
+    | `secrets_directory` | Directory that holds the four secret files, for example `/run/kionga/secrets` |
+
+    The installer rejects image references that are not pinned by a SHA-256
+    digest.
+
+4. **Write the application configuration.** Copy
+   `deploy/vm/config.example.json` to the `config_file` path and set your
+   values. Every value must be a JSON string.
+
+    - `MLAIOPS_ALLOWED_ORIGIN`: `https://<your-domain>`. It must match
+      `domain`.
+    - `OIDC_ISSUER`, `OIDC_JWKS_URL`, `OIDC_AUTH_URL`, `OIDC_TOKEN_URL`: your
+      identity provider's HTTPS endpoints.
+    - `OIDC_CLIENT_ID` and `OIDC_AUDIENCE`: the client you registered.
+    - `OIDC_REDIRECT_URL`: `https://<your-domain>/auth/callback`.
+    - Optional engine addresses, such as `MLFLOW_URL`, `PREFECT_API_URL` and
+      `KAFKA_REST_URL`.
+
+    Do not put secrets in this file. The gateway refuses to start if a key is
+    a secret name, ends in `_FILE`, or contains `PASSWORD`, `SECRET`, `TOKEN`
+    (other than `OIDC_TOKEN_URL`) or `API_KEY`.
+
+5. **Deliver the secret files.** Have your secret agent write the four files
+   from [Before you begin](#before-you-begin) into `secrets_directory`, one
+   value per file, named exactly as in the table. The installer requires each
+   file to be non-empty, readable by the deploying user and not
+   world-accessible.
+
+    On a standard Docker host that runs as root, make the files owned by root with
+    group `65532` (the gateway's user and group), mode `0640`, in a directory
+    with mode `0750`:
+
+    ```bash
+    sudo chown -R root:65532 /run/kionga/secrets
+    sudo chmod 0750 /run/kionga/secrets
+    sudo chmod 0640 /run/kionga/secrets/*
+    ```
+
+    Rootless Docker or user-namespace remapping needs the matching mapped
+    ownership instead. `/run` is cleared at reboot, so configure your secret
+    agent to write the files again before Docker starts the containers.
+
+6. **Validate the inputs.**
+
+    ```bash
+    python3 deploy/vm/up.py /etc/kionga/deployment.json --validate-only
+    ```
+
+    Expected output:
+
+    ```text
+    VM deployment inputs and Compose configuration validated
+    ```
+
+    Validation checks the deployment file, the configuration origin, the secret
+    files and the Compose configuration. It does not check credentials, the
+    database or your identity provider.
+
+7. **Start Kionga.**
+
+    ```bash
+    make -C deploy public-up DEPLOYMENT=/etc/kionga/deployment.json
+    ```
+
+    Without Make, run `bash deploy/public-up.sh /etc/kionga/deployment.json`.
+    The installer pulls the pinned images, recreates both containers and polls
+    `https://<your-domain>/api/v1/ready` (60 attempts, 3 seconds apart). When
+    the gateway answers, it prints:
+
+    ```text
+    Kionga is ready at https://<your-domain>
+    ```
+
+## Verify
+
+1. Check readiness from outside the server:
+
+    ```bash
+    curl -s https://<your-domain>/api/v1/ready   # {"status":"ready"}
+    ```
+
+    The gateway reports ready when it can reach PostgreSQL.
+
+2. Open `https://<your-domain>`, sign in through your identity provider and
+   sign out again.
+
+3. Check that anonymous API access is denied:
+
+    ```bash
+    curl -s -o /dev/null -w '%{http_code}\n' https://<your-domain>/api/v1/projects   # 401
+    ```
+
+4. Inspect the containers if something fails:
+
+    ```bash
+    docker compose -p kionga-public ps
+    docker compose -p kionga-public logs --tail 100 gateway
+    ```
+
+Readiness is not acceptance. Before you admit users, complete the
+[production readiness checklist](production-operations.md#acceptance-checklist).
+
+## Optional: add a break-glass administrator
+
+By default the server accepts only single sign-on. To keep a local `admin`
+account for when the identity provider is unavailable:
+
+1. Add `"KIONGA_LOCAL_LOGIN": "true"` to the application configuration.
+2. Deliver the password as a fifth secret file, `MLAIOPS_LOCAL_PASSWORD`. In
+   production the gateway refuses to start unless the password has at least
+   16 characters and contains none of `local`, `change-me` or `password`.
+3. The installer mounts only the four standard secrets. Add the file to the
+   gateway's `secrets` list in `deploy/vm/compose.yaml`, with a matching entry
+   under the top-level `secrets` key, and set
+   `MLAIOPS_LOCAL_PASSWORD_FILE: /run/secrets/MLAIOPS_LOCAL_PASSWORD` in the
+   gateway's `environment`.
+4. Run the start command again.
+
+Connect optional engines that need credentials (for example `MLFLOW_TOKEN` or
+`KAFKA_REST_TOKEN`) the same way: mount the secret file and set the matching
+`NAME_FILE` variable.
+
+## Upgrade and roll back
+
+**Upgrade.** Replace the image digests in `deployment.json` with the reviewed
+digests of the new release, then run the start command again. The installer
+always recreates the containers, so it also picks up replaced secret files.
+Expect a short outage: there is one gateway.
+
+**Rotate secrets.** Have your secret agent write the new file contents, then
+run the start command again. The gateway reads secret files only at startup.
+When you rotate `MLAIOPS_INTERNAL_TOKEN`, update every service that uses it at
+the same time.
+
+**Roll back.** Restore the previous digests and configuration, then run the
+start command again. Rollback does not undo database migrations or restore
+earlier secret values. Back up PostgreSQL before every upgrade.
+
+**Stop.** Stop the containers without deleting the certificate volumes:
 
 ```bash
 make -C deploy public-down DEPLOYMENT=/etc/kionga/deployment.json
-# Equivalent, retaining certificate/data volumes:
-python3 deploy/vm/up.py /etc/kionga/deployment.json --stop
 ```
 
-Do not use `down -v` as an upgrade or troubleshooting command. Configure host
-service ordering for boot and secret delivery; Docker restart policies alone do
-not guarantee secrets are present at boot. Back up external databases and retain
-the Caddy certificate volume. Do not log secret file contents when diagnosing errors.
+`python3 deploy/vm/up.py /etc/kionga/deployment.json --stop` does the same.
+Never use `docker compose down -v` to upgrade or troubleshoot: it deletes
+Caddy's certificate data.
 
-## References
+## Next steps
 
-- [Docker Compose secrets](https://docs.docker.com/compose/how-tos/use-secrets/)
-- [Compose Secret file semantics](https://docs.docker.com/reference/compose-file/secrets/)
-- [Caddy automatic HTTPS](https://caddyserver.com/docs/automatic-https)
-- [AWS instance roles](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html)
-- [Google Application Default Credentials](https://cloud.google.com/docs/authentication/application-default-credentials)
-- [Azure managed identities](https://learn.microsoft.com/en-us/entra/identity/managed-identities-azure-resources/overview)
+- [Production readiness](production-operations.md): monitoring, backups and the
+  acceptance checklist.
+- [Single sign-on](single-sign-on.md): map identity provider groups to Kionga
+  roles.
+- [Troubleshooting](troubleshooting.md#single-server): installer and gateway
+  startup errors.
+- [Deploy on Kubernetes](managed-kubernetes.md) when you need notebooks, IDE
+  workspaces or agents.
+
+Related: [Docker Compose secrets](https://docs.docker.com/compose/how-tos/use-secrets/),
+[Caddy automatic HTTPS](https://caddyserver.com/docs/automatic-https).
