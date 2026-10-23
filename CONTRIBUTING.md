@@ -1,63 +1,35 @@
 # Contributing to the documentation
 
-The documentation should help readers complete a task or answer a precise
-question. Keep marketing claims out of procedures and distinguish code that
-exists from integrations that have been tested in a live environment.
+Thank you for improving Kionga's documentation. The full standard (page types, style,
+checks and URL rules) is the handbook's
+[documentation standard](https://kiongahq.github.io/docs/engineering/contributing/documentation/).
+This page is the short version.
 
-## Choose the right section
+## Where a page goes
 
-| Content                                                    | Section         |
-| ---------------------------------------------------------- | --------------- |
-| First install and first successful run                     | Getting started |
-| Platform concepts and architecture                         | Understand      |
-| A user task with steps and an expected result              | Build           |
-| Exact fields, endpoints, permissions, or service contracts | Reference       |
-| Deployment, security, recovery, and incident procedures    | Operations      |
+- **Product documentation** (`docs/`): what Kionga does and how to use, deploy and
+  operate it, organized by Diátaxis (tutorials, how-to guides, concepts, reference).
+- **Engineering handbook** (`engineering/docs/`): how Kionga is built. Architecture in
+  arc42 sections, decisions as MADR records, one page per component, contribution
+  workflow.
 
-Add a page to `mkdocs.yml` under one primary section. Prefer linking to an
-existing reference page over copying a table of settings into several guides.
-Keep existing URLs stable when reorganizing navigation; add a redirect plan
-before moving a published page.
+Product pages do not name Go packages or source files; they link to the handbook
+instead. Links within a site are relative; links between sites are absolute URLs.
 
-## Page format
+## Writing rules
 
-1. Use one descriptive `#` title and a short opening paragraph that states the
-   page's purpose and scope. Avoid a heading called “Overview” immediately below
-   the title unless it adds distinct information.
-2. For a task guide, state prerequisites, then give steps in execution order.
-   Show the expected result and link to troubleshooting or next steps.
-3. For a reference, group facts by resource or interface. Use tables only when
-   readers need to compare repeated fields; include units, defaults, and the
-   owning component where relevant.
-4. For an operations page, state the environment and trust boundary first.
-   Include validation, rollback or recovery, and the evidence needed before
-   admitting users.
-5. Use sentence-case headings, fenced code blocks with a language, and relative
-   links for pages in this repository. Keep examples copyable and avoid tokens,
-   passwords, or personal hostnames except explicitly labeled local defaults.
+- Front matter with a one-sentence `description:`, one H1, sentence-case headings.
+- Google developer documentation style: second person, present tense, active voice.
+- No em dashes, no Latin abbreviations, no marketing language.
+- Check every command, path, variable, route and default against the code.
+- Keep published URLs working: when you move a product page, add a redirect in
+  `mkdocs.yml`.
 
-## Accuracy and status
+## Before you open a pull request
 
-- Check commands, flags, paths, and defaults against the owning repository.
-  `make docs-check` verifies the mechanical part (make targets, paths, env
-  vars, routes, CLI commands, SDK names); defaults and behaviour still need a
-  read of the code.
-- Mark optional engines as optional. A control-plane API does not imply the
-  external engine is installed or reachable.
-- Do not describe mock-backed tests, a successful build, or a health endpoint as
-  production acceptance. Update [implementation status](docs/reference/implementation-status.md)
-  when a capability changes delivery or verification level.
-- Document local credentials as development-only. Public deployment guidance must
-  use the [production acceptance checklist](docs/operations/production-operations.md).
-- Keep product agent documentation. Coding-assistant prompts and local assistant
-  state do not belong in this repository.
+```bash
+make docs-build docs-lint docs-check docs-test
+```
 
-## Review checklist
-
-- [ ] The page has a clear audience, title, scope, and correct section in `mkdocs.yml`.
-- [ ] Internal links and code examples work from the documented workspace layout.
-- [ ] Security and deployment claims match the current implementation status.
-- [ ] No secrets, machine-specific paths, generated site files, or assistant state
-  have been added.
-- [ ] `make docs-build` passes with strict mode.
-- [ ] `make docs-check` passes against current sibling checkouts.
+All four must pass. Commit with a conventional message, for example
+`docs(guides): add the feature store guide`.

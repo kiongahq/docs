@@ -1,41 +1,34 @@
 # Kionga documentation
 
-Source for the [Kionga documentation](https://kiongahq.github.io/docs/), built with
-MkDocs Material and published from `main`. Kionga's repositories use the
-[MIT License](LICENCE); third-party components keep their own licenses.
+Source for Kionga's two documentation sites, built with
+[MkDocs Material](https://squidfunk.github.io/mkdocs-material/) and published from
+`main` to GitHub Pages.
 
-The site is organized by reader task:
+| Site | Source | Published at | For |
+| --- | --- | --- | --- |
+| Product documentation | `docs/`, `mkdocs.yml` | <https://kiongahq.github.io/docs/> | People who install, use, administer and operate Kionga |
+| Engineering handbook | `engineering/docs/`, `engineering/mkdocs.yml` | <https://kiongahq.github.io/docs/engineering/> | People who change Kionga's code |
 
-| Section | Purpose |
-| --- | --- |
-| Getting started | Install a private local stack and complete the first workflow |
-| Understand | Concepts, architecture, repositories, and technology choices |
-| Build | Task-based guides for projects, ML/data, agents, and collaboration |
-| Reference | Exact APIs, configuration, RBAC, service and code contracts |
-| Operations | Deployment choices, acceptance, recovery, and troubleshooting |
+Kionga is a self-hosted, open-source platform for machine learning, data and AI
+agents. Its repositories use the [MIT License](LICENCE); third-party components keep
+their own licenses.
 
-The [implementation-status page](docs/reference/implementation-status.md) separates
-bundled code, optional integrations, and features that still need live-environment
-validation. Do not describe a capability as production-ready based only on a local
-build or mock-backed test.
+## Build and check
 
 ```bash
-make docs-install
-make docs-serve      # http://127.0.0.1:8000, live reload
-make docs-build      # strict: broken links and nav errors fail the build
-make docs-check      # references checked against the sibling checkouts
-make docs-test       # gate tests for the reference checker (needs pytest)
+make docs-install            # MkDocs and plugins from requirements-docs.txt
+make docs-serve              # product site, http://127.0.0.1:8000
+make docs-serve-engineering  # handbook, http://127.0.0.1:8001
+make docs-build              # strict build of both sites
+make docs-lint               # Vale, Google developer documentation style
+make docs-check              # references checked against the sibling checkouts
+make docs-test               # reference checker and legacy URL tests (pytest)
 ```
 
-`make docs-check` runs `scripts/check_references.py`. It reads every page and
-verifies `make` targets, paths into other repositories, environment variable
-names, REST routes, CLI commands, and Python SDK names against the code in the
-sibling checkouts (`KIONGA_SRC=..` by default). Known false positives go in
-`scripts/reference-allowlist.txt` with a comment saying why; when a reference is
-wrong, fix the page instead.
+`make docs-check` reads the code in the sibling repositories (`KIONGA_SRC=..` by
+default). Clone them beside this one with `make -C ../deploy workspace`.
 
-Paths and commands in the docs are relative to a workspace folder holding every
-Kionga repository (see [Repositories](docs/overview/repositories.md)). When a change
-in another repository changes behaviour, update the matching page here in the same
-pull-request cycle. Follow [CONTRIBUTING.md](CONTRIBUTING.md) for page structure,
-terminology, and verification.
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). The full standard is the handbook's
+[documentation standard](https://kiongahq.github.io/docs/engineering/contributing/documentation/).
