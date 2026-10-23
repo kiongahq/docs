@@ -29,3 +29,6 @@ env RESOURCE_GROUP
 
 # Named as removed in the engineering-blog migration note.
 route /api/v1/admin/blogs
+
+# Secret files the operator creates in the git-ignored deploy/config/secrets/ folder.
+path deploy/config/secrets/*
