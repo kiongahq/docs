@@ -1,206 +1,166 @@
-# Installation
+---
+description: Install the full Kionga platform on one machine with Docker Compose and confirm that it works.
+---
 
-Kionga runs as one Docker Compose stack built from its component repositories
-(see [Repositories](https://kiongahq.github.io/docs/engineering/components/)). You clone them side by side into
-one workspace folder; every path and command in these docs is relative to that
-folder.
+# Install Kionga
 
-## Prerequisites
+In this tutorial you install the complete Kionga platform on your own machine,
+sign in to the console, and run a check that exercises every bundled capability.
+Kionga runs locally as one Docker Compose stack that it builds from its component
+repositories.
 
-| Requirement | Why | Notes |
-| --- | --- | --- |
-| **Docker Engine + Compose v2** | Runs the whole stack | Docker Desktop on macOS/Windows, Docker Engine on Linux |
-| **~8 GB RAM free for Docker** | The full multi-service stack | Raise Docker Desktop's memory if services get OOM-killed; 12 GB is more comfortable |
-| **25–35 GB free Docker storage** | First build downloads and compiles several large images | Cached rebuilds need less; check with `docker system df` |
-| **Make** | Convenience targets | Optional: you can call `docker compose` and the scripts directly |
-| **Go 1.26** (toolchain 1.26.10, fetched automatically by the `go` command) | Only for building Go binaries outside Docker or running Go tests | Not needed just to run the stack |
-| **Python 3.11+** | Only for the SDK, tests, or docs outside Docker | Not needed just to run the stack |
-| **Node.js** | Only for `make -C platform verify` and `make -C platform test-ui` (console checks) | Not needed to run the stack |
+## Before you begin
 
-## Fastest path: the full stack
+| Requirement | Notes |
+| --- | --- |
+| Docker Engine with Docker Compose v2 | Docker Desktop on macOS or Windows, Docker Engine on Linux. The Docker daemon must be running. |
+| At least 8 GB of memory for Docker | On Docker Desktop, set it under **Settings → Resources**. |
+| 25 to 35 GB of free disk space | The first build downloads and compiles several large images. Later starts need much less. |
+| Git, Make, and Python 3 | Git clones the repositories, Make runs the commands, and the startup script uses Python 3 (standard library only). |
+| curl | Optional. The startup script uses it to wait until the console is ready. |
+
+## Step 1: Get the code
+
+Create a workspace folder, clone the `deploy` repository into it, and let it
+clone the other component repositories beside it:
 
 ```bash
 mkdir ~/kionga && cd ~/kionga
 git clone https://github.com/kiongahq/deploy.git
-KIONGA_GIT_BASE=https://github.com/kiongahq/ make -C deploy workspace   # clones the other repositories
+KIONGA_GIT_BASE=https://github.com/kiongahq/ make -C deploy workspace
+```
+
+`make -C deploy workspace` clones over SSH by default. `KIONGA_GIT_BASE`
+switches it to HTTPS. Each repository prints `cloned`, or `present` when it is
+already there. Every command in this documentation runs from this workspace
+folder.
+
+## Step 2: Start the stack
+
+```bash
 make -C deploy local-up
 ```
 
-`make -C deploy workspace` clones every component beside `deploy/` (over SSH by
-default; `KIONGA_GIT_BASE` above switches to HTTPS). `make -C deploy local-up`:
+The command:
 
-1. Verifies that Docker and Compose v2 are available, the daemon is running, and
-   every component checkout is present.
-2. Downloads missing upstream images with conservative concurrency and retries
-   transient registry/CDN failures such as `EOF`.
-3. Reuses cached images or builds missing images, then starts every service in
-   `deploy/compose.yaml`.
-4. Waits for the control-plane health endpoint.
-5. Creates the Kafka topics (`deploy/scripts/local-topics.sh`).
+1. Checks that Docker and Compose v2 are available, that the Docker daemon is
+   running, and that every component repository is present.
+2. Keeps each default port, or moves a busy one to a free port 10000 higher and
+   prints the change (for example, `8080` becomes `18080`).
+3. Downloads missing upstream images, a few at a time, and retries transient
+   network failures.
+4. Builds the images that are missing or whose sources changed, then starts every
+   service.
+5. Waits for the console and API to become healthy, then creates the Kafka topics.
 
-The shorter `make -C deploy local` alias does the same thing. The bootstrap is idempotent: if
-a download fails even after the bounded retries, run the command again and Docker
-resumes from layers already cached. Tune unusual environments with
-`COMPOSE_PARALLEL_LIMIT`, `KIONGA_START_RETRIES`, and
-`KIONGA_START_TIMEOUT_SECONDS` without editing the Compose file.
+The first run builds several images and takes the longest. Later runs reuse the
+built images and start much faster. If a download fails even after the retries,
+run the command again: Docker resumes from the layers it already has.
 
-Routine `make -C deploy local-up` runs reuse cached images and rebuild only images
-whose sources changed, including sources in another repository the image installs
-(an SDK change rebuilds `agent-runtime` and `jupyter`). `make -C deploy local-rebuild`
-rebuilds everything. `make -C deploy workspace-pull` fast-forwards clean checkouts.
+When the stack is ready, the command prints:
 
-The first run builds several images (Go services, MLflow, agent runtime, pipeline
-runner, and Jupyter workbench). Allow roughly 10–25 minutes depending on bandwidth,
-CPU architecture, and cache state. Subsequent runs are much faster.
-
-When it finishes, open the landing page:
-
-<http://localhost:8080>
-
-The operational console is at <http://localhost:8080/console.html>.
-Sign in with the local account `admin` / `mlaiops-local`, or with one of the
-single sign-on test accounts described in
-[Single sign-on](../operations/single-sign-on.md#try-it-locally).
-
-Every published port binds to `127.0.0.1`, so the stack is reachable only from
-this machine. To open it to other machines on a trusted network, set
-`KIONGA_BIND_ADDRESS` (see [Local operations](../operations/local.md#network-exposure)).
-
-If a default port is already used (8080, or 5432 by a native PostgreSQL),
-`make -C deploy local-up` moves that service to a free port 10000 higher (18080,
-15432) and prints it; see [Changing ports](../operations/local.md#changing-ports). To choose a port yourself without changing the container network:
-
-```bash
-GATEWAY_PORT=18080 make -C deploy local-up
-export GATEWAY=http://localhost:18080
+```text
+Kionga is ready.
+  Console:  http://localhost:8080
+  Login:    admin / mlaiops-local
 ```
 
-Bucket creation uses the `boto3` already included in the local MLflow image;
-it does not pull a separate S3 client image. A registry error that says a
-repository or tag does not exist fails immediately rather than consuming all
-retry attempts.
+The port in the console URL differs when the default port was busy. `make -C deploy local` is an alias for
+`make -C deploy local-up`.
 
-### Verify it works
+## Step 3: Sign in
+
+Open <http://localhost:8080> for the landing page, or go straight to the console
+at <http://localhost:8080/console.html>. Sign in with the local account `admin` and
+password `mlaiops-local`, or with one of the single sign-on test accounts described in
+[Single sign-on](../operations/single-sign-on.md#try-it-locally).
+
+You see the console's **Overview** page.
+
+## Step 4: Check the whole platform
 
 ```bash
 ./deploy/scripts/demo-smoke.sh
 ```
 
-This exercises the configured platform end to end: it signs in with the local
-account (or uses `MLAIOPS_TOKEN` when set), creates a project, runs a real
-pipeline, deploys a model and gets a live prediction, deploys and invokes an
-agent, reads features from Redis, browses storage, and scores fraud events.
-`make -C deploy smoke` runs the same script. Use
-`GATEWAY=http://localhost:18080 ./deploy/scripts/demo-smoke.sh` when the port was
-overridden. The pass/skip count is dynamic; the command must finish with zero
-failures. OpenFaaS is skipped until an external gateway is configured.
+The check signs in with the local account (or uses `MLAIOPS_TOKEN` when you set
+it), creates a project, runs a real training pipeline, deploys the trained model
+and requests a live prediction, deploys and invokes an agent, reads online
+features, browses storage, and scores real-time events. `make -C deploy smoke`
+runs the same script.
 
-### Service URLs
+The script ends with a `RESULT: <passed> passed, <failed> failed, <skipped> skipped`
+line; the counts depend on what your stack has configured. The check succeeds when
+`failed` is `0`. Serverless functions are skipped until you connect an OpenFaaS
+gateway.
 
-| Service | URL | Credentials (local defaults) |
+If the console uses a different port, pass it to the check:
+
+```bash
+GATEWAY=http://localhost:18080 ./deploy/scripts/demo-smoke.sh
+```
+
+## Service URLs
+
+| Service | URL | Sign-in (local defaults) |
 | --- | --- | --- |
-| Landing page | <http://localhost:8080> | none |
-| Console + API | <http://localhost:8080/console.html> | `admin` / `mlaiops-local`, or single sign-on through Dex |
-| Jupyter workbench | <http://localhost:8080/workspace.html?tool=workbench> | Kionga session |
-| Browser IDE | <http://localhost:8080/workspace.html?tool=ide> | Kionga session; start with `make -C deploy ide-up` |
+| Landing page | <http://localhost:8080> | None |
+| Console and API | <http://localhost:8080/console.html> | `admin` / `mlaiops-local`, or single sign-on |
+| Jupyter workbench | <http://localhost:8080/workspace.html?tool=workbench> | Your console session |
+| Browser IDE | <http://localhost:8080/workspace.html?tool=ide> | Your console session. Start it first with `make -C deploy ide-up`. |
 | Dex (single sign-on) | <http://localhost:5556/dex> | Test directory password `kionga-sso-dev` |
-| MLflow | <http://localhost:15000> | none |
-| Prefect | <http://localhost:4200> | none |
+| MLflow | <http://localhost:15000> | None |
+| Prefect | <http://localhost:4200> | None |
 | Langfuse | <http://localhost:3000> | `admin@local.dev` / `mlaiops-local-admin` |
 | RustFS console | <http://localhost:9001> | `mlaiops` / `mlaiops-local-secret` |
 
-See [Configuration reference](../reference/configuration.md) for every port and setting, and
-[Connecting all services](../reference/service-endpoints.md) for the full connection map.
+[Service endpoints](../reference/service-endpoints.md) lists every service, and
+[Services and ports](../reference/services.md) lists every port.
 
-## Stopping and restarting
+## Change ports and network access
 
-```bash
-make -C deploy local-down     # stop the stack (volumes persist)
-make -C deploy local-up       # bring it back
-make -C deploy local-status   # show every service, including completed one-shot jobs
-make -C deploy local-logs     # show the latest logs from the stack
-make -C deploy local-rebuild  # rebuild changed local source images, then start
-```
+Every published port binds to `127.0.0.1`, so only your machine can reach the
+stack. To open it to other machines on a trusted network, set
+`KIONGA_BIND_ADDRESS`; see [Network exposure](../operations/local.md#network-exposure).
 
-Durable state lives in named volumes (`postgres-data`, `objectstore-data`, `redis-data`,
-`prefect-data`, `jupyter-data`), so your projects, models, and notebooks survive
-restarts.
-
-Long-running services use `restart: unless-stopped`: after Docker Desktop or the
-machine restarts, the whole stack comes back as it was. `make -C deploy local-down`
-removes the containers, so a stopped stack stays stopped.
-
-## Alternative: build and run the Go control plane only
-
-For control-plane development without the full stack:
+To choose a port yourself, set its variable when you start the stack:
 
 ```bash
-make -C platform run            # runs the gateway on :8080 (file-backed store)
+GATEWAY_PORT=18080 make -C deploy local-up
 ```
 
-In this mode there is no execution engine, serving, or agent runtime. The gateway
-stores state in a local JSON file (`MLAIOPS_DATA_PATH`, default
-`data/platform.json` relative to `platform/go`), single sign-on is off, and the
-local account `admin` / `mlaiops-local` is the only sign-in. Downstream
-integrations show as not configured. Use it for API and console work. Install
-the SDK separately when you need it: `pip install -e "./sdk-python[dev]"`.
+A port that you set explicitly is never moved. If it is busy, the startup stops and
+names the variable to change. See [Changing ports](../operations/local.md#changing-ports).
 
-## Building the binaries
+## Stop and restart
 
 ```bash
-make -C platform build
+make -C deploy local-down     # stop and remove the containers; data volumes stay
+make -C deploy local-up       # start again
+make -C deploy local-status   # every service, including finished one-shot jobs
+make -C deploy local-logs     # the latest 100 log lines of each service
+make -C deploy local-rebuild  # rebuild every image, then start
+make -C deploy workspace-pull # fast-forward clean repository checkouts
 ```
 
-Produces static binaries in `platform/bin/`:
+Your projects, models, object storage, online features, pipeline history, and
+notebooks live in named Docker volumes (`postgres-data`, `objectstore-data`,
+`redis-data`, `prefect-data`, `jupyter-data`), so they survive restarts.
 
-```text
-mlaiops-gateway  mlaiops-operator  mlaiops-integration-worker
-mlaiops-feature-gateway  mlaiops-storage-proxy  mlaiops-metrics-collector
-mlaiops-log-exporter  mlaiops-cli
-```
+Services restart automatically (`restart: unless-stopped`): after Docker or the
+machine restarts, the stack comes back as it was. A stack you stopped with
+`make -C deploy local-down` stays stopped.
 
-The serving manager and the trace proxy live in their own repositories and build
-with `make -C serving build` and `make -C trace-proxy build`.
+## What you built
 
-The platform's Go services build from `platform/go/Dockerfile` with a `SERVICE`
-build arg; every other image builds from its own repository's `Dockerfile` (see
-[Repositories](https://kiongahq.github.io/docs/engineering/components/)):
+You now have the full Kionga platform on your machine: the console and API, the
+pipeline engine, the model registry and serving, the agent runtime, the feature
+store, object storage, event streaming, and the Jupyter workbench.
 
-```bash
-docker build --build-arg SERVICE=gateway -t kionga/gateway platform/go
-docker build -t kionga/serving-manager serving
-```
+## Next steps
 
-## Running the test suites
-
-```bash
-make -C platform verify           # gofmt, go vet, go test -race, build, console JS syntax, banned-tech scan
-make -C platform test-integration # PostgreSQL store tests in a throwaway pgvector container
-make -C deploy test               # Compose wiring, Helm chart, and VM installer gate tests
-make -C deploy test-e2e-kind      # Kind-based end to end (optional scale path)
-make -C deploy test-load          # k6 load test against the gateway
-```
-
-Each Python repository (`sdk-python`, `agent-runtime`, `pipeline-runner`,
-`workspace`, `contracts`) runs `python -m pytest -q && ruff check .` after
-installing its development requirements.
-
-## Public / production install
-
-To host a gateway-only pilot on a public VM behind TLS with an external OIDC
-provider, see **[Public VM](../operations/public-vm.md)**. After preparing
-`/etc/kionga/deployment.json`, non-secret config, and mounted secret files:
-
-```bash
-python3 deploy/vm/up.py /etc/kionga/deployment.json --validate-only
-make -C deploy public-up DEPLOYMENT=/etc/kionga/deployment.json
-```
-
-## Documentation site (this site)
-
-```bash
-make -C docs docs-install       # install the pinned MkDocs toolchain
-make -C docs docs-serve         # live preview at http://localhost:8000
-make -C docs docs-build         # strict static build into docs/site/
-make -C docs docs-check         # check commands, paths, and names against the code
-```
+- Follow the [Quickstart](quickstart.md) to create a project, deploy a model, and
+  chat with an agent.
+- Run Kionga for a team: [Single server](../operations/public-vm.md) or
+  [Kubernetes](../operations/managed-kubernetes.md).
+- Operate the local stack: [Run locally](../operations/local.md).
