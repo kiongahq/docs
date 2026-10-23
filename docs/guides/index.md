@@ -1,34 +1,48 @@
-# Build with Kionga
+---
+description: Task-oriented guides for building with Kionga, from projects and workspaces to pipelines, models, features, agents, collaboration and administration.
+---
 
-These guides are task-oriented. Start with the workflow you need, then use the
-[reference](../reference/index.md) for exact API and configuration details.
+# Guides
 
-## Projects and development
+These guides walk you through one task at a time. Each starts with what you need
+before you begin, including the role or service your account needs, and ends
+with a way to check the result. For exact routes, commands and settings, see the
+[reference](../reference/index.md).
 
-- [Choose a project template](project-templates.md), then
-  [scaffold it](scaffolding.md) into a workspace.
-- Work in [Jupyter](workbench.md) or the [browser IDE](coding-workspace.md).
-- Connect Git, functions, and distributed workspaces with the
-  [workspace guide](distributed-workspaces.md).
+## Workspaces and projects
 
-## ML and data workflows
+- [Create a project from a template](project-templates.md) and
+  [scaffold it into your workspace](scaffolding.md).
+- [Work in the Jupyter workbench](workbench.md) or
+  [use the browser IDE and coding agents](coding-workspace.md).
+- [Set up team workspaces, Git and functions](distributed-workspaces.md).
+- [Navigate the console](console-navigation.md), create a personal API key and
+  choose the pipeline runtime.
 
-- [Define and run pipelines](pipelines.md), then inspect
-  [logs and events](logs.md).
-- [Register and serve models](models-serving.md), or bring in a
-  [Hugging Face model](huggingface.md).
-- Use [features](features.md), connect an
-  [internal or external feature store](feature-stores.md), and process
-  [real-time events](realtime.md).
+## Machine learning and data
 
-## Agents and collaboration
+- [Define and run pipelines](pipelines.md).
+- [Register, deploy and serve models](models-serving.md), or
+  [import a Hugging Face model](huggingface.md).
+- [Use the built-in feature store](features.md) or
+  [connect an external feature store](feature-stores.md).
+- [Process real-time events](realtime.md).
 
-- [Build an agent](agents.md) and choose a
-  [framework adapter](agent-frameworks.md).
-- Learn [console navigation](console-navigation.md),
-  [access control](access-control.md), and the separate
-  [engineering blog](engineering-blog.md).
+## AI agents
 
-External engines and credentials are not provisioned by every guide. Check each
-guide's prerequisites and the [implementation status](https://kiongahq.github.io/docs/engineering/status/implementation-status/)
-before using a workflow in a team environment.
+- [Build and deploy an agent](agents.md).
+- [Run agents built with Agno, NOOA or your own framework](agent-frameworks.md).
+
+## Collaboration
+
+- [Write and publish on the engineering blog](engineering-blog.md).
+- [Search and stream pipeline logs](logs.md).
+
+## Administration
+
+- [Manage users, groups and policies](access-control.md).
+- [Set up single sign-on](../operations/single-sign-on.md).
+
+Some guides use engines that your deployment provides, such as OpenFaaS for
+functions or a GPU node pool for distributed training. Each guide's **Before you
+begin** section names them.

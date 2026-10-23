@@ -1,207 +1,267 @@
-# Project templates
+---
+description: Choose a versioned project template and create a Kionga project from the console, the Python SDK, or the REST API.
+---
 
-Kionga projects start from a **versioned platform contract**, not an untyped label.
-The selected template records the framework, accelerator class, requested resource
-profile, capabilities, and exact generator command on the project. That metadata
-stays attached to pipeline runs, model versions, agent deployments, and Git lineage.
+# Create a project from a template
 
-The catalog is returned by `GET /api/v1/project-templates`. It is the authoritative
-source for the console, Python SDK, and the `kionga` workspace command.
+Create a Kionga project from one of five versioned templates. The template you
+choose records the framework, accelerator, resource profile and capabilities on
+the project, and gives you the exact `kionga scaffold` command that generates
+the starter code. Runs, model versions and agent deployments in the project
+keep that record.
 
-In **Projects → New project**, the console loads this API rather than maintaining a
-second hardcoded list. It shows framework, accelerator, capabilities, required
-services, and recommended profile; options outside a normal user's grant are
-identified before submission. The gateway repeats every check, so browser state is
-never the security boundary.
+Creating a project stores its record only. No files are written until you
+[scaffold the project](scaffolding.md).
+
+## Before you begin
+
+- You need a role that can create projects:
+    - `admin`, `operator` or `engineer` can create a project from any template.
+    - A normal user (`user` role) needs the `projects` service, plus every
+      service the template requires (see the [template catalog](#template-catalog)),
+      and a free slot in the project quota of their resource grant.
+- To connect a Git repository while you create the project, a normal user also
+  needs the `git` service.
+- To use the SDK or the API from outside a Kionga workspace, create a personal
+  API key in **Settings > Personal API keys** with the `projects` scope, and
+  export it as `MLAIOPS_TOKEN` together with the gateway address in
+  `MLAIOPS_URL`. Inside Jupyter or the browser IDE, the SDK needs no key.
 
 ## Template catalog
 
-| Template | Use it for | Frameworks | Accelerators | Recommended profile |
-| --- | --- | --- | --- | --- |
-| `production-ml` | Reproducible training, evaluation gates, MLflow registration, batch inference, serving, and monitoring | `scikit-learn`, `xgboost`, `pytorch` | CPU or single GPU | `power` |
-| `distributed-training` | Large deep-learning jobs with PyTorch DDP, mixed precision, durable checkpoints, and reproducible evaluation | `pytorch-ddp` | Single GPU or multi-GPU | `gpu` |
-| `production-agent` | Stateful LangGraph agents with tools, checkpoints, semantic memory, tracing, evaluations, and an HTTP runtime | `langgraph` | CPU or single GPU | `team` |
-| `fullstack-ai` | A model or agent backend, governed API, event function, browser client, containers, CI, and tests | `fastapi-ml`, `fastapi-agent` | CPU or single GPU | `power` |
-| `blank-python` | An expert-owned typed Python package with containers, CI, linting, and tests | `python` | CPU, single GPU, multi-GPU | `starter` |
+| Template | Use it for | Frameworks | Accelerators | Recommended profile | Required services |
+| --- | --- | --- | --- | --- | --- |
+| `production-ml` | Reproducible training, evaluation gates, MLflow registration, batch inference, serving and monitoring | `scikit-learn`, `xgboost`, `pytorch` | `cpu`, `single-gpu` | `power` | `pipelines`, `models`, `features`, `storage`, `git`, `workbench` |
+| `distributed-training` | Large deep-learning jobs with PyTorch DDP, mixed precision, durable checkpoints and reproducible evaluation | `pytorch-ddp` | `single-gpu`, `multi-gpu` | `gpu` | `pipelines`, `models`, `storage`, `git`, `workbench` |
+| `production-agent` | Stateful LangGraph agents with tools, checkpoints, semantic memory, tracing, evaluations and an HTTP runtime | `langgraph` | `cpu`, `single-gpu` | `team` | `agents`, `storage`, `git`, `workbench` |
+| `fullstack-ai` | A model or agent backend, an API, an event function, a browser client, containers, CI and tests | `fastapi-ml`, `fastapi-agent` | `cpu`, `single-gpu` | `power` | `models`, `agents`, `functions`, `storage`, `git`, `workbench`, `ide` |
+| `blank-python` | A typed Python package with containers, CI, linting and tests, without an ML or agent structure | `python` | `cpu`, `single-gpu`, `multi-gpu` | `starter` | `git`, `workbench` |
 
-Template versions are immutable contracts. A later template release may add files
-or defaults without silently changing projects already pinned to version `1.0.0`.
+Every template is at version `1.0.0`. A template version is immutable: a later
+release can add a new version, but a project pinned to `1.0.0` keeps generating
+the same starter.
 
-## What the generator writes
+When you leave a field empty, Kionga uses the template's first framework, its
+first accelerator and its recommended profile. Kionga rejects combinations a
+template does not support, for example `scikit-learn` with `single-gpu` in
+`production-ml`, or `multi-gpu` in any template other than
+`distributed-training` and `blank-python`.
 
-Every starter includes a typed package layout, `pyproject.toml`, Dockerfile,
-`.env.example`, tests, Ruff/pytest CI, `platform/project.yaml`, an immutable
-`.kionga/template.json` selection record, and a new Git repository when Git is
-available. Workload-specific additions are:
+## List the available templates
 
-| Template | Generated workload boundary |
-| --- | --- |
-| `production-ml` | Framework-specific training, model artifact/metric output, control-plane registration hook, prediction API, tests, and pipeline manifest |
-| `distributed-training` | PyTorch DDP worker, `torchrun` launcher, CPU `world_size=1` smoke path, AMP, resumable rank-zero checkpoint, rank-zero MLflow logging, tests, and API-ready container pipeline JSON/YAML for a matching executor |
-| `production-agent` | LangGraph tool loop, pure safe tool, `AgentMemoryClient` boundary, PostgreSQL/in-memory checkpointer selection, Langfuse callback, HTTP runtime, deterministic graph test, golden JSONL evaluation runner, and deployable `KiongaAgent` manifest with supported resources and min/max replicas |
-| `fullstack-ai` | FastAPI ML or agent backend, matching browser client, real event-function source/Dockerfile/API request, tests/evaluations, application container, CI, and deployment requests |
-| `blank-python` | Minimal typed/tested/container-ready Python service foundation without an imposed ML or agent architecture |
+Use the catalog to compare templates before you create a project.
 
-Generation fails when the destination is non-empty. This prevents a template or
-coding agent from silently overwriting an existing checkout; use `kionga project
-sync` for an already connected repository.
+=== "Console"
 
-## Discover before creating
+    1. Open **Projects** and click **＋ New project**.
+    2. Under **Starting architecture**, review each template's framework,
+       accelerator, capabilities, required services and recommended profile.
 
 === "SDK"
 
     ```python
-    templates = client.list_project_templates()
-    for template in templates:
-        print(template.id, template.frameworks, template.accelerators)
+    from mlaiops_sdk import MLAIOpsClient
 
-    distributed = client.get_project_template("distributed-training")
-    print(distributed.required_services)
+    with MLAIOpsClient() as client:
+        for template in client.list_project_templates():
+            print(template.id, template.frameworks, template.accelerators)
+        print(client.get_project_template("distributed-training").required_services)
     ```
 
 === "API"
 
     ```bash
-    export MLAIOPS_URL="${MLAIOPS_URL:-http://localhost:8080}"
-    # with a session cookie from a local sign-in (see the REST API reference)
-    curl -s -b kionga.cookies "$MLAIOPS_URL/api/v1/project-templates" | python -m json.tool
-    curl -s -b kionga.cookies "$MLAIOPS_URL/api/v1/project-templates/production-agent" | python -m json.tool
+    curl -s -H "Authorization: Bearer $MLAIOPS_TOKEN" \
+      "$MLAIOPS_URL/api/v1/project-templates" | python -m json.tool
+    curl -s -H "Authorization: Bearer $MLAIOPS_TOKEN" \
+      "$MLAIOPS_URL/api/v1/project-templates/production-agent" | python -m json.tool
     ```
 
-=== "Workspace CLI"
+=== "Workspace terminal"
 
     ```bash
     kionga templates
     kionga templates --json
     ```
 
-The gateway rejects an unsupported framework/accelerator combination instead of
-creating a project that cannot run. Omitting those fields selects the template's
-first supported framework and accelerator and its recommended resource profile.
+**Verify:** the list contains the five templates in the catalog above.
 
-## Create a heavyweight ML project
+## Create a project
 
-The distributed template makes the compute intent explicit at creation time:
+=== "Console"
 
-```python
-project = client.create_project(
-    "foundation-model-evaluation",
-    template="distributed-training",
-    framework="pytorch-ddp",
-    accelerator="multi-gpu",
-    requested_profile="custom",
-    repository_url="git@github.com:acme/foundation-model-evaluation.git",
-)
-print(project.scaffold_command)
-```
+    1. Open **Projects** and click **＋ New project**.
+    2. Enter a **Project name** and, optionally, what it is for.
+    3. Under **Starting architecture**, select a template.
+    4. Under **Runtime shape**, choose the **Framework**, **Accelerator** and
+       **Requested profile**. Options that your grant does not cover are
+       disabled and labeled, for example `not provisioned`.
+    5. Optional: under **Source control**, enter the **Git repository** URL and
+       the **Default branch**.
+    6. Click **Create project**.
 
-For a normal user, the gateway verifies every template-required service before
-creation. For `distributed-training` the owner therefore needs `pipelines`,
-`models`, `storage`, `git`, and `workbench`; the requested CPU/RAM/storage profile cannot exceed the grant. A
-single-GPU selection requires at least one provisioned GPU, and `multi-gpu` requires
-at least two, which normally means a custom grant. Template intent never bypasses
-RBAC, quotas, node capacity, or scheduler policy. Admin/operator principals may
-create any template for provisioning and recovery workflows.
+=== "SDK"
 
-Run the returned command inside Jupyter or the browser IDE:
+    ```python
+    from mlaiops_sdk import MLAIOpsClient
 
-```bash
-kionga scaffold foundation-model-evaluation \
-  --template distributed-training \
-  --template-version 1.0.0 \
-  --framework pytorch-ddp \
-  --accelerator multi-gpu \
-  --profile custom
-```
+    with MLAIOpsClient() as client:
+        project = client.create_project(
+            "churn-model",
+            template="production-ml",
+            framework="xgboost",
+            accelerator="cpu",
+            requested_profile="team",
+            repository_url="https://github.com/acme/churn-model.git",
+        )
+        print(project.id, project.scaffold_command)
+    ```
 
-The distributed starter is designed around these production boundaries:
+=== "API"
 
-- `torchrun`/PyTorch DDP owns process-group launch; the training module remains
-  importable and testable without a cluster;
-- device and world-size configuration comes from the environment rather than
-  being hardcoded;
-- mixed precision is configurable and CPU fallback keeps smoke tests portable;
-- checkpoints are written to the workspace/object-store path so workers can
-  resume after preemption;
-- only rank zero records shared MLflow metadata and final model artifacts;
-- pipeline jobs declare CPU, memory, GPU, retry, and dependency requirements.
+    ```bash
+    curl -s -X POST "$MLAIOPS_URL/api/v1/projects" \
+      -H "Authorization: Bearer $MLAIOPS_TOKEN" \
+      -H 'Content-Type: application/json' \
+      -d '{"name": "churn-model", "template": "production-ml",
+           "framework": "xgboost", "accelerator": "cpu",
+           "requested_profile": "team"}'
+    ```
 
-When a normal user saves that pipeline, Kionga calculates the resource total of
-each concurrently runnable DAG layer and rejects the definition if its widest layer
-exceeds the user's CPU, memory, or GPU grant. Large sequential flows remain possible
-without allowing parallel branches to overcommit provisioned capacity.
+The gateway checks every rule again, whatever client you use: an unsupported
+combination returns `422`, and a missing service, a profile larger than your
+grant, or too few GPUs returns `403` with the reason.
 
-For a laptop smoke test, use one process. Multi-node scheduling belongs on the
-Kubernetes scale path with an appropriate GPU operator, storage class, and workload
-scheduler; creating a multi-GPU project does not pretend that local hardware exists.
-
-## Create a functional agent project
-
-```python
-project = client.create_project(
-    "incident-response-agent",
-    template="production-agent",
-    framework="langgraph",
-    accelerator="cpu",
-)
-```
-
-Then run `project.scaffold_command`, optionally handing the generated directory to
-a configured coding agent:
+**Verify:** the project opens with a **Generate the starter code** panel that
+shows the scaffold command, for example:
 
 ```bash
-kionga scaffold incident-response-agent \
-  --template production-agent \
-  --template-version 1.0.0 \
-  --framework langgraph \
-  --accelerator cpu \
-  --profile team \
-  --agent codex \
-  --prompt "Add a read-only runbook search tool and escalation policy"
+kionga scaffold churn-model --template production-ml --template-version 1.0.0 \
+  --framework xgboost --accelerator cpu --profile team
 ```
 
-The starter is executable before customization: it has a graph entry point, typed
-state, a safe example tool, deterministic tests, a health/invocation runtime,
-container packaging, evaluation fixtures, and a platform manifest. Real provider
-keys remain external configuration. Deploying the agent records its project,
-version, image, graph module, tools, per-replica CPU/memory/GPU, min/max replicas,
-and traffic policy in the control plane. Normal-user deployment is admitted against
-the provisioned compute and workload limits before Kubernetes reconciliation.
+## Create a GPU training project
 
-See [Agents](agents.md) for runtime behavior, memory, traces, and deployment.
+Use `distributed-training` for PyTorch DDP workloads that need one or more
+GPUs.
 
-## Full-stack AI applications
+1. Make sure your grant has the GPUs the accelerator asks for: `single-gpu`
+   needs at least one GPU and `multi-gpu` at least two, which usually means an
+   administrator gives you the **GPU** or a **Custom** resource profile.
+2. Create the project:
 
-Choose `fullstack-ai` when the deliverable includes more than a training package.
-The generated boundary separates the browser client, FastAPI inference/agent API,
-event handler, tests, container image, and CI. The API and function can be deployed
-independently, while a pipeline definition can connect ingestion, training,
-evaluation, deployment, and event-processing jobs into one governed DAG.
+    ```python
+    project = client.create_project(
+        "foundation-model-evaluation",
+        template="distributed-training",
+        framework="pytorch-ddp",
+        accelerator="multi-gpu",
+        requested_profile="custom",
+        repository_url="git@github.com:acme/foundation-model-evaluation.git",
+    )
+    print(project.scaffold_command)
+    ```
 
-## Git and reproducibility
+3. [Scaffold the project](scaffolding.md) with the returned command.
 
-Connect the repository when the project is created or from its detail panel. Kionga
-stores repository metadata only; credentials remain in the workspace Git helper.
-Every definition-backed run can preserve the repository URL and commit SHA.
+The generated starter is shaped for production training:
 
-Before a production run:
+- `torchrun` launches the PyTorch DDP processes, and the training module stays
+  importable and testable without a cluster.
+- Device and world-size settings come from the environment.
+- Mixed precision is configurable, and a CPU path with `world_size=1` keeps smoke
+  tests portable.
+- Checkpoints go to workspace or object-store paths, so workers can resume after
+  preemption.
+- Only rank zero writes shared MLflow metadata and the final model artifacts.
+- The pipeline manifest declares CPU, memory, GPU, retries and dependencies for
+  each job.
 
-1. synchronize the project with `kionga project sync <project-id>`;
-2. commit generated and customized source;
-3. build an immutable image tagged by commit SHA;
-4. submit the pipeline with the same repository and commit fields;
-5. store checkpoints, datasets, and models in provisioned object-storage paths.
+A project's template never bypasses your grant, quotas, node capacity or the
+cluster scheduler. When a normal user saves a pipeline, Kionga rejects it if the
+widest set of jobs that can run at the same time needs more CPU, memory or GPUs
+than the grant provides. Multi-node training runs on Kubernetes with a GPU
+operator, a suitable storage class and a workload scheduler. Creating a
+`multi-gpu` project on a laptop records the intent; it does not create GPUs.
 
-## Compatibility aliases
+**Verify:** the project record shows **Accelerator** `multi-gpu` and **Requested
+profile** `custom`.
 
-Older generic template values are normalized at the API boundary:
+## Create an agent project
 
-| Input alias | Canonical template |
+Use `production-agent` for a LangGraph agent you plan to deploy.
+
+1. Create the project:
+
+    ```python
+    project = client.create_project(
+        "incident-response-agent",
+        template="production-agent",
+        framework="langgraph",
+        accelerator="cpu",
+    )
+    ```
+
+2. Run `project.scaffold_command` in a workspace terminal. To let a coding agent
+   extend the generated starter, add `--agent` and `--prompt`:
+
+    ```bash
+    kionga scaffold incident-response-agent \
+      --template production-agent \
+      --template-version 1.0.0 \
+      --framework langgraph \
+      --accelerator cpu \
+      --profile team \
+      --agent codex \
+      --prompt "Add a read-only runbook search tool and escalation policy"
+    ```
+
+The starter runs before you change it. It includes a graph entry point, typed
+state, a safe example tool, deterministic tests, an HTTP runtime with health and
+invocation routes, container packaging, golden evaluation cases and a
+deployable agent manifest. Provider keys stay in your environment, never in the
+generated code.
+
+**Verify:** the project page shows `PROJECT · production-agent v1.0.0`. After
+you scaffold it, install the project with `python -m pip install -e ".[dev]"`
+and run `pytest -q` in the generated folder: the tests use an offline model and
+need no provider keys.
+
+## What the scaffold generates
+
+Every template generates a typed package, `pyproject.toml`, a Dockerfile,
+`.env.example`, tests, a CI workflow with Ruff and `pytest`, `platform/project.yaml`,
+an immutable `.kionga/template.json` record of the template choice, and a new
+Git repository when `git` is available. Each template adds its own workload:
+
+| Template | Adds |
+| --- | --- |
+| `production-ml` | Framework-specific training, model and metric output, a registration hook, a prediction API, tests and a pipeline manifest |
+| `distributed-training` | A PyTorch DDP worker, a `torchrun` launcher, a CPU smoke path, mixed precision, resumable rank-zero checkpoints, rank-zero MLflow logging, tests and a container pipeline definition |
+| `production-agent` | A LangGraph tool loop, a safe tool, an agent memory client, PostgreSQL or in-memory checkpoints, a Langfuse callback, an HTTP runtime, a deterministic graph test, a golden evaluation runner and an agent manifest with resources and replica limits |
+| `fullstack-ai` | A FastAPI model or agent backend, a matching browser client, an event function with its Dockerfile, tests, an application container, CI and deployment requests |
+| `blank-python` | A minimal typed, tested and container-ready Python service |
+
+Scaffolding fails when the destination folder already has files, so it never
+overwrites your work. To bring an existing repository into a workspace, use
+`kionga project sync` instead (see
+[Connect a project to Git](distributed-workspaces.md#connect-a-project-to-git)).
+
+## Template aliases
+
+The API accepts some older template names and stores the canonical ID instead:
+
+| Alias | Canonical template |
 | --- | --- |
 | `tabular-classification`, `forecasting`, `ml` | `production-ml` |
 | `rag-agent`, `agent` | `production-agent` |
 | `fullstack` | `fullstack-ai` |
 | `blank`, `python`, `api`, `function` | `blank-python` |
 
-New automation should use canonical IDs because those IDs, versions, supported
-frameworks, and accelerator classes form the durable project contract.
+Use the canonical IDs in new automation.
+
+## Next steps
+
+- [Scaffold the project](scaffolding.md) into your workspace.
+- [Connect the project to Git](distributed-workspaces.md#connect-a-project-to-git).
+- [Build and deploy an agent](agents.md) from a `production-agent` project.

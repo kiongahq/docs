@@ -206,7 +206,7 @@ required; the Kind bootstrap installs metrics-server for this reason. In Compose
 `AGENT_RUNTIME_URL` intentionally overrides per-agent DNS and points every agent at
 the shared runtime; Kubernetes HPA behavior does not apply.
 
-See [Project templates](project-templates.md#create-a-functional-agent-project) for
+See [Project templates](project-templates.md#create-an-agent-project) for
 the full source-control and scaffolding workflow.
 
 ## Production acceptance gates

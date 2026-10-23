@@ -1,57 +1,77 @@
-# Jupyter workbench
+---
+description: Open the JupyterLab workbench, call Kionga from notebooks without an API key, use object storage as files, install your own tools, and train and register a model.
+---
 
-The workbench is a JupyterLab service that runs **inside the platform network**, so
-every service is one hostname away. It also provides the **terminal** for
-shell-based dev work. Sign in to Kionga and open Jupyter or the browser IDE from
-the console. Inside either workspace, the SDK uses a loopback helper configured
-through `MLAIOPS_URL` and acts as the workspace owner without a personal API key.
-The browser session is never copied into notebook kernels; the gateway checks
-current user grants on each API request. Personal API keys are for tools running
-outside Kionga, such as your own laptop IDE or external automation.
+# Work in the Jupyter workbench
+
+The workbench is JupyterLab running next to the platform services, with the
+Kionga SDK, pinned ML libraries and a terminal. Use it to explore data, train
+models and call the platform from notebooks. This guide covers opening the
+workbench, calling Kionga, reading object storage, installing tools, using
+coding assistants and taking a model from a notebook to a live endpoint.
+
+## Before you begin
+
+- You can open the workbench: the `workbench` service for a normal user, or the
+  `engineer`, `operator` or `admin` role. Viewers and personal API keys cannot
+  open workspaces.
+- Calls you make from the workbench run as you, with your current grants.
+  Registering a model needs the `models` service (or a role that can write
+  models), and the [feature](features.md) and
+  [real-time](realtime.md) examples need those services.
+
+## Open the workbench
+
+1. Sign in to the Kionga console.
+2. Open the workbench in one of these ways:
+    - In the sidebar, click **Jupyter workbench ↗**.
+    - Open a project and click **Open in Jupyter ↗** to open its folder,
+      `projects/<namespace>`.
+    - Open **Settings > Developer workspaces** and choose **JupyterLab**.
+
+The workbench opens through the gateway at `/workspace.html?tool=workbench`
+with your console session. You do not need a Jupyter token. The workspace
+toolbar switches between JupyterLab and the browser IDE and takes you back to
+the console.
+
+**Verify:** JupyterLab opens, and the file browser shows `quickstart.ipynb`.
+
+## Call Kionga from a notebook
+
+Inside the workbench, the SDK reaches the platform through a local helper set in
+`MLAIOPS_URL` and acts as you. You do not need a personal API key, and your
+browser session is never copied into the notebook kernel.
 
 ```python
 from mlaiops_sdk import MLAIOpsClient
 
 with MLAIOpsClient() as client:
-    print(client.list_projects())
+    for project in client.list_projects():
+        print(project.id, project.name)
 ```
 
-- **URL:** [Open Jupyter through Kionga](http://localhost:8080/workspace.html?tool=workbench)
-- **Login:** your Kionga session; the gateway keeps the notebook token server-side
-- **Direct local diagnostics:** `http://127.0.0.1:8888/workspaces/workbench/`, with `JUPYTER_TOKEN`; the port is bound to loopback
-- **Build:** `workspace/jupyter/Dockerfile` (Python 3.11)
-- **Persistence:** your work lives in the `jupyter-data` volume across restarts
-- **Notebook file IDs:** Jupyter keeps its file-ID database at `/workspace/.jupyter/file_id_manager.db` on that same volume, so open notebooks retain their IDs across image rebuilds
-- **Object store mount:** `/workspace/object-store/<bucket>`
-- **AI chat:** Jupyter AI chat panel in the left sidebar
-- **JupyterLab extensions:** the Extension Manager lists installed extensions in [read-only mode](https://jupyterlab.readthedocs.io/en/stable/user/extensions.html#configuring-the-extension-manager). PyPI's [removed XML-RPC `browse` method](https://warehouse.pypa.io/api-reference/xml-rpc/#browse-classifiers) breaks JupyterLab's PyPI search; install trusted, prebuilt Python extensions from the Jupyter terminal instead. Reload an already-open JupyterLab tab after upgrading the image to clear the old PyPI Manager view.
-- **Coding agents:** `codex`, `claude`, and the `kionga` scaffolder in terminals
+**Verify:** the cell prints the projects you see in the console.
 
-## Install your own coding tools
+Personal API keys are for tools that run outside Kionga, such as an IDE on your
+laptop or external automation.
 
-Jupyter AI is preinstalled. To add another compatible, prebuilt JupyterLab
-extension or Python coding package, use **File → New → Terminal**:
+## Run the guided quickstart notebook
 
-```bash
-python -m pip install --user PACKAGE_NAME
-```
+Open `quickstart.ipynb` in the file browser and run the cells. Kionga copies it
+into your workspace the first time the workbench starts and never overwrites
+your edits. It walks through the platform in code:
 
-`PYTHONUSERBASE` is set to `/workspace/.kionga/jupyter/python-user`, so the
-package remains available after the workbench image is rebuilt. Restart the
-workbench to load newly installed server extensions; reload the browser tab for
-frontend-only extensions. User settings, Jupyter data and workspace layouts are
-also stored under `/workspace/.kionga/jupyter`. Avoid replacing Kionga's pinned
-MLflow and scikit-learn versions in this environment; use a project virtual
-environment when dependencies conflict.
+1. Check your identity and platform health.
+2. List projects, registered models and feature views.
+3. Train a scikit-learn model and log it to MLflow.
+4. Register the model with Kionga, so it appears under **Models**.
+5. Read online features through the feature gateway.
+6. Produce real-time fraud events and read the stream statistics.
 
-The Codex and Claude Code command-line agents are already in the Jupyter image.
-Their user-level npm update location is `/workspace/.kionga/jupyter/npm`; for
-example, `npm install --global @anthropic-ai/claude-code` persists across image
-rebuilds. Installing a VS Code `.vsix` in JupyterLab is not supported: use the
-[browser IDE](coding-workspace.md) for VS Code extensions.
+## Read and write object storage as files
 
-Each object-store bucket is mounted as a directory, so notebook code can use normal
-filesystem APIs:
+Each platform bucket is mounted under `/workspace/object-store/<bucket>`, so you
+can use ordinary file APIs:
 
 ```python
 from pathlib import Path
@@ -60,117 +80,146 @@ features = Path("/workspace/object-store/mlaiops-features")
 print(list(features.iterdir()))
 ```
 
-Writes through these paths persist directly to object storage. Only the
-workbench receives the FUSE device and `SYS_ADMIN` capability required by
-S3FS; these permissions must not be copied to other platform services.
+Files you write under these paths go straight to object storage. The mounted
+buckets are `mlaiops-models`, `mlaiops-artifacts`, `mlaiops-features`,
+`mlaiops-traces`, `mlaiops-agents` and `mlaiops-pipeline-logs`.
 
-## What's preloaded
+**Verify:** `ls /workspace/object-store` in a terminal lists the buckets.
 
-- **The platform SDK** (`mlaiops_sdk`) and the runnable modules (`pipelines`,
-  `features`, `realtime`, `agents`).
-- **ML libraries pinned to the serving image** (`scikit-learn==1.7.0`,
-  `mlflow==3.16.1`), so a model you train in a notebook deploys to a live endpoint
-  without training-serving skew.
-- **Every connection, preconfigured via environment:**
+## Install your own packages and extensions
 
-  | Environment variable | Points to |
-  | --- | --- |
-  | `MLAIOPS_URL` | Loopback workspace API helper (forwards as your platform identity) |
-  | `MLFLOW_TRACKING_URI` | MLflow |
-  | `MLFLOW_S3_ENDPOINT_URL` + `AWS_*` | RustFS (S3) |
-  | `MLAIOPS_FEATURE_GATEWAY_URL` | Feature gateway |
-  | `KAFKA_REST_URL` | Kafka REST proxy |
-  | `PREFECT_API_URL` | Prefect |
-  | `DATABASE_URL` | PostgreSQL + pgvector |
-  | `REDIS_URL` | Redis |
-  | `LANGFUSE_HOST` + keys | Langfuse |
+Your installs live on the persistent workspace volume, so they survive restarts
+and image upgrades.
 
-## The terminal
+1. Open a terminal with **File > New > Terminal**.
+2. Install a Python package or a prebuilt JupyterLab extension:
 
-**File → New → Terminal** gives you a bash shell with the same environment, plus
-`git` and `curl`. Everything the platform modules expose is available:
+    ```bash
+    python -m pip install --user PACKAGE_NAME
+    ```
 
-```bash
-python -m realtime.produce --demo fraud --count 5
-python -m realtime.produce --demo callcenter --count 2
-curl -s "$MLAIOPS_URL/api/v1/models" | python -m json.tool
-kionga agents
-kionga scaffold fraud-api --template fullstack-ai --prompt "Create a fraud scoring API"
-```
+    User packages go to `/workspace/.kionga/jupyter/python-user`. Settings,
+    Jupyter data and layouts are kept under `/workspace/.kionga/jupyter`.
 
-Use `--agent codex` or `--agent claude` to let the selected coding agent
-complete the generated starter:
+3. Restart the workbench to load a new server extension, or reload the browser
+   tab for a frontend-only extension.
 
-```bash
-kionga scaffold support-agent \
-  --template production-agent \
-  --agent codex \
-  --prompt "Build a tested support agent with retrieval and escalation"
-```
+To update the Codex or Claude Code command-line tools for your user, install
+them with `npm install --global`, for example
+`npm install --global @anthropic-ai/claude-code`. They go to
+`/workspace/.kionga/jupyter/npm`.
 
-The command confines the agent to the newly generated project directory.
-Provider credentials come from `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`.
+Keep these limits in mind:
 
-The five canonical project templates are discoverable through the control plane.
-For heavyweight ML, create a `distributed-training` project with a GPU profile and
-run its returned scaffold command. For agents, `production-agent` produces a
-runnable graph/runtime and offline test/evaluation path rather than an empty stub.
-See [Project templates](project-templates.md).
+- Do not replace the pinned MLflow and scikit-learn versions in the workbench
+  environment. Use a project virtual environment when dependencies conflict.
+- The JupyterLab **Extension Manager** is read-only. JupyterLab's PyPI search
+  does not work because PyPI removed the API it uses, so install extensions from
+  the terminal.
+- JupyterLab cannot install VS Code extensions (`.vsix`). Use the
+  [browser IDE](coding-workspace.md) for those.
 
-## Natural-language coding
+**Verify:** `python -m pip list --user` shows the package.
 
-Open the **Jupyter AI** chat panel from the left sidebar, select the OpenAI or
-Anthropic provider, and describe the analysis or code you need. The chat can
-reference notebook cells and generate code without leaving JupyterLab. For
-repository-wide edits, open a terminal and run `codex`, `claude`, or
-`kionga scaffold`.
+## Code with AI assistants
 
-## The seeded quickstart
+The workbench includes three kinds of coding help:
 
-A `quickstart.ipynb` is seeded into the workspace on first start (it never
-overwrites your edits). It walks the whole platform in code:
+- **Jupyter AI chat:** open the chat panel in the left sidebar, choose a
+  provider, and describe the code or analysis you need. It can reference
+  notebook cells.
+- **Command-line agents:** run `codex` or `claude` in a terminal for
+  repository-wide changes. Provider credentials come from `OPENAI_API_KEY` or
+  `ANTHROPIC_API_KEY`, which an operator sets for the workspace.
+- **Scaffold with an agent:** generate a starter and let a coding agent extend
+  it, confined to the new project folder:
 
-1. **Identity & health**: `GET /me`, `GET /health`.
-2. **Browse**: projects, registered models, feature views.
-3. **Train & log**: a scikit-learn model logged to MLflow.
-4. **Register**: the model version registered with the control plane (shows up in
-   the console's Models tab).
-5. **Online features**: a real lookup from Redis via the feature gateway.
-6. **Real-time**: produce fraud events and read live stream stats.
+    ```bash
+    kionga scaffold support-agent \
+      --template production-agent \
+      --agent codex \
+      --prompt "Build a tested support agent with retrieval and escalation"
+    ```
 
-## From notebook to live endpoint
+Run `kionga agents` to see which agents are installed and whether their
+credentials are set. For the full scaffold workflow, see
+[Scaffold a project](scaffolding.md).
 
-Because the workbench pins match the serving image, the round trip works end to end:
+## Train a model and serve it
 
-```python
-import os, httpx, mlflow
-from sklearn.linear_model import LogisticRegression
-from sklearn.datasets import make_classification
+The workbench pins `scikit-learn==1.7.0` and `mlflow==3.16.1`, the same versions
+as the default serving image, so a model you train here loads in a live
+endpoint.
 
-X, y = make_classification(n_samples=1200, n_features=12, n_informative=6,
-                           n_clusters_per_class=1, class_sep=1.5, random_state=7)
-model = LogisticRegression(max_iter=500).fit(X, y)
+1. Train a model and log it to MLflow:
 
-mlflow.set_experiment("workbench")
-with mlflow.start_run():
-    logged = mlflow.sklearn.log_model(model, name="model",
-                                      registered_model_name="notebook-classifier")
+    ```python
+    import mlflow
+    from sklearn.datasets import make_classification
+    from sklearn.linear_model import LogisticRegression
 
-gateway = os.environ["MLAIOPS_URL"]
-version = mlflow.MlflowClient().get_latest_versions("notebook-classifier")[0].version
-httpx.post(f"{gateway}/api/v1/models", json={
-    "project_id": httpx.get(f"{gateway}/api/v1/projects").json()[0]["id"],
-    "name": "notebook-classifier", "version": version,
-    "artifact_uri": logged.model_uri, "metrics": {"accuracy": 0.9},
-})
-```
+    X, y = make_classification(n_samples=1200, n_features=12, n_informative=6,
+                               n_clusters_per_class=1, class_sep=1.5, random_state=7)
+    model = LogisticRegression(max_iter=500).fit(X, y)
 
-Then open the console's **Models** tab, deploy `notebook-classifier`, and hit it
-from the predict console.
+    mlflow.set_experiment("workbench")
+    with mlflow.start_run():
+        logged = mlflow.sklearn.log_model(model, name="model",
+                                          registered_model_name="notebook-classifier")
+    ```
 
-## Public deployments
+2. Register the version with Kionga:
 
-In the public overlay the workbench port is **closed**; reach it over an SSH
-tunnel to the VM rather than exposing 8888 to the internet. For multi-user
-Kubernetes deployments, each authorized subject receives an isolated
-`KiongaWorkspace` instead of this shared Compose volume.
+    ```python
+    from mlaiops_sdk import MLAIOpsClient
+
+    version = mlflow.MlflowClient().get_latest_versions("notebook-classifier")[0].version
+    with MLAIOpsClient() as client:
+        project_id = client.list_projects()[0].id
+        registered = client.register_model(
+            project_id, "notebook-classifier", version, logged.model_uri,
+            metrics={"accuracy": 0.9},
+        )
+        print(registered.id, registered.stage)
+    ```
+
+3. Open **Models** in the console, deploy `notebook-classifier`, and send a
+   request from its **Test** dialog. See [Deploy and serve models](models-serving.md).
+
+**Verify:** `notebook-classifier` appears under **Models** with the version you
+registered.
+
+## Environment reference
+
+Every workbench kernel and terminal has these variables set:
+
+| Variable | Points to |
+| --- | --- |
+| `MLAIOPS_URL` | The local helper that calls Kionga as you |
+| `MLFLOW_TRACKING_URI` | MLflow |
+| `MLFLOW_S3_ENDPOINT_URL`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | The object store used by MLflow |
+| `MLAIOPS_FEATURE_GATEWAY_URL` | The feature gateway |
+| `KAFKA_REST_URL` | The Kafka REST proxy |
+| `PREFECT_API_URL` | Prefect |
+| `DATABASE_URL` | PostgreSQL with pgvector |
+| `REDIS_URL` | Redis |
+| `LANGFUSE_HOST`, `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY` | Langfuse |
+
+The workbench runs Python 3.11 with the Kionga SDK (`mlaiops_sdk`) and the
+platform modules `pipelines`, `features`, `realtime` and `agents`. The terminal
+also has `git`, `curl`, `codex`, `claude` and `kionga`.
+
+## Deployment notes
+
+- **Compose:** everyone shares one workspace volume (`jupyter-data`). The direct
+  Jupyter port, `127.0.0.1:8888`, is for local diagnostics only, and the public
+  overlay does not publish it. Open the workbench through the console.
+- **Kubernetes:** each provisioned user gets an isolated workspace with its own
+  persistent volume. See
+  [Provision a teammate's workspace](distributed-workspaces.md#provision-a-teammates-workspace).
+
+## Next steps
+
+- [Use the browser IDE](coding-workspace.md) for VS Code extensions.
+- [Define a pipeline](pipelines.md) to run your training code on a schedule.
+- [Deploy and serve models](models-serving.md).

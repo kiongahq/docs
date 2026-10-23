@@ -171,7 +171,7 @@ all capabilities dropped, `no-new-privileges` and a PID limit.
 
 ## Heavy and distributed training
 
-Start with the [`distributed-training`](project-templates.md#create-a-heavyweight-ml-project)
+Start with the [`distributed-training`](project-templates.md#create-a-gpu-training-project)
 template for PyTorch DDP workloads and express orchestration as ordinary nodes
 around the trainer. For normal users, the widest set of nodes that can run at the
 same time must fit the CPU, memory and GPU grant; definitions and manual overrides

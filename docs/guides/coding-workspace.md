@@ -1,93 +1,142 @@
-# AI coding and IDE workspace
+---
+description: Start and open the browser IDE, install VS Code extensions, and generate project starters with Codex, Claude Code, or your own coding agent.
+---
 
-Kionga treats `/workspace` as the primary development surface. JupyterLab and
-the optional browser IDE mount the same persistent volume, so a project created
-in either interface appears immediately in the other.
+# Use the browser IDE and coding agents
 
-## Start the IDE
+The browser IDE is code-server, the open-source browser build of VS Code. It
+shares the `/workspace` volume with the [Jupyter workbench](workbench.md), so a
+project you create in one appears in the other. This guide covers starting and
+opening the IDE, installing extensions, and generating code with coding agents.
 
-```bash
-make -C deploy ide-up
-```
+## Before you begin
 
-The first run downloads the code-server image and installs only the packages
-needed for the editor. If you also want Codex and Claude Code CLI tools inside
-the IDE terminal, run `make -C deploy ide-agents-up`; this optional image build downloads
-Node.js and both pinned CLIs and can take longer. Jupyter's coding-agent tools
-are unaffected.
+- You can open the IDE: the `ide` service for a normal user, or the `engineer`,
+  `operator` or `admin` role. Viewers and personal API keys cannot open
+  workspaces.
+- On Compose, the IDE is optional. An operator starts it with the steps in
+  [Start the IDE on Compose](#start-the-ide-on-compose). On Kubernetes, the IDE
+  is part of each user's workspace when the `ide` service is assigned.
+- To use Codex or Claude Code without signing in to them interactively, an
+  operator sets `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` in `deploy/.env`.
 
-Sign in to the console, then choose **IDE workspace**. It opens through the
-authenticated gateway at `/workspace.html?tool=ide`; no separate password or
-published IDE port is needed in Compose. The link explains when the IDE is
-offline. Select a project first to open its shared folder. The workspace toolbar
-switches between Jupyter and the IDE and takes you back to the console.
-Stop it without deleting projects:
+## Start the IDE on Compose
 
-```bash
-make -C deploy ide-down
-```
+Run these commands from the folder that holds your Kionga checkouts.
 
-The IDE is code-server, the open-source browser build of VS Code. It is an
-opt-in Compose profile and is not exposed by the public deployment overlay.
-If the IDE link says it is offline, run `make -C deploy ide-up` from the workspace folder,
-then click the link again. The console checks readiness before launching it.
+1. Start the IDE:
 
-## Install AI coding extensions
+    ```bash
+    make -C deploy ide-up
+    ```
 
-Open **Extensions** in the browser IDE and install from Open VSX. For example,
-search for **Claude Code for VS Code**, or run this in the IDE terminal:
+    The first run downloads the code-server image.
 
-```bash
-code-server --install-extension anthropic.claude-code
-code-server --list-extensions --show-versions
-```
+2. Optional: to add the Codex and Claude Code command-line tools to the IDE
+   terminal, build the larger agents image instead:
 
-The IDE stores installed extensions, their settings and their user data under
-`/workspace/.kionga/ide`, not in the replaceable container filesystem. They
-survive IDE restarts and image rebuilds. A downloaded, trusted `.vsix` can also
-be installed through **Extensions: Install from VSIX** or passed to
-`code-server --install-extension`. code-server uses [Open VSX rather than the
-Microsoft marketplace](https://github.com/coder/code-server/blob/main/docs/FAQ.md#why-cant-code-server-use-microsofts-extension-marketplace),
-so some proprietary extensions may be unavailable or incompatible. If an
-Open VSX install fails with `EAI_AGAIN`, retry when the workspace can resolve
-`open-vsx.org` and `openvsx.eclipsecontent.org`; the extension registry is an
-external service. The coding extension's own account sign-in is separate from
-the Kionga session.
+    ```bash
+    make -C deploy ide-agents-up
+    ```
 
-When using the optional `ide-agents-up` image, `npm install --global` writes
-user-installed coding-agent CLIs to `/workspace/.kionga/ide/npm` instead of the
-replaceable system path. User-level Python packages similarly use
-`/workspace/.kionga/ide/python-user`.
+    This downloads Node.js and both pinned tools, so it takes longer. The
+    Jupyter workbench already includes them.
 
-Compose has one shared development workspace, so these paths are shared by its
-users. On Kubernetes, each provisioned `KiongaWorkspace` has its own PVC, making
-the same paths user-specific. For JupyterLab extensions and Python packages,
-see the [workbench guide](workbench.md#install-your-own-coding-tools).
+The IDE has no published port. It opens only through the gateway, which signs
+you in with your console session. Never publish its internal port.
 
-The Compose gateway and IDE build from the small `platform/go/` and
-`workspace/` contexts. If Docker cannot download the Go builder image,
-an operator with local Go installed can cross-compile into `platform/go/build/gateway`
-and package that binary with `platform/go/Dockerfile.local` for the matching Docker CPU
-architecture. This is a local recovery path, not the normal release build.
+**Verify:** in the console, **Settings > Developer workspaces** shows **Browser
+IDE** as `Ready · uses your Kionga session` instead of `IDE is offline`.
 
-## Generate a starter
+To stop the IDE without deleting any files, run `make -C deploy ide-down`.
 
-Run this in either the Jupyter terminal or the IDE terminal:
+## Open the IDE
 
-```bash
-kionga scaffold churn-service \
-  --template production-ml \
-  --agent codex \
-  --prompt "Train, evaluate, and expose a churn classifier with tests"
-```
+1. Sign in to the console.
+2. Open the IDE in one of these ways:
+    - In the sidebar, click **IDE workspace ↗**.
+    - Open a project and click **Open in IDE ↗** to open its folder,
+      `/workspace/projects/<namespace>`.
 
-Canonical templates are `production-ml`, `distributed-training`,
-`production-agent`, `fullstack-ai`, and `blank-python`. Use `--agent none` for a
-deterministic runnable starter without an LLM, or choose `codex` or `claude`. The
-[template catalog](project-templates.md) lists supported frameworks, accelerators,
-required services, and generated boundaries.
+The IDE opens at `/workspace.html?tool=ide`. The workspace toolbar switches to
+JupyterLab and back to the console. If the link says the IDE is offline, an
+operator runs `make -C deploy ide-up`, and then you click the link again.
 
-Other command-line agents can be connected without changing Kionga:
+**Verify:** the IDE opens with `/workspace` or the project folder in the
+explorer.
+
+## Install VS Code extensions
+
+code-server installs extensions from [Open VSX](https://open-vsx.org), not from
+the Microsoft marketplace, so some proprietary extensions are missing or do not
+work.
+
+1. Open **Extensions** in the IDE, search for an extension (for example
+   **Claude Code for VS Code**), and install it. Or run this in the IDE terminal:
+
+    ```bash
+    code-server --install-extension anthropic.claude-code
+    ```
+
+2. To install a trusted `.vsix` file you downloaded, use **Extensions: Install
+   from VSIX** or pass the file to `code-server --install-extension`.
+
+Extensions, their settings and user data are stored under
+`/workspace/.kionga/ide`, so they survive IDE restarts and image upgrades.
+User-level Python packages go to `/workspace/.kionga/ide/python-user`, and with
+the agents image, `npm install --global` writes to `/workspace/.kionga/ide/npm`.
+An extension's own account sign-in is separate from your Kionga session.
+
+**Verify:** `code-server --list-extensions --show-versions` lists the extension.
+
+If an install fails with `EAI_AGAIN`, the workspace cannot resolve `open-vsx.org`
+or `openvsx.eclipsecontent.org`. Retry when the workspace has internet access.
+
+## Generate a starter with a coding agent
+
+`kionga scaffold` generates a runnable starter from a template, and can hand it
+to a coding agent that works only inside the new folder. Run it in the IDE
+terminal or the Jupyter terminal.
+
+1. Check which agents are ready:
+
+    ```bash
+    kionga agents
+    ```
+
+    The output shows whether `codex` and `claude` are installed and have
+    credentials, and whether a custom agent is configured.
+
+2. Generate the starter and pass the task to an agent:
+
+    ```bash
+    kionga scaffold churn-service \
+      --template production-ml \
+      --agent codex \
+      --prompt "Train, evaluate, and expose a churn classifier with tests"
+    ```
+
+    Use `--agent claude` for Claude Code, or `--agent none` (the default) for a
+    starter without any LLM.
+
+3. Review the agent's changes and run the tests before you commit.
+
+Kionga runs Codex in its `workspace-write` sandbox and starts Claude Code in the
+generated folder with edit acceptance. The agent gets your prompt plus an
+instruction to work only in that folder and not to access credentials.
+
+The templates are `production-ml`, `distributed-training`, `production-agent`,
+`fullstack-ai` and `blank-python`. For larger work, create the project in the
+console or the API first and run its scaffold command, so the template version,
+framework, accelerator and profile are recorded on the project. See
+[Create a project from a template](project-templates.md).
+
+**Verify:** the command prints `Created /workspace/churn-service` (or the folder
+under your `KIONGA_WORKSPACE`), and the agent's changes are in that folder.
+
+### Use another command-line agent
+
+Connect any command-line agent that accepts a task as its last argument:
 
 ```bash
 export KIONGA_CUSTOM_AGENT_COMMAND="your-agent --non-interactive"
@@ -95,43 +144,33 @@ kionga scaffold experiment --template production-ml --agent custom \
   --prompt "Build a reproducible classification experiment"
 ```
 
-Kionga appends the task as the final command argument and runs it from the new
-project directory. Only configure agents whose permission model you understand.
+Kionga runs the command from the new project folder and appends the task as the
+final argument. Configure only agents whose permission model you understand.
 
-```bash
-kionga agents
-```
+## Run agents directly
 
-shows whether each CLI and its API credential are available.
-
-For substantial workloads, create the project through the API/console first and
-run the returned `scaffold_command`. This preserves template version, framework,
-accelerator, resource-profile intent, capabilities, and Git lineage in control-plane
-state instead of leaving those decisions only in generated files.
-
-## Direct agent use
-
-Pinned Codex and Claude Code CLIs are installed in Jupyter, and in the IDE after
-`make -C deploy ide-agents-up`:
+Codex and Claude Code are installed in the Jupyter workbench, and in the IDE
+when you use the agents image. Start them in a terminal:
 
 ```bash
 codex
 claude
 ```
 
-For unattended scaffolding, Kionga runs Codex with workspace-write sandboxing.
-Claude Code starts in the generated project with edit acceptance. Review agent
-changes and tests before committing.
+Their sign-in and configuration state is stored in separate volumes, not in
+your project files.
 
-## Security boundary
+## Security notes
 
-- Agent API keys are injected from `.env`; they are not written into projects.
-- Agent configuration volumes persist login/config state separately from code.
-- The Compose IDE has no published port and delegates authentication to the
-  Kionga gateway. Never expose its internal port directly to the internet.
-- Jupyter and the IDE share source files, but only Jupyter receives FUSE and
-  `SYS_ADMIN` for the object-store mount.
+- Agent API keys come from the deployment environment and are never written
+  into projects.
+- JupyterLab and the IDE share source files, but only JupyterLab mounts object
+  storage as files.
+- On Compose, all users share one IDE and one workspace volume, so the paths
+  above are shared. On Kubernetes, each user's workspace has its own volume.
 
-For production multi-user deployments, replace the single shared code-server
-container with isolated per-user `KiongaWorkspace` pods. A GPU or custom resource
-profile bounds the workspace; pipeline job requests are enforced separately.
+## Next steps
+
+- [Scaffold a project](scaffolding.md) from the console.
+- [Connect a project to Git](distributed-workspaces.md#connect-a-project-to-git).
+- [Work in the Jupyter workbench](workbench.md).

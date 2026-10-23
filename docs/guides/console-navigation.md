@@ -1,81 +1,132 @@
-# Moving between projects and services
+---
+description: Filter the console by project, bookmark and share views, open workspaces, create a personal API key, and choose the Prefect or OpenFaaS runtime for new operations.
+---
 
-The console uses one project selector across projects, pipelines, functions,
-models, agents, and workspace launches. Choose **All assigned projects** to
-clear the filter. Shared infrastructure, feature definitions, and the catalog
-remain platform-wide within your grants.
+# Navigate the console
 
-Each section is bookmarkable: `/console.html?view=pipelines&project=PROJECT_ID`.
-Project, run, model, agent, and feature details add a `resource` parameter.
-Refreshing and browser Back/Forward restore the view and project. Project cards
-offer direct links to their runs, functions, models, agents, Jupyter, and IDE.
+The Kionga console groups its pages into **Build** (Overview, Projects,
+Pipelines, Functions), **Models & data** (Models, Agents, Features, Storage,
+Real-time, Catalog), **Operate** (Logs, Platform, Users & access) and
+**Account** (My access, Settings, Engineering blog). You see a page when you
+have its service, and related panels appear only when you have their services
+too. This guide covers the everyday navigation tasks.
 
-An individual service grant is sufficient to load that service's page. Related
-panels appear only with the corresponding grants. Project selectors use a
-minimal metadata endpoint limited to assigned or owned projects. A failed page
-shows a persistent error and Retry button without preventing other navigation.
-An expired session returns to sign-in with the current console URL preserved.
+## Before you begin
 
-## Developer workspaces
+- Sign in to the console at `/console.html`. If your session expires, Kionga
+  returns you to sign-in and then back to the page you were on.
+- To change the pipeline or function runtime, you need the `admin` or
+  `operator` role.
 
-Choose Jupyter or IDE in the sidebar, settings, or project details. The gateway
-checks availability and authorization. The workspace toolbar preserves the
-project while switching tools; both tools use the same persistent storage.
-Project launches prepare `projects/<project-namespace>` before opening the
-corresponding directory. Jupyter uses its contents API; IDE-only workspaces use
-a small directory helper reached through code-server's authenticated loopback
-proxy. Either service can prepare the folder independently.
+## Work in one project at a time
 
-Compose uses an authenticated gateway proxy. Jupyter's diagnostic port is
-loopback-only; code-server has no published port. Platform cookies and API keys
-are stripped before forwarding. The gateway injects the upstream credential.
-Workspace access is checked on every HTTP request and WebSocket handshake.
-Existing upgraded WebSocket connections end when closed by the client or server;
-revoking a grant blocks new requests but does not retroactively close a socket.
+1. In the page header, open the **Project** selector.
+2. Choose a project. Projects, pipelines, functions, models, agents and
+   workspace launches now show only that project.
+3. To clear the filter, choose **All assigned projects**.
 
-On Kubernetes, `KIONGA_WORKSPACE_NAMESPACE` enables discovery of the requesting
-subject's KiongaWorkspace, its internal Service, and `<workspace-name>-auth`
-Secret. Apply `deploy/config/rbac/gateway-workspaces.yaml` together with the deployment
-manifests. Change its Role/RoleBinding namespace when changing the workspace
-namespace. The gateway needs read access to workspace CRs and their credentials.
-Hosted users are never routed to the shared local administrator workspace.
+Feature definitions, shared infrastructure and the catalog stay platform-wide.
+The selector lists only the projects assigned to you or owned by you.
 
-Custom upstream templates can contain `{subject}`, expanded to the subject's
-SHA-256 hex digest. Prefer Kubernetes discovery when using the bundled operator.
-The deployment must provision isolated upstreams and use matching Jupyter base
-paths. Use a separate, authenticated workspace origin for deployments executing
-untrusted browser content; the bundled proxy shares the console's origin.
+**Verify:** the page lists only resources from the selected project, and the
+address bar contains `project=<project-id>`.
 
-## Connections and execution
+## Bookmark or share a view
 
-Connection checks accept only successful HTTP responses. Redirects, missing
-routes, and authentication failures are shown as failures. Use a Prefect API
-base address or an OpenFaaS gateway address; other connection types accept a
-health endpoint. Credential references are `none` or `env:VARIABLE` on the
-gateway. Prefect uses a bearer credential; OpenFaaS uses its gateway password
-and `OPENFAAS_USER` (default `admin`). Secret values never appear in API responses.
+Every page has its own address, so you can bookmark it or send it to a teammate
+who has the same access:
 
-After testing, **Use for new operations** persists the selected Prefect or
-OpenFaaS connection. Subsequent execution uses that stored address and credential
-without restarting the gateway. Switching is rejected while pipelines are queued
-or running, to avoid changing their execution destination. The most recently
-activated connection of each type wins. Workers and deployments must already be
-registered with the chosen engine. Other connection cards are explicitly labeled
-availability monitors; their runtime configuration remains deployment-managed.
+```text
+/console.html?view=pipelines&project=PROJECT_ID
+```
 
-## Local authentication and automation
+Pages that open one item, such as a project, run, model, agent or feature,
+add `resource=<id>`. Refreshing the page and the browser's back and forward
+buttons restore the view, the project filter and the open item. A project page
+links straight to its runs, functions, models, agents, Jupyter and IDE.
 
-Both console files and API operations require authentication. Local login uses
-`MLAIOPS_LOCAL_USERNAME` / `MLAIOPS_LOCAL_PASSWORD`; the username is the grant
-subject. Logging out invalidates that local session, including API calls.
-Personal SDK/CLI use requires a scoped API key from Settings, passed through
-`MLAIOPS_TOKEN`. Workers use the separate `MLAIOPS_INTERNAL_TOKEN` credential.
-Compose supplies it to reporting services, not to interactive workspaces.
-`deploy/scripts/demo-smoke.sh` accepts a personal key or signs in with local credentials.
+If a page fails to load, it shows the error and a **Retry** button; the rest of
+the console keeps working.
 
-## Verification
+## Open a workspace
 
-`make -C platform test-ui` installs pinned test dependencies and exercises the real console
-HTML/JavaScript using jsdom: individual grants, routing, project preservation,
-errors, retry, and workspace availability. Go tests cover session revocation,
-workspace authorization/proxying, HTTP checks, and persisted runtime activation.
+Open JupyterLab or the browser IDE from any of these places:
+
+- The sidebar links **Jupyter workbench ↗** and **IDE workspace ↗**.
+- A project's **Open in Jupyter ↗** and **Open in IDE ↗** buttons, which open the
+  project's folder.
+- **Settings > Developer workspaces**.
+
+The sidebar's **Developer workspaces** status shows whether each workspace is
+ready. When you open a project, Kionga creates its folder,
+`projects/<namespace>`, if it does not exist. The workspace toolbar keeps the
+project when you switch between JupyterLab and the IDE.
+
+Kionga checks your access on every workspace request and every new WebSocket
+connection. If an administrator removes your access, new requests are refused
+at once, but a connection that is already open stays open until it closes.
+
+For details, see [Work in the Jupyter workbench](workbench.md) and
+[Use the browser IDE](coding-workspace.md).
+
+## Create a personal API key
+
+Use a personal API key for the SDK, the `mlaiops` CLI or automation that runs
+outside Kionga. JupyterLab and the browser IDE do not need one.
+
+1. Open **Settings > Personal API keys** and click **＋ Create key**.
+2. Enter a **Key name**, choose when it **Expires after** (7 days, 30 days,
+   90 days or 1 year), select the **Service scopes** it needs and, optionally,
+   limit it to **Project IDs**. A key can never exceed your own access.
+3. Click **Create key**, copy the key, and click **I have saved it**. Kionga
+   shows the key only once.
+4. Export it where your tool runs:
+
+    ```bash
+    export MLAIOPS_URL=https://kionga.example.com
+    export MLAIOPS_TOKEN="your-key"
+    mlaiops project list
+    ```
+
+**Verify:** `mlaiops project list` prints the projects the key's scopes allow.
+
+Personal API keys cannot open workspaces, run scaffold jobs, change personal
+settings or use the editorial workspace. Store keys in a secret manager or your
+operating system's keychain, never in source control.
+
+## Choose the runtime for new pipeline runs and functions
+
+Kionga sends container pipelines to Prefect and functions to OpenFaaS. An
+administrator can switch to another Prefect or OpenFaaS deployment without
+restarting the gateway.
+
+1. Open **Platform** and click **＋ Add connection**.
+2. Choose the **Service** (**Prefect** or **OpenFaaS**) and enter a
+   **Connection name**.
+3. Enter the **Service address**: the Prefect API base address, or the OpenFaaS
+   gateway address.
+4. Enter the **Credential reference**: `none`, or `env:VARIABLE` naming a
+   variable set on the gateway. Prefect uses it as a bearer token; OpenFaaS uses
+   it as the gateway password, with the user from `OPENFAAS_USER` (default
+   `admin`). Never paste a secret into this field.
+5. Click **Save and test**. A check passes only on a successful HTTP response;
+   redirects, missing routes and authentication failures count as failures.
+6. On the connection card, click **Use for new operations**.
+
+Kionga refuses to switch while any pipeline run is queued or running, so a run
+never changes its destination. When several connections of a type have been
+activated, the most recent one wins. Register your Prefect workers and
+deployments, or your OpenFaaS functions, with the new engine before you switch.
+
+Connections of other types (Kubernetes, MLflow, object storage, Kafka REST,
+Langfuse, Redis or Feast) are availability monitors: they report health, and
+their runtime settings stay in your deployment configuration.
+
+**Verify:** the card's label changes to `prefect · Active runtime` or
+`openfaas · Active runtime`.
+
+## Next steps
+
+- [Create a project from a template](project-templates.md).
+- [Define and run pipelines](pipelines.md).
+- [Manage users, groups and policies](access-control.md).
