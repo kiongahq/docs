@@ -1,121 +1,150 @@
-# Feature stores: internal and external
+---
+description: Connect an external feature store such as Feast to Kionga, test its health, share it with projects, and serve online lookups from it through the feature gateway.
+---
 
-Kionga serves features from its **internal store** (Redis online, Parquet
-offline in `s3://mlaiops-features`) and can connect **external stores**
-through adapters. The Features page shows, for every store, whether it is
-internal or external, where it lives, its last health check with the reason,
-and which projects may use it. Each feature view card shows its version,
-store location, freshness badge and recent failures.
+# Connect an external feature store
 
-## Adapter contract
+Register a feature store you already run, such as a Feast feature server, so
+Kionga can check its health and show it to the projects that may use it. For the
+store that ships with Kionga, see [Use the built-in feature store](features.md).
 
-Every provider implements `feature.Adapter` (`platform/go/internal/feature/adapter.go`):
+Kionga connects external stores through adapters. An adapter defines what Kionga
+can drive in that store:
 
-| Method | Meaning |
-| --- | --- |
-| `Name()` | Registry name |
-| `Capabilities()` | `online`, `offline`, `point_in_time`, `materialize`, `ttl`, `push`: what Kionga can drive through this adapter |
-| `Health(ctx)` | `configured`, `healthy`, `degraded` or `unavailable`, with a reason |
-| `ListFeatureViews(ctx)` | Views the store reports, or `ErrNotSupported` |
-| `GetOnline(ctx, request)` | One row per entity, `NOT_FOUND` statuses for misses |
-
-| Provider | Adapter | Capabilities | Health check |
+| Provider | Adapter | What Kionga can drive | Health check |
 | --- | --- | --- | --- |
-| `internal` | yes | all six | Redis `PING` or feature-gateway `/healthz` (which pings Redis); degraded without an offline location |
-| `feast` | yes | online, ttl | Feast `GET /health`; 401/403 means the credential was rejected; slow (>2 s) is degraded |
-| `tecton`, `hopsworks`, `vertex-ai`, `sagemaker`, `databricks` | no | none | listed as `contract available — no adapter`; connections cannot be created |
+| `internal` (built in) | Yes | Online, offline, point-in-time joins, materialization, TTL, push | Redis, or the feature gateway's `/healthz` |
+| `feast` | Yes | Online lookups and TTL | Feast `GET /health` |
+| `tecton`, `hopsworks`, `vertex-ai`, `sagemaker`, `databricks` | Not yet | Nothing | Listed as a contract without an adapter; you cannot connect them |
 
-Both adapters pass one conformance suite (`TestInternalAdapterConformance`,
-`TestInternalAdapterThroughFeatureGatewayConformance`,
-`TestFeastAdapterConformance`); the Feast fake reproduces the feature server's
-real `/health` and columnar `/get-online-features` contract.
+## Before you begin
 
-## Connecting an external store
+- **To connect, edit, test or remove a store:** the `admin` or `operator` role.
+- **To see the stores shared with your projects:** the `features` service for a
+  normal user, or the `viewer`, `engineer`, `operator` or `admin` role.
+- A running Feast feature server that the Kionga gateway can reach over HTTP or
+  HTTPS.
+- If Feast needs a bearer token, an operator sets it as an environment variable
+  on the gateway, for example `FEAST_TOKEN`. You never paste the secret into
+  Kionga.
 
-Platform → **Feature stores and object storage** → **＋ Feature store**, or with an administrator session (`kionga.cookies` from a local sign-in; see
-[Authentication](../reference/api.md#authentication)):
+## Connect a Feast feature server
+
+=== "Console"
+
+    1. Open **Platform**. Under **Feature stores and object storage**, click
+       **＋ Feature store**.
+    2. Choose the **Provider** and enter a **Connection name** (2 to 63
+       lowercase letters, digits and hyphens).
+    3. Enter the **Feature server URL**, for example
+       `http://feast-feature-server:6566`.
+    4. Optional: enter **Feature services** as a comma-separated list. Feast's HTTP
+       server cannot list them itself.
+    5. Optional: enter a **Credential reference** such as `env:FEAST_TOKEN`.
+    6. Enter the **Allowed projects** as comma-separated project IDs. Leave it
+       empty to share the store with every project.
+    7. Click **Save and test**.
+
+=== "API"
+
+    Use an administrator's session cookie (see
+    [Authentication](../reference/api.md#authentication)):
+
+    ```bash
+    curl -s -b kionga.cookies -X POST "$MLAIOPS_URL/api/v1/admin/feature-stores" \
+      -H 'Content-Type: application/json' \
+      -d '{"provider": "feast", "name": "team-feast",
+           "config": {"url": "http://feast-feature-server:6566",
+                      "feature_services": "customer_profile"},
+           "secret_ref": "env:FEAST_TOKEN",
+           "allowed_projects": ["prj-123"]}'
+    curl -s -b kionga.cookies -X POST \
+      "$MLAIOPS_URL/api/v1/admin/feature-stores/<store-id>/test"
+    ```
+
+Kionga validates the connection before saving it:
+
+- `config` accepts only the provider's keys (`url` and `feature_services` for
+  Feast). Keys that look like secrets, and URLs with embedded credentials, are
+  rejected.
+- `secret_ref` is empty or `env:VARIABLE`. Kionga reads the value only to run a
+  check, and never stores, logs or returns it. Responses report only whether the
+  secret is present.
+- Every project in `allowed_projects` must exist.
+
+**Verify:** the health message reads `Healthy: Feast feature server is serving
+at ...`. Other results mean:
+
+| Health | Meaning |
+| --- | --- |
+| `configured` | Saved but not tested yet. Saving or editing a connection resets it to this state. |
+| `degraded` | Feast answered, but took more than 2 seconds or returned an unexpected status |
+| `unavailable` | Feast is unreachable, or it rejected the credential (`401` or `403`) |
+
+## Share a store with projects
+
+To change which projects can use a store after you connect it, send the full
+connection with the new `allowed_projects` list. The console has no edit form;
+there you remove the store and connect it again.
+
+1. Update the connection:
+
+    ```bash
+    curl -s -b kionga.cookies -X PUT \
+      "$MLAIOPS_URL/api/v1/admin/feature-stores/<store-id>" \
+      -H 'Content-Type: application/json' \
+      -d '{"provider": "feast", "name": "team-feast",
+           "config": {"url": "http://feast-feature-server:6566"},
+           "secret_ref": "env:FEAST_TOKEN",
+           "allowed_projects": ["prj-123", "prj-456"]}'
+    ```
+
+2. Test it again, because saving resets its health to `configured`.
+
+Project members see a store only when it is shared with one of their projects
+(or with every project), and they see only their own project IDs on it.
+
+**Verify:** a project member sees the store in **Features > Feature stores**,
+or in the response of:
 
 ```bash
-curl -b kionga.cookies -X POST "$MLAIOPS_URL/api/v1/admin/feature-stores" -H 'Content-Type: application/json' -d '{
-  "provider": "feast", "name": "team-feast",
-  "config": {"url": "http://feast-feature-server:6566", "feature_services": "customer_profile"},
-  "secret_ref": "env:FEAST_TOKEN",
-  "allowed_projects": ["prj-123"]
-}'
-curl -b kionga.cookies -X POST "$MLAIOPS_URL/api/v1/admin/feature-stores/<id>/test"
+curl -s -H "Authorization: Bearer $MLAIOPS_TOKEN" \
+  "$MLAIOPS_URL/api/v1/features/stores"
 ```
 
-- `config` takes only the provider's documented keys. Keys that look like
-  secrets and URLs with embedded credentials are rejected.
-- `secret_ref` is `env:VARIABLE` on the gateway. The value is read only for a
-  check and is never stored, logged or returned; responses report only
-  `secret_present`.
-- `allowed_projects` empty means every project. Members see a store only when
-  it is shared with one of their projects, and only their own project ids.
-- Saving or editing resets health to `configured`; **Test** records the result.
+## Serve online lookups from Feast
 
-| Endpoint | Who |
-| --- | --- |
-| `GET/POST /api/v1/admin/feature-stores`, `GET/PUT/DELETE /{id}`, `POST /{id}/test` | admin, operator |
-| `GET /api/v1/admin/feature-store-providers` | admin, operator |
-| `GET /api/v1/features/stores` | anyone with the features service (scoped) |
+Registering a store records and monitors it. To make Kionga's feature gateway
+answer `/get-online-features` from Feast instead of Redis, an operator configures
+the feature gateway itself:
 
-The built-in store has id `internal`; it is configured by
-`MLAIOPS_FEATURE_GATEWAY_URL` and `KIONGA_FEATURE_OFFLINE_URI` and cannot be
-edited or deleted.
+1. Set `FEAST_URL` on the `feature-gateway` service to the Feast feature server
+   address.
+2. Restart the feature gateway.
 
-## Versions, lineage and freshness
+With `FEAST_URL` set, the gateway forwards every lookup to Feast and its
+`/healthz` returns `503` when Feast is unreachable. Its metrics carry the label
+`mode="feast"`.
 
-- **Immutable versions.** Every `POST /api/v1/features` whose definition
-  (entity, fields, tags, source, TTL, store) changed writes
-  `feature_definition_version` `<name>@<n>`. Re-applying the same definition
-  writes nothing. `GET /api/v1/features/{name}/versions`.
-- **Lineage.** The materializer reports each run to
-  `POST /api/v1/features/{name}/materializations` with `run_id`,
-  `source_dataset`, `offline_uri`, `entity_count`, `status` and `error`, linked
-  to the current view version. `GET /api/v1/features/{name}/lineage`. Only the
-  materializer (service role), engineers and operators may report.
-- **Freshness** compares the last successful materialization with the view's
-  TTL: `fresh`, `stale` (older than TTL) or `never`. A zero TTL never goes stale.
-  `GET /api/v1/features/views` returns each view with store, freshness,
-  version, last run and failures since the last success.
+**Verify:** a lookup returns the values that Feast serves:
 
-## Point-in-time joins
-
-`features.point_in_time.point_in_time_join` builds training sets without
-future leakage: per entity, it takes the latest feature row at or before each
-label's `event_timestamp` (ties broken by `created_timestamp`), and treats rows
-older than `ttl_seconds` as missing.
-
-```python
-from features.point_in_time import point_in_time_join
-training = point_in_time_join(labels, feature_rows, entity_key="user_id", features=["plan", "spend"], ttl_seconds=3600)
+```bash
+curl -s -X POST "$MLAIOPS_FEATURE_GATEWAY_URL/get-online-features" \
+  -H 'Content-Type: application/json' \
+  -d '{"feature_service": "customer_profile", "entities": [{"entity_id": "u123"}]}'
 ```
 
-The leakage fixture in `agent-runtime/tests/test_feature_store_correctness.py`
-places a future value after every label and checks it never appears, and
-compares every output against a brute-force scan.
+## Remove a store
 
-## TTL and retention sweep
+Click **Remove** on the store under **Feature stores and object storage**, or
+call `DELETE /api/v1/admin/feature-stores/<store-id>`. The built-in store, with
+the ID `internal`, cannot be edited or removed; its addresses come from
+`MLAIOPS_FEATURE_GATEWAY_URL` and `KIONGA_FEATURE_OFFLINE_URI` on the gateway.
 
-The feature gateway writes online rows without expiry.
-`python -m features.retention` (with `REDIS_URL`) arms `EXPIRE ttl_seconds` on
-every key of a view that has a TTL, deletes keys of views that no longer
-exist, and leaves TTL-less views alone. `--dry-run` reports without changes.
-Run it after each materialization: a row that stops being refreshed then
-disappears within one TTL of the next sweep.
+## Next steps
 
-## Metrics
-
-The feature gateway exports `/metrics`:
-
-| Metric | Labels |
-| --- | --- |
-| `kionga_feature_gateway_lookups_total` | `mode`, `outcome` (ok, invalid_request, failed) |
-| `kionga_feature_gateway_lookup_entities_total` | `mode` |
-| `kionga_feature_gateway_lookup_entities_missing_total` | `mode` |
-| `kionga_feature_gateway_lookup_duration_seconds` | `mode` |
-| `kionga_feature_gateway_writes_total` | `mode`, `outcome` (ok, unauthorized, invalid_request, unsupported) |
-| `kionga_feature_gateway_health_checks_total` | `mode`, `outcome` |
-
-`/healthz` now returns `503` when Redis or Feast is unreachable.
+- [Use the built-in feature store](features.md) for materialization, versions
+  and point-in-time joins.
+- [Process real-time events](realtime.md) with online features.
+- For how adapters work and how to add one, see the
+  [engineering handbook](https://kiongahq.github.io/docs/engineering/components/go-packages/).

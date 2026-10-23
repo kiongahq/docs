@@ -1,153 +1,189 @@
-# Hugging Face models in Kionga
+---
+description: Search the Hugging Face Hub from Kionga, register a pinned model revision in a project, connect a personal account for private models, and download the weights in your workspace.
+---
 
-Use **Models → Hugging Face Hub** to find pretrained models for classification,
-embeddings, text generation, vision, speech, and other ML/AI workloads. Hub models
-can be the starting point for notebooks, training pipelines, or agent tools.
-Importing a model does not automatically make it a deployed inference service.
+# Import a Hugging Face model
 
-## 1. Connect your account
+Find a trained model on the Hugging Face Hub, register a pinned revision in a
+Kionga project, and download its weights in your workspace. Use Hub models as the
+starting point for notebooks, training pipelines or agent tools.
 
-Public search and model registration work without a Hugging Face account.
-For private repositories, connect your personal account in **Settings → Hugging
-Face account**. Create a read or fine-grained token at
-[Hugging Face token settings](https://huggingface.co/settings/tokens), grant only
-the repository access you need, and paste it into the password field.
+Registering a model records where it comes from. It does not download the
+weights or deploy an inference service.
 
-The gateway validates the token against the Hub identity endpoint. It encrypts
-the token with AES-256-GCM, bound to your platform subject, before persisting it
-in the existing file/PostgreSQL repository. It never returns the token in API
-responses, puts it in browser storage, or includes it in generated code or audit
-events. The token is sent only to `https://huggingface.co`, without following
-redirects. Use HTTPS for the platform outside loopback development.
+## Before you begin
 
-An administrator must first set `KIONGA_CREDENTIAL_KEY` on the gateway to a
-base64-encoded 32-byte random key. Generate one with:
+- **To search the Hub:** any signed-in user who can see **Models**. Public
+  search works without a Hugging Face account.
+- **To register a model:** the `models` service for a normal user, or the
+  `engineer`, `operator` or `admin` role, and access to the destination project.
+  Viewers can search but cannot register.
+- **For private or gated models:** a Hugging Face account with access to the
+  repository, and an administrator who has set the credential key on the gateway
+  (see [Set the credential key](#set-the-credential-key)).
 
-```sh
-openssl rand -base64 32
-```
+## Connect your Hugging Face account
 
-For Compose, put the result in your uncommitted root `.env`, then recreate the
-gateway. In Kubernetes, inject it using a Secret. Keep this key stable across
-gateway replicas and restarts, back it up separately from the database, and
-never commit it. Changing it requires users to reconnect; automated re-encryption
-and managed-KMS rotation are not implemented. Without the key, private account
-connections are disabled; public discovery still works.
+Connect your account only when you need private or gated repositories.
 
-**Disconnect** forgets the platform's saved credential. It does not revoke the
-token on Hugging Face or log out any notebook/IDE. Revoke a compromised token on
-Hugging Face and remove local Hub logins separately.
+1. On Hugging Face, create a read or fine-grained
+   [access token](https://huggingface.co/settings/tokens) that grants only the
+   repositories you need.
+2. In the Kionga console, open **Settings > Hugging Face account**.
+3. Paste the token into **Read or fine-grained token** and click **Connect
+   account**.
 
-## 2. Find and register a model
+Kionga checks the token with the Hub and encrypts it for your account alone. It
+never shows the token again, never stores it in your browser, and never puts it
+in generated code or audit events. Kionga sends it only to
+`https://huggingface.co`.
 
-1. Search by model/organization and optionally filter by task.
-2. Open the model card and review license, required libraries, memory needs,
-   intended uses, and limitations. A download count is not a quality guarantee.
-3. Choose an assigned project and a branch, tag, or commit (default `main`).
+**Verify:** the **Hugging Face account** panel shows `Connected as <your Hub username>`.
+
+**Disconnect** removes the token from Kionga. It does not revoke the token on
+Hugging Face or sign out any workspace. If a token leaks, revoke it on Hugging
+Face.
+
+## Find and register a model
+
+1. Open **Models**. In the **Hugging Face Hub** panel, enter a **Model or
+   organization**, optionally choose a **Task**, and click **Search Hub**.
+2. Review the model card: license, required libraries, memory needs, intended use
+   and limitations. A high download count is not a quality guarantee.
+3. Choose the **Destination project** and a **Revision**: a branch, tag or commit
+   (default `main`).
 4. Click **Register in project**.
 
-Kionga resolves the revision to its immutable commit and stores an artifact URI
-such as `hf://organization/model@<40-character-commit>`, plus repository, task,
-library, and license metadata when available. The model starts as a candidate
-with `needs_evaluation`; its weights have **not** been downloaded. Repeat imports
-of the same repository/commit into the same project are rejected as duplicates.
-Different projects can register the same source independently.
+Kionga resolves the revision to its 40-character commit and stores an artifact
+URI such as `hf://organization/model@<commit>`, with the repository, task,
+library and license when the Hub provides them. The model starts in the
+`candidate` stage with the quality gate `needs_evaluation`. Registering the same
+repository and commit in the same project again is rejected; other projects can
+register it independently.
 
-Users need the **models** service and access to the destination project. Viewers
-can browse but cannot import. Private metadata registered in a project is visible
-to that project's authorized members; their own Hub accounts still need permission
-to download the underlying weights.
+You can do the same from the SDK:
 
-## 3. Pull weights in Jupyter, the IDE, or a local environment
+```python
+results = client.search_huggingface_models("sentence-transformers",
+                                            task="sentence-similarity")
+model = client.import_huggingface_model(
+    "prj-123", "sentence-transformers/all-MiniLM-L6-v2", revision="main")
+print(model.artifact_uri)
+```
 
-After import, copy the generated Python code or download the starter notebook.
-**Open Jupyter** preserves the destination project. Upload/open the notebook in
-that workspace; Kionga does not silently execute it.
+**Verify:** the model card under **Models** shows the `hf://` URI and a
+**Download / notebook** button.
 
-The rebuilt Jupyter image includes the SDK's `huggingface` extra. For an IDE or
-local checkout, create an environment and install the SDK:
+## Download the weights in a workspace
 
-```sh
+1. On the registered model, click **Download / notebook**. Copy the generated
+   Python code, or click **Download notebook**, then **Open Jupyter**.
+2. For private or gated models, sign in to the Hub inside that workspace. Kionga
+   never copies your connected account into workspaces:
+
+    ```python
+    from mlaiops_sdk.huggingface import connect
+    connect()  # interactive Hub login; never paste a token into saved code
+    ```
+
+3. Run the download:
+
+    ```python
+    from mlaiops_sdk import MLAIOpsClient
+    from mlaiops_sdk.huggingface import download_model
+
+    repo = "sentence-transformers/all-MiniLM-L6-v2"
+    with MLAIOpsClient() as platform:
+        model = next(m for m in platform.list_models()
+                     if m.artifact_uri.startswith(f"hf://{repo}@"))
+        path = download_model(model, cache_dir="/workspace/huggingface-cache")
+        print(path)
+    ```
+
+    `download_model` takes the registered model, so it always downloads the
+    pinned commit.
+
+`download_model` uses the Hub's own `snapshot_download` with the registered
+commit and returns the snapshot folder. Interrupted downloads can resume and
+reuse cached files. `allow_patterns` limits which files it pulls (leaving out
+required config, vocabulary or weight files can make the model unusable), and
+`local_files_only=True` reuses the cache offline. The helper never runs
+repository code and never enables `trust_remote_code`.
+
+Downloads run in your workspace or job, within its disk and resource limits, not
+on the gateway. Make sure you have room for large checkpoints first.
+
+The JupyterLab workbench already includes the SDK with Hugging Face support. For
+the browser IDE or your own machine, install it from your `sdk-python` checkout:
+
+```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install './sdk-python[huggingface]'
 ```
 
-Run this from the workspace folder that holds `sdk-python/`; adjust the path when working elsewhere.
-For private/gated models, authenticate **inside that environment**:
+Outside Kionga, export `MLAIOPS_URL` and a personal API key as `MLAIOPS_TOKEN`.
+That key is for Kionga, not Hugging Face. In pipeline jobs, provide `HF_TOKEN`
+through your deployment's secret manager, never as a parameter or in a committed
+file.
 
-```python
-from mlaiops_sdk.huggingface import connect
-connect()  # Interactive official Hub login; do not paste a token into saved code.
-```
+**Verify:** the printed folder contains the model's config and weight files.
 
-This local login is deliberately separate from the encrypted console connection:
-Kionga does not export the saved account credential to workspaces or API clients.
-The official Hub client caches local credentials under the current OS user;
-only use this on your personal workspace. In jobs, inject `HF_TOKEN` with your
-deployment's secret manager, not a pipeline parameter or committed file.
+## Evaluate and deploy
 
-An SDK workflow can register and pull a model directly:
+An imported Hub reference cannot be promoted to production or deployed through the
+default serving path, because its gate is `needs_evaluation`.
 
-```python
-import os
-from mlaiops_sdk import MLAIOpsClient
-from mlaiops_sdk.huggingface import download_model
+1. Install the model's runtime library in your project environment, for example
+   `transformers`, `sentence-transformers` or `diffusers`, and load the model from
+   the snapshot folder. Assess any model that needs custom code separately.
+2. Evaluate it on your own data, or fine-tune it in a [pipeline](pipelines.md).
+3. Register the evaluated artifact with its metrics and a `serving_image` that can
+   load it, and keep the source commit in your experiment metadata. See
+   [Register, deploy and serve models](models-serving.md).
 
-with MLAIOpsClient(os.environ["MLAIOPS_URL"]) as platform:
-    # MLAIOPS_TOKEN is your scoped Kionga API key; it is not your HF_TOKEN.
-    model = platform.import_huggingface_model(
-        project_id="YOUR_ASSIGNED_PROJECT_ID",
-        repo_id="sentence-transformers/all-MiniLM-L6-v2",
-        revision="main",
-    )
-    path = download_model(model, cache_dir="/workspace/huggingface-cache")
-    print(path)
-```
+Large generative models can need a dedicated GPU inference server. Embeddings
+and model calls inside agents are part of your project code.
 
-`download_model` uses the official `snapshot_download` function with the registry's
-exact commit. It returns the cache directory containing the snapshot; interrupted
-downloads can be retried and cached files reused. Optional `allow_patterns` limits
-the files pulled, and `local_files_only=True` supports offline reuse. Filtering
-out required tokenizer/config/weight files can make a model unusable.
+## Set the credential key
 
-Provision enough disk before pulling large checkpoints. Downloads execute in the
-calling workspace/job, subject to that environment's filesystem and resource
-limits, not the gateway. There is no gateway background download queue or automatic
-size-based quota reservation in this integration.
+An administrator sets the key that encrypts connected Hugging Face tokens.
 
-## 4. Build, evaluate, and deploy
+1. Generate a base64-encoded 32-byte key:
 
-Install the model's compatible runtime library in your project environment
-(`transformers`, `sentence-transformers`, `diffusers`, etc.). Load from the returned
-snapshot path. The download helper never executes repository Python and never
-enables `trust_remote_code`; assess any model requiring custom code separately.
+    ```bash
+    openssl rand -base64 32
+    ```
 
-Use embeddings in retrieval tools, add an inference call to an agent's graph,
-or fine-tune the checkpoint in a pipeline. These application integrations are
-project code, not automatically generated deployments. Hub downloads alone do
-not provide an LLM backend or guarantee CPU/GPU compatibility.
+2. Set it as `KIONGA_CREDENTIAL_KEY` on the gateway: in `deploy/.env` (never
+   committed) for Compose, or from a Kubernetes Secret.
+3. Recreate the gateway.
 
-Evaluate on your own data and register the evaluated artifact with metrics and
-an appropriate serving image through the normal model workflow. A raw imported
-Hub reference cannot be promoted to production or deployed through the default
-MLflow serving path. Preserve the source commit in your experiment and artifact
-metadata. Select a runtime/image that understands the artifact format; large
-generative models may require a dedicated GPU inference server.
+Use the same key on every gateway replica, keep it stable across restarts, and
+back it up separately from the database. If you change it, users must reconnect
+their accounts. Without the key, account connections are disabled and public
+search still works.
+
+**Verify:** **Settings > Hugging Face account** shows `Not connected. Public
+model discovery is available without an account.` instead of asking for
+`KIONGA_CREDENTIAL_KEY`, and **Connect account** is enabled.
 
 ## Troubleshooting
 
-- **401/403 or gated access:** accept the model's terms/request approval on its
-  Hub page, then use a token from the approved account. Registration of metadata
-  is not proof that weights are downloadable.
-- **404:** verify the repository/revision and your personal account's access.
-- **429:** wait and retry; the console reports rate limiting explicitly.
-- **Credential cannot be decrypted:** an administrator may have changed the key;
-  reconnect your account.
-- **Download fails:** check workspace connectivity, disk capacity, local Hub
-  credentials, and the model's required access. Detailed download errors come
-  from the official Hub client in your notebook/terminal.
+| Symptom | What to do |
+| --- | --- |
+| `401` or `403`, or a gated model | Accept the model's terms on its Hub page, then use a token from the approved account. Registering metadata does not prove you can download the weights. |
+| `404` | Check the repository ID, the revision, and your account's access. |
+| Rate limit reached (`429`) | Wait and retry. |
+| The saved credential cannot be decrypted | The credential key changed. Reconnect your account. |
+| A download fails | Check the network access of the workspace, free disk, Hub login and access to the model. The Hub client in your notebook or terminal reports the details. |
 
-Reference: [Hub downloads](https://huggingface.co/docs/huggingface_hub/guides/download),
-[access tokens](https://huggingface.co/docs/hub/security-tokens),
+See the Hugging Face documentation on
+[downloads](https://huggingface.co/docs/huggingface_hub/guides/download),
+[access tokens](https://huggingface.co/docs/hub/security-tokens) and
 [gated models](https://huggingface.co/docs/hub/models-gated).
+
+## Next steps
+
+- [Register, deploy and serve models](models-serving.md).
+- [Build an agent](agents.md) that uses the model.

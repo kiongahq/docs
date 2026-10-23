@@ -1,112 +1,212 @@
-# Models & serving
+---
+description: Register a model version, pass its quality gate, promote it, deploy it to a live REST endpoint, send predictions, and roll it back.
+---
 
-The classical-ML lifecycle: register a model, gate it, promote it, deploy it to a
-**live REST endpoint**, and roll back.
+# Register, deploy and serve models
 
-Shell examples assume `export MLAIOPS_URL=http://localhost:8080`. Add a credential to each `curl` call (`-b kionga.cookies` after a local sign-in, or `-H "Authorization: Bearer $MLAIOPS_TOKEN"`); see [Authentication](../reference/api.md#authentication).
+Take a trained model from registration to a live REST endpoint: register a
+version, check its quality gate, promote it, deploy it, send predictions, and
+roll back when you need to.
 
-## Registry
+## Before you begin
 
-Models are registered against a project, usually by the training pipeline's
-`register` step, or manually:
+- You need the `models` service for a normal user, or the `engineer`,
+  `operator` or `admin` role, and access to the model's project. Viewers can
+  see models but cannot change them.
+- The model is logged to MLflow, or stored at an artifact URI that the serving
+  image can load.
+- Deployment needs the serving manager, which the Compose stack runs for you.
+- For the API examples, export `MLAIOPS_URL` and a personal API key with the
+  `models` scope as `MLAIOPS_TOKEN`. See
+  [Authentication](../reference/api.md#authentication).
 
-```bash
-curl -s -X POST "$MLAIOPS_URL/api/v1/models" \
-  -H 'Content-Type: application/json' \
-  -d '{"project_id":"<id>","name":"churn-classifier","version":"1",
-       "artifact_uri":"models:/m-...",
-       "serving_image":"ghcr.io/acme/churn-sklearn@sha256:<digest>",
-       "metrics":{"accuracy":0.968}}'
-```
+## Register a model version
 
-Each model carries `metrics`, a **quality gate** status, a **stage**, and (once
-deployed) an `endpoint_url` and `deployment_status`. The console's Models tab shows
-a per-version quality bar chart and cards with the gate, stage, and metrics.
+A training pipeline usually registers its model. To register one yourself:
 
-## Promotion
+=== "SDK"
 
-Move a model between stages (e.g. `candidate` → `production`):
-
-```bash
-curl -s -X POST "$MLAIOPS_URL/api/v1/models/<id>/promote" \
-  -d '{"stage":"production"}'
-```
-
-## Deploying to a live endpoint
-
-The serving manager launches an `mlflow models serve` container for the model
-version and the gateway records the endpoint URL:
-
-```bash
-curl -s -X POST "$MLAIOPS_URL/api/v1/models/<id>/deploy" \
-  -d '{"canary_weight":0}'
-```
-
-1. The gateway calls the serving-manager (`POST /deployments`).
-2. The manager starts the container on the platform network and returns the URL
-   (e.g. `http://mlaiops-serve-churn-classifier:5001`).
-3. The gateway records it and marks the model `serving`, or, if the manager
-   rejects it, marks it `failed` and returns `502`.
-
-The model card then shows a green **● live** tag and a **Test** button.
-
-## Predicting
-
-Hit the live endpoint through the gateway (it proxies to `/invocations`):
-
-=== "Console"
-
-    Click **Test** on a live model, edit the payload, **Send prediction request**:
-
-    ```json
-    {"predictions": [1]}
+    ```python
+    model = client.register_model(
+        "prj-123", "churn-classifier", "1", "models:/m-1234",
+        metrics={"accuracy": 0.968},
+        serving_image="ghcr.io/acme/churn-sklearn@sha256:<digest>",
+    )
+    print(model.id, model.gate_status)
     ```
 
 === "API"
 
     ```bash
-    curl -s -X POST "$MLAIOPS_URL/api/v1/models/<id>/predict" \
+    curl -s -X POST "$MLAIOPS_URL/api/v1/models" \
+      -H "Authorization: Bearer $MLAIOPS_TOKEN" \
+      -H 'Content-Type: application/json' \
+      -d '{"project_id": "prj-123", "name": "churn-classifier", "version": "1",
+           "artifact_uri": "models:/m-1234",
+           "serving_image": "ghcr.io/acme/churn-sklearn@sha256:<digest>",
+           "metrics": {"accuracy": 0.968}}'
+    ```
+
+`serving_image` is optional. Set it when the model needs libraries that the
+default serving image does not have; see
+[Avoid training-serving skew](#avoid-training-serving-skew).
+
+A new version starts in the `candidate` stage with a quality gate:
+
+| Gate status | When |
+| --- | --- |
+| `passed` | The default for a registered artifact |
+| `failed` | The metrics include `accuracy` below `0.8` |
+| `needs_evaluation` | The artifact is an imported Hugging Face reference (`hf://`) |
+
+A project cannot hold two versions with the same name and version number.
+
+**Verify:** the model appears under **Models** with its stage, quality gate and
+metrics, and the **Model quality by version** chart includes it.
+
+## Promote a model
+
+Promotion moves a version to `staging`, `production` or `archived`. Promoting to
+`production` requires a `passed` quality gate.
+
+=== "Console"
+
+    On the model card, click **Promote**. The console promotes the version to
+    `production`.
+
+=== "SDK"
+
+    ```python
+    client.promote_model(model.id, "staging")
+    ```
+
+=== "API"
+
+    ```bash
+    curl -s -X POST "$MLAIOPS_URL/api/v1/models/<model-id>/promote" \
+      -H "Authorization: Bearer $MLAIOPS_TOKEN" \
+      -H 'Content-Type: application/json' \
+      -d '{"stage": "production"}'
+    ```
+
+**Verify:** the model card shows the new stage, for example `production · v1`.
+
+## Deploy a model to a live endpoint
+
+Deploying starts an `mlflow models serve` container for the version and records
+its endpoint. Deployment also requires a `passed` quality gate.
+
+=== "Console"
+
+    On the model card, click **Deploy**.
+
+=== "SDK"
+
+    ```python
+    client.deploy_model(model.id)
+    ```
+
+=== "API"
+
+    ```bash
+    curl -s -X POST "$MLAIOPS_URL/api/v1/models/<model-id>/deploy" \
+      -H "Authorization: Bearer $MLAIOPS_TOKEN" \
+      -H 'Content-Type: application/json' \
+      -d '{"canary_weight": 0}'
+    ```
+
+When the container starts, the model's `deployment_status` becomes `serving`
+and its `endpoint_url` is recorded, for example
+`http://mlaiops-serve-churn-classifier:5001`. If the serving manager rejects the
+deployment, the status becomes `failed` and the request returns `502` with the
+reason.
+
+`canary_weight` (0 to 100) is recorded on the model. The bundled serving path
+runs one container per model name and does not split traffic between versions.
+Agents have their own [canary traffic control](agents.md#shift-canary-traffic).
+
+**Verify:** the model card shows a **● live** tag and a **Test** button.
+
+## Send a prediction
+
+The gateway forwards your request to the model's MLflow `/invocations` route.
+
+=== "Console"
+
+    1. On a live model card, click **Test**.
+    2. Edit the **Request payload** and click **Send prediction request**.
+
+=== "API"
+
+    ```bash
+    curl -s -X POST "$MLAIOPS_URL/api/v1/models/<model-id>/predict" \
+      -H "Authorization: Bearer $MLAIOPS_TOKEN" \
       -H 'Content-Type: application/json' \
       -d '{"inputs": [[0.1,-1.2,0.5,2.0,0.3,-0.7,1.1,0.0,-0.4,0.9,-1.5,0.2]]}'
     ```
 
-## Canary & rollback
+A model without a live endpoint returns `409 not_serving`.
 
-- **Canary weight** (`canary_weight` on deploy) is recorded on the model. The
-  bundled serving path runs one container per model and does not split traffic
-  between versions. Agents have their own traffic API
-  (`PUT /api/v1/agents/{id}/traffic`), which the Kubernetes operator turns into
-  a stable/canary traffic plan.
-- **Rollback** removes the serving container and reverts:
+**Verify:** the response contains predictions, for example
+`{"predictions": [1]}`.
 
-    ```bash
-    curl -s -X POST "$MLAIOPS_URL/api/v1/models/<id>/rollback" -d '{}'
+## Roll back a model
+
+Rollback returns the version to its previous stage, sets its deployment status to
+`rolled_back` and removes its serving container.
+
+=== "Console"
+
+    On the model card, click **Rollback**.
+
+=== "SDK"
+
+    ```python
+    client.rollback_model(model.id)
     ```
 
-## Avoiding training-serving skew
+=== "API"
 
-A model trained under one library or framework version can fail to load under
-another. Register `serving_image` with each model version so XGBoost, PyTorch, and
-other heavyweight artifacts run in an OCI image containing the same dependencies
-used for training. Prefer an immutable digest. The image must contain the `mlflow`
-CLI and artifact-store support because the manager runs `mlflow models serve`
-inside it. If the field is absent, `SERVE_IMAGE` remains the compatible default for
-the bundled scikit-learn path.
+    ```bash
+    curl -s -X POST "$MLAIOPS_URL/api/v1/models/<model-id>/rollback" \
+      -H "Authorization: Bearer $MLAIOPS_TOKEN" -d '{}'
+    ```
 
-Serving images run with the platform's model-store credentials. Treat the registry
-and allowed image publishers as part of the deployment trust boundary; container
-capability dropping, `no-new-privileges`, and the PID limit reduce runtime privilege
-but do not make an untrusted image safe.
+A version that was never promoted has no previous stage, and rollback returns
+`no previous stage is available`.
 
-## Kubernetes fidelity path
+**Verify:** the model card shows the previous stage and the deployment status
+`rolled_back`.
 
-On the scale path, serving integrates with KServe/Knative and the operator reconciles a
-`KiongaModelPromotion`. Locally and on a single VM, mlflow-serve containers provide
-the same control-plane lifecycle without Kubernetes.
+## Avoid training-serving skew
 
-## Pretrained Hugging Face models
+A model trained with one library version can fail to load under another. The
+default serving image matches the [Jupyter workbench](workbench.md) pins
+(`scikit-learn==1.7.0`, `mlflow==3.16.1`), so scikit-learn models trained there
+serve as they are.
 
-Use the [Hugging Face workflow](huggingface.md) to connect a personal Hub account,
-search repositories, register immutable revisions, and download weights in your
-workspace. Imported references require evaluation and a compatible serving
-artifact before production deployment.
+For `xgboost`, PyTorch and other frameworks, register a `serving_image` with each
+version:
+
+- Use an OCI image with the same dependencies you trained with, pinned by digest.
+- Include the `mlflow` command-line tool and support for your artifact store,
+  because Kionga runs `mlflow models serve` inside the image.
+
+Serving containers run with the platform's model-store credentials, so treat the
+images you allow as part of your trust boundary. Dropped capabilities,
+`no-new-privileges` and a process limit reduce what a container can do, but they
+do not make an untrusted image safe.
+
+## Troubleshooting
+
+| Symptom | What to check |
+| --- | --- |
+| `model evaluation gates have not passed` | The gate is `failed` or `needs_evaluation`. Register an evaluated version with passing metrics. |
+| Deploy returns `502 serving_failed` | The serving manager could not start the container; the message gives its reason. See [Troubleshooting](../operations/troubleshooting.md). |
+| `409 not_serving` on predict | Deploy the model first, and wait for the **● live** tag. |
+
+## Next steps
+
+- [Import a Hugging Face model](huggingface.md).
+- [Use a deployed model in real-time scoring](realtime.md).
+- [Train models in a pipeline](pipelines.md).

@@ -119,7 +119,7 @@ OpenAI-protocol calls egress through the trace proxy, so every call lands in Kaf
 not captured by the proxy; Langfuse tracing and measured token usage still
 apply. Keys are env-only and never written to traces, logs, or the store.
 
-## Canary traffic
+## Canary traffic {#shift-canary-traffic}
 
 ```bash
 curl -s -X PUT "$MLAIOPS_URL/api/v1/agents/<id>/traffic" \
