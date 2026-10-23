@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block scripts %}
+<button class="kg-assistant-launch" id="kg-assistant-launch" aria-haspopup="dialog" aria-controls="kg-assistant">✧ <span>Ask Kionga</span></button>
+<dialog id="kg-assistant" class="kg-assistant" aria-labelledby="kg-assistant-title" data-index="{{ 'search/search_index.json' | url }}" data-endpoint="{{ config.extra.assistant_endpoint | default('', true) | e }}">
+  <header class="kg-assistant-header">
+    <div><span class="kg-assistant-eyebrow">DOCUMENTATION ASSISTANT</span><h2 id="kg-assistant-title">Ask Kionga <span>✧</span></h2></div>
+    <button type="button" id="kg-assistant-close" aria-label="Close assistant">×</button>
+  </header>
+  <div class="kg-assistant-body">
+    <p id="kg-assistant-mode">Find the right guide, without leaving your page.</p>
+    <div class="kg-suggestions" aria-label="Suggested questions">
+      <button type="button">How do I install Kionga?</button>
+      <button type="button">How do I deploy an AI agent?</button>
+      <button type="button">How do pipelines work?</button>
+    </div>
+    <div id="kg-messages" role="log" aria-label="Conversation" aria-live="polite" aria-relevant="additions"></div>
+  </div>
+  <form id="kg-assistant-form">
+    <label for="kg-question">Your question</label>
+    <div class="kg-composer"><input id="kg-question" placeholder="Ask about Kionga…" maxlength="2000" required autocomplete="off"><button type="submit" aria-label="Send question">↑</button></div>
+    <p id="kg-assistant-notice">Documentation search · Answers link to the source.</p>
+  </form>
+</dialog>
+{{ super() }}
+{% endblock %}

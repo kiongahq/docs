@@ -1,18 +1,17 @@
 ---
-title: Kionga
+title: Overview
 description: Kionga is a self-hosted platform for machine learning, data and AI agents on infrastructure you control.
 hide:
-  - navigation
   - toc
 ---
 
 <div class="kg-hero" markdown>
 
-<p class="kg-eyebrow">Open source &middot; Self-hosted</p>
+<p class="kg-eyebrow">Kionga documentation</p>
 
-# Machine learning, data and AI agents on infrastructure you control
+# Build on your own terms.
 
-Kionga gives your team one platform to build, train, serve and observe models
+Machine learning, data and AI agents. One platform to build, train, serve and observe models
 and AI agents: workspaces, pipelines, a model registry, feature stores and agent
 operations behind a single console and API, running in your own environment.
 
@@ -21,7 +20,17 @@ operations behind a single console and API, running in your own environment.
 
 </div>
 
-## One platform for the whole lifecycle
+<div class="kg-start" markdown>
+
+**Your first project, from notebook to production.**
+
+Start with the [installation guide](getting-started/installation.md), then follow
+the [quickstart](getting-started/quickstart.md). Need a specific answer? Use search
+or open **Ask Kionga**.
+
+</div>
+
+## Explore the platform
 
 <div class="grid cards" markdown>
 

@@ -32,3 +32,4 @@ docs-diagrams:       ## every mermaid diagram parses (needs Node)
 
 docs-test:           ## gate tests: reference checker and legacy URL redirects
 	python -m pytest -q tests
+	node --test tests/assistant.test.cjs
