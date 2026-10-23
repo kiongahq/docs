@@ -17,7 +17,11 @@ def on_config(config):
 
 def release_notes(changelog):
     """Keep generated headings and commit links; add timeline containers."""
-    entries = re.split(r"(?=^## )", changelog, flags=re.MULTILINE)[1:]
+    entries = [
+        entry
+        for entry in re.split(r"(?=^## )", changelog, flags=re.MULTILINE)[1:]
+        if re.match(r"## \[?v?[0-9]+\.[0-9]+\.[0-9]+(?:\]|\s|$|[-+])", entry)
+    ]
     if not entries:
         return (
             '<div class="kg-release-empty" markdown>\n\n'

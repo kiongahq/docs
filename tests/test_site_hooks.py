@@ -74,3 +74,12 @@ def test_both_sites_use_the_shared_template_directory():
         custom_dir = re.search(r"^  custom_dir: (.+)$", config.read_text(), re.MULTILINE)
         assert custom_dir
         assert (config.parent / custom_dir.group(1)).resolve() == root / "overrides"
+
+
+def test_explanatory_headings_are_not_release_entries():
+    result = site_hooks.release_notes(
+        "# Changelog\n\n## 1.0.0 (2026-10-23)\n\n### New features\n\n* A guide.\n\n"
+        "## Changelog\n\nExplanatory text.\n"
+    )
+    assert result.count('<section class="kg-release" markdown>') == 1
+    assert "Explanatory text" not in result

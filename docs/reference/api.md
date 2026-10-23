@@ -1,5 +1,5 @@
 ---
-icon: material/api
+icon: material/application-brackets-outline
 description: Every Kionga REST API route, with its method, who can call it, and what it does.
 ---
 
