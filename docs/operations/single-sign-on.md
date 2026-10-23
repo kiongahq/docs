@@ -1,4 +1,8 @@
-# Single sign-on
+---
+description: Sign people in to Kionga through Dex with LDAP, Active Directory, SAML, OIDC, GitHub, GitLab, Google or Microsoft, and control how first-time users get access.
+---
+
+# Set up single sign-on
 
 Kionga signs people in through an OIDC broker, [Dex](https://dexidp.io). Dex
 connects to the identity systems you already run and gives Kionga one trusted
@@ -12,66 +16,21 @@ OAuth secrets itself.
 | GitHub, GitLab (OAuth) | `github`, `gitlab` |
 | Google Workspace | `google` |
 | Microsoft Entra ID | `microsoft` |
-| Keycloak, Okta OIDC, Auth0, any OIDC provider | `oidc` |
+| `Keycloak`, Okta OIDC, `Auth0`, any OIDC provider | `oidc` |
 
 Local accounts can stay enabled next to single sign-on as break-glass access, for
 example when the directory is down.
 
-## How sign-in works
+## Before you begin
 
-1. The login page reads `/auth/providers` and shows a button per provider, plus the
-   local form when local accounts are enabled.
-2. **Sign in with …** goes to `/auth/sso/login?connector=<id>`. The gateway sends the
-   browser to Dex with that connector, a PKCE challenge and a nonce. Unknown
-   connector ids are rejected.
-3. Dex authenticates the user with the upstream system and returns a code. The
-   gateway exchanges it (proving PKCE), verifies the ID token signature, issuer,
-   audience, expiry and nonce, and sets an HttpOnly session cookie, marked
-   Secure when `OIDC_REDIRECT_URL` is https (production requires https).
-   The login starts on the callback's host: opening the console at
-   `127.0.0.1` moves the browser to `localhost` first, so the login cookies
-   reach the callback.
-4. Roles come from the token: a `roles` claim if present, otherwise the user's
-   groups mapped through `KIONGA_SSO_GROUP_ROLES`. A group named like a role
-   (`viewer`) still counts. Identity-provider groups never grant the internal
-   `service` role. Someone with no mapped group is an unprovisioned `user`: they
-   reach only their profile, access requests and personal settings.
-   Administrator-managed access profiles keyed by the user's subject override
-   token roles, as for any user.
-5. On a person's first sign-in, [sign-up](#sign-up) decides whether they get an
-   account.
-6. **Sign out** ends the Kionga session (and workspace sessions) for both local
-   and single sign-on users.
+- You operate the deployment: you can edit `deploy/.env` (Compose) or the Helm
+  values and secrets (Kubernetes), and restart the gateway and Dex.
+- For a directory or identity provider, you have an application registration or
+  a bind account, and its client ID and secret.
+- After sign-in, an `admin` or `operator` grants access in **Users & access**
+  (see [Manage users, groups and policies](../guides/access-control.md)).
 
-## Sign-up
-
-A person signing in through single sign-on for the first time, with no Kionga
-account and no directory group mapped to a role above `user`, gets an account
-according to `KIONGA_SIGNUP`:
-
-| Mode | First sign-in creates | The person sees |
-| --- | --- | --- |
-| `approval` (default) | An access request ("Signed up with github") for the requested default services | A "waiting for approval" banner; no service until an administrator provisions them in **Users & access** |
-| `open` | An active `user` account with the `KIONGA_SIGNUP_PROFILE` resource profile (default `starter`) | The console, at once |
-| `off` | Nothing | Access only through mapped directory groups or an administrator |
-
-Rules that always hold:
-
-- Signing in again never creates a second request, and a declined request is
-  not refiled. The person can ask again from **My access**.
-- An existing account is never changed by signing in: a suspended account stays
-  suspended.
-- People whose directory groups grant `admin`, `operator`, `engineer` or `viewer`
-  are skipped, because a stored profile would replace that role.
-- `KIONGA_SIGNUP_EMAIL_DOMAINS=example.com,corp.io` limits sign-up to emails at
-  those domains that the identity provider marked verified.
-- `KIONGA_SIGNUP_SERVICES` overrides the default services (overview, projects,
-  pipelines, models, features, storage, catalog, workbench, ide).
-
-The gateway logs each sign-up (`sign-up for <subject> via "github": requested`),
-and `/api/v1/me` reports `connector` and the latest `access_request` status.
-
-## Try it locally
+## Try single sign-on locally {#try-it-locally}
 
 `make -C deploy local-up` starts every sign-in method. Open
 <http://localhost:8080/login.html>:
@@ -79,7 +38,7 @@ and `/api/v1/me` reports `connector` and the latest `access_request` status.
 | Option | Try it |
 | --- | --- |
 | **Company directory** (LDAP through Dex, GLAuth test directory) | Password `kionga-sso-dev` for every user below |
-| **Demo account (local only)** (Dex's no-credentials OAuth round trip) | One click; the first sign-in signs up as Kilgore Trout |
+| **Demo account (local only)** (Dex's no-credentials OAuth round trip) | One click; the first sign-in signs up as a demo user |
 | **GitHub, Google, GitLab, Microsoft** | Appear once their client id and secret are set (below) |
 | Local form | `admin` / `mlaiops-local` (break-glass) |
 
@@ -89,7 +48,7 @@ and `/api/v1/me` reports `connector` and the latest `access_request` status.
 | `grace` | `data-team` | engineer |
 | `alan` | `everyone` | signs up: an access request waits for approval |
 
-### Add an OAuth provider locally
+## Add an OAuth provider locally
 
 1. Register an OAuth app at the provider with callback URL
    `http://localhost:5556/dex/callback`.
@@ -103,15 +62,21 @@ and `/api/v1/me` reports `connector` and the latest `access_request` status.
     # KIONGA_MICROSOFT_* (+ KIONGA_MICROSOFT_TENANT)
     ```
 
-3. `make -C deploy sso-reload`.
+3. Reload Dex:
 
-Dex renders `deploy/sso/dex.yaml` (a gomplate template) with the connectors
+    ```bash
+    make -C deploy sso-reload
+    ```
+
+**Verify:** the provider's button appears on <http://localhost:8080/login.html>.
+
+Dex renders `deploy/sso/dex.yaml` (a template) with the connectors
 whose client ids are set, and writes the login-page list from the same rendered
 config to a volume the gateway reads, so a button exists exactly when its
 connector does and the gateway needs no restart. Secrets stay `$VARS` that Dex
 expands when it loads the config; the rendered file never holds them.
 
-## Connect your directory
+## Connect your directory or identity provider
 
 With Compose, point the LDAP connector at your directory with `KIONGA_LDAP_HOST`,
 `KIONGA_LDAP_BIND_DN`, `DEX_LDAP_BIND_PASSWORD`, `KIONGA_LDAP_BASE_DN`,
@@ -201,6 +166,62 @@ test directory and demo account off, Dex's own email and password admin
 
 With GitHub, group names are `org:team` (for example `your-org:ml-admins`); map
 those names in `KIONGA_SSO_GROUP_ROLES`.
+
+**Verify:** `curl $MLAIOPS_URL/auth/providers` lists your providers, and signing in through one lands you in the console.
+
+## Choose how first-time users get access {#sign-up}
+
+A person signing in through single sign-on for the first time, with no Kionga
+account and no directory group mapped to a role above `user`, gets an account
+according to `KIONGA_SIGNUP`:
+
+| Mode | First sign-in creates | The person sees |
+| --- | --- | --- |
+| `approval` (default) | An access request (`Signed up with github`) for the requested default services | A "waiting for approval" banner; no service until an administrator provisions them in **Users & access** |
+| `open` | An active `user` account with the `KIONGA_SIGNUP_PROFILE` resource profile (default `starter`) | The console, at once |
+| `off` | Nothing | Access only through mapped directory groups or an administrator |
+
+Rules that always hold:
+
+- Signing in again never creates a second request, and a declined request is
+  not refiled. The person can ask again from **My access**.
+- An existing account is never changed by signing in: a suspended account stays
+  suspended.
+- People whose directory groups grant `admin`, `operator`, `engineer` or `viewer`
+  are skipped, because a stored profile would replace that role.
+- `KIONGA_SIGNUP_EMAIL_DOMAINS=example.com,corp.io` limits sign-up to emails at
+  those domains that the identity provider marked verified.
+- `KIONGA_SIGNUP_SERVICES` overrides the default services (`overview`, `projects`,
+  `pipelines`, `models`, `features`, `storage`, `catalog`, `workbench`, `ide`).
+
+The gateway logs each sign-up (`sign-up for <subject> via "github": requested`),
+and `/api/v1/me` reports `connector` and the latest `access_request` status.
+
+## How sign-in works
+
+1. The login page reads `/auth/providers` and shows a button per provider, plus the
+   local form when local accounts are enabled.
+2. **Sign in with …** goes to `/auth/sso/login?connector=<id>`. The gateway sends the
+   browser to Dex with that connector, a PKCE challenge and a nonce. Unknown
+   connector ids are rejected.
+3. Dex authenticates the user with the upstream system and returns a code. The
+   gateway exchanges it (proving PKCE), verifies the ID token signature, issuer,
+   audience, expiry and nonce, and sets an HttpOnly session cookie, marked
+   Secure when `OIDC_REDIRECT_URL` uses HTTPS (production requires HTTPS).
+   The login starts on the callback's host: opening the console at
+   `127.0.0.1` moves the browser to `localhost` first, so the login cookies
+   reach the callback.
+4. Roles come from the token: a `roles` claim if present, otherwise the user's
+   groups mapped through `KIONGA_SSO_GROUP_ROLES`. A group named like a role
+   (`viewer`) still counts. Identity-provider groups never grant the internal
+   `service` role. Someone with no mapped group is an unprovisioned `user`: they
+   reach only their profile, access requests and personal settings.
+   Administrator-managed access profiles keyed by the user's subject override
+   token roles, as for any user.
+5. On a person's first sign-in, [sign-up](#sign-up) decides whether they get an
+   account.
+6. **Sign out** ends the Kionga session (and workspace sessions) for both local
+   and single sign-on users.
 
 ## Production checklist
 

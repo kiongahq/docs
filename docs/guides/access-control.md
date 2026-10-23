@@ -1,24 +1,27 @@
-# Access control: users, groups, roles and policies
+---
+description: Provision users, create groups, write and attach access policies, and check why a request was allowed or denied.
+---
 
-Kionga answers one question on every request: may this principal perform this
-action on this resource, right now? This guide explains each building block,
-the order they are applied in, and how to grant, restrict and debug access.
+# Manage users, groups and policies
 
-## The building blocks
+Kionga decides on every request whether a principal may perform an action on a
+resource. Roles and assigned services open whole areas of the platform; policies
+then allow or deny specific actions on specific resources. This guide covers
+provisioning users, creating groups, writing and attaching policies, and checking
+decisions. The [policy reference](#policy-reference) at the end lists every
+action, resource format and condition.
 
-| Concept | What it is | Where it lives | Who manages it |
-| --- | --- | --- | --- |
-| **Identity** | Who is calling: an OIDC subject (`sub` claim), a local username, a personal API key, or the internal service token. | Identity provider, local accounts, API keys | The identity provider or an administrator |
-| **User** | An identity with an administrator-provisioned *access profile*: role, assigned services, assigned projects, storage buckets and compute grant. Unprovisioned identities can sign in but only request access. | `PUT /api/v1/admin/users/{subject}` | Administrators and operators |
-| **Group** | A named set of subjects. Policies attached to a group apply to every member. | `/api/v1/admin/iam/groups` | Administrators and operators |
-| **Role** | A coarse job function: `admin`, `operator`, `engineer`, `viewer`, `user` (normal user) or `service` (in-platform machine identity). Each role has a built-in *role baseline* policy. | The user's access profile (or OIDC claims for unprovisioned identities) | Administrators |
-| **Permission** | One action from the [action catalog](#action-catalog), such as `pipeline:Run`, on a resource such as `kionga:project/prj-a/pipeline/train`. | Policy statements | Policy authors |
-| **Service assignment** | Which console services (projects, pipelines, features, workbench, ide, ...) a normal user may use at all. It is the outer boundary for normal users. | The access profile's `services` | Administrators |
-| **Policy** | A named, versioned document of statements that allow or deny actions on resources, optionally under conditions. Every save creates an immutable revision. | `/api/v1/admin/iam/policies` | Administrators and operators |
-| **Attachment** | Binds a policy to a user or a group. | `/api/v1/admin/iam/attachments` | Holders of `policy:Attach` (anti-escalation applies) |
-| **Quota** | Capacity limits from the compute grant: projects, concurrent runs, functions, CPU, memory, GPUs, storage. Quotas are checked after authorization and are never granted by policies. | The access profile's `compute` and `storage` | Administrators |
+## Before you begin
 
-## Precedence
+- **To provision users and review access requests:** the `admin` or `operator`
+  role (`user:Manage`).
+- **To create policies and groups:** the `admin` or `operator` role
+  (`policy:Write`).
+- **To attach policies:** `policy:Attach` on the policy, and every grant the
+  policy gives (see [Safety rules](#safety-rules)).
+- **To explain your own access:** any signed-in user.
+
+## How access is decided
 
 Every request goes through these steps in order. The first step that refuses
 decides.
@@ -42,13 +45,113 @@ Applicable policies are the caller's role baseline, every policy attached to
 the caller, and every policy attached to a group the caller belongs to.
 
 !!! note "Nothing changes until you attach a policy"
-    Role baselines reproduce the behavior that existed before policies, so a
-    deployment with no attachments behaves exactly as before. Normal users are
+    Each role has a built-in baseline policy, so a deployment with no
+    attachments behaves exactly as the roles describe. Normal users are
     limited to the projects assigned to them plus the projects they own;
     engineers and viewers are limited the same way when their access profile
     lists project IDs, and see every project otherwise.
 
-## Role baselines
+## Provision a user
+
+1. Open **Users & access**. On the **Users** tab, click **＋ Provision user**, or
+   approve a request from **Access requests**.
+2. Under **Identity**, enter the **Identity subject** (the identity provider's
+   `sub` claim, or the local username) and choose a **Role**: **Normal user**,
+   **Engineer**, **Viewer (read-only)** or **Administrator**. The `operator` role
+   is set through `PUT /api/v1/admin/users/{subject}`.
+3. Under **Services and projects**, select only the services the person needs and
+   enter the **Assigned project IDs**.
+4. Under **Resource allocation**, choose a resource profile and storage buckets.
+5. Click **Save access**.
+
+For the resource profiles, see
+[Provision a teammate's workspace](distributed-workspaces.md#provision-a-teammates-workspace).
+
+**Verify:** the user appears under **Provisioned identities** with the role,
+services and compute you chose.
+
+## Create a group
+
+1. On the **Groups** tab, click **＋ New group**.
+2. Enter a **Name**, an **ID**, a **Description** and the **Members** (subjects).
+3. Click **Save group**.
+
+Members receive every policy attached to the group on their next request.
+
+**Verify:** the group lists its members and attached policies.
+
+## Write a policy
+
+1. On the **Policies** tab, click **＋ New policy**.
+2. Enter a **Name** and **ID**, then click **＋ Add statement** for each
+   statement: an effect (`allow` or `deny`), actions, resources and optional
+   conditions. Or switch to **JSON** and paste a policy (see
+   [Examples](#examples)).
+3. Click **Save policy**. Validation errors point at the exact field, such as
+   `statements[1].actions[0]`.
+
+Every save creates an immutable revision; **History** shows them. Built-in role
+baselines are listed here but cannot be edited or attached.
+
+**Verify:** the policy appears with version 1 and its statements.
+
+## Attach a policy
+
+1. On the **Attachments** tab, under **Attach a policy**, choose the **Policy**,
+   the **Principal type** (**User** or **Group**) and the **Principal**.
+2. Click **Attach policy**.
+
+To remove a grant, detach the policy from the **Attachments** list. Detach a policy
+before you delete it.
+
+**Verify:** the attachment appears in the **Attachments** list.
+
+## Check why a request was allowed or denied
+
+1. On the **Access simulator** tab, choose the **Principal**, **Action** and
+   **Resource**, and optionally a **Source IP** and **Resource profile**.
+2. Click **Evaluate**.
+
+The result shows allow or deny, the statement that decided, every matched
+statement, and the principal's effective policies. When a request is denied by
+policy anywhere in the console, the error offers **Why?**, which shows the same
+trace.
+
+From the API, `GET /api/v1/iam/explain?principal=&action=&resource=` returns the
+decision; anyone may explain themselves.
+
+**Verify:** the simulator's decision matches what the user sees.
+
+## Troubleshooting
+
+- *"Your role and service assignments do not open ..."*: the coarse gate refused.
+  Assign the service or role; policies cannot open an area that the role and
+  services keep closed.
+- *Default deny*: no statement allowed the action. Check the resource name in the
+  simulator; a final `*` does not match the parent.
+- *A grant does not apply*: check the statement's conditions with the simulator's
+  source IP and resource profile fields.
+- *Explaining another user shows fewer roles than expected*: explain uses the
+  user's access profile. Roles that come only from identity-provider claims show
+  when the user explains themselves.
+
+## Policy reference
+
+### The building blocks
+
+| Concept | What it is | Where it lives | Who manages it |
+| --- | --- | --- | --- |
+| **Identity** | Who is calling: an OIDC subject (`sub` claim), a local username, a personal API key, or the internal service token. | Identity provider, local accounts, API keys | The identity provider or an administrator |
+| **User** | An identity with an administrator-provisioned *access profile*: role, assigned services, assigned projects, storage buckets and compute grant. Unprovisioned identities can sign in but only request access. | `PUT /api/v1/admin/users/{subject}` | Administrators and operators |
+| **Group** | A named set of subjects. Policies attached to a group apply to every member. | `/api/v1/admin/iam/groups` | Administrators and operators |
+| **Role** | A coarse job function: `admin`, `operator`, `engineer`, `viewer`, `user` (normal user) or `service` (in-platform machine identity). Each role has a built-in *role baseline* policy. | The user's access profile (or OIDC claims for unprovisioned identities) | Administrators |
+| **Permission** | One action from the [action catalog](#action-catalog), such as `pipeline:Run`, on a resource such as `kionga:project/prj-a/pipeline/train`. | Policy statements | Policy authors |
+| **Service assignment** | Which console services (`projects`, `pipelines`, `features`, `workbench`, `ide` and so on) a normal user may use at all. It is the outer boundary for normal users. | The access profile's `services` | Administrators |
+| **Policy** | A named, versioned document of statements that allow or deny actions on resources, optionally under conditions. Every save creates an immutable revision. | `/api/v1/admin/iam/policies` | Administrators and operators |
+| **Attachment** | Binds a policy to a user or a group. | `/api/v1/admin/iam/attachments` | Holders of `policy:Attach` (anti-escalation applies) |
+| **Quota** | Capacity limits from the compute grant: projects, concurrent runs, functions, CPU, memory, GPUs, storage. Quotas are checked after authorization and are never granted by policies. | The access profile's `compute` and `storage` | Administrators |
+
+### Role baselines
 
 Baselines are built-in managed policies (`kionga-admin`, `kionga-operator`,
 `kionga-engineer`, `kionga-viewer`, `kionga-user`, `kionga-service`). They are
@@ -63,7 +166,7 @@ scoped per principal at evaluation time.
 | `user` | Only statements for assigned services: `projects` (read in scope, create), `pipelines` (every pipeline action and logs in scope), `features` (read and write), `workbench`/`ide` (open that workspace in scope). |
 | `service` | Every action; the coarse gate limits it to reporting paths. |
 
-## Action catalog
+### Action catalog
 
 `GET /api/v1/iam/catalog` returns this catalog. Actions are case-insensitive;
 `*` matches every action and `pipeline:*` every action in a namespace.
@@ -94,7 +197,7 @@ scoped per principal at evaluation time.
 Models, agents, functions, storage and the catalog are governed by the coarse
 gate plus project assignment; they have no policy actions yet.
 
-## Resources
+### Resources
 
 Resource names start with `kionga:` and use `/`-separated segments. IDs are
 URL-escaped inside a segment.
@@ -109,7 +212,7 @@ URL-escaped inside a segment.
 | `kionga:user/<subject>`, `kionga:group/<id>`, `kionga:policy/<id>` | `kionga:user/alice` |
 | `kionga:connection/<id>` | `kionga:connection/conn-1` |
 
-Pipelines are named by their definition ID; ad hoc runs without a definition
+Pipelines are named by their definition ID; one-off runs without a definition
 use the run name. Creating a new definition is checked against
 `kionga:project/<project>/pipeline/*`, and creating a project against
 `kionga:project/*`.
@@ -123,7 +226,7 @@ Pattern rules:
   not the project itself. Use both `kionga:project/prj-a` and
   `kionga:project/prj-a/*` to cover a project and its contents.
 
-## Conditions
+### Conditions
 
 A statement applies only when every condition it sets holds. Inside one
 condition, listed values are alternatives. A deny whose condition does not
@@ -138,7 +241,7 @@ hold does not apply.
 
 Conditions with unknown inputs (no source address, no time) fail closed.
 
-## Examples
+### Examples
 
 Let an analysts group read one project and its pipelines:
 
@@ -184,26 +287,7 @@ in any project created from the production agent template:
 }
 ```
 
-## Managing access in the console
-
-**Users & access** has five tabs:
-
-- **Users**: provision identities, roles, services, projects, storage and
-  compute, and review access requests.
-- **Groups**: create groups and manage members.
-- **Policies**: built-in baselines (view only) and custom policies. The editor
-  has a form mode and a JSON mode; validation errors point at the exact field,
-  such as `statements[1].actions[0]`. **History** shows every immutable
-  revision.
-- **Attachments**: attach a policy to a user or group, or detach it.
-- **Access simulator**: choose a principal, action and resource (and optionally
-  a source IP and resource profile) to see allow or deny, the statement that
-  decided, every matched statement, and the principal's effective policies.
-
-When a request is denied by policy, the error toast offers **Why?**, which
-re-evaluates the request for you and shows the trace.
-
-## API
+### API
 
 | Method and path | Purpose |
 | --- | --- |
@@ -213,7 +297,7 @@ re-evaluates the request for you and shows the trace.
 | `GET/POST /api/v1/admin/iam/groups`, `GET/PUT/DELETE /api/v1/admin/iam/groups/{id}` | Groups |
 | `GET/POST /api/v1/admin/iam/policies`, `GET/PUT/DELETE /api/v1/admin/iam/policies/{id}` | Policies; `PUT` bumps the version and accepts `version` for optimistic concurrency (`409` when stale) |
 | `GET /api/v1/admin/iam/policies/{id}/revisions[/{version}]` | Immutable revisions |
-| `GET/POST /api/v1/admin/iam/attachments`, `DELETE /api/v1/admin/iam/attachments/{id}` | Attachments (`{policy_id, principal_type: user|group, principal_id}`) |
+| `GET/POST /api/v1/admin/iam/attachments`, `DELETE /api/v1/admin/iam/attachments/{id}` | Attachments (`policy_id`, `principal_type` (`user` or `group`), `principal_id`) |
 
 Validation failures return `422` with `details: [{field, message}]`. Denials
 return `403` with a `decision` object:
@@ -237,7 +321,7 @@ return `403` with a `decision` object:
 `coarse-gate` (role or service assignment), or `account-suspended`. Reads of
 resources you cannot read return `404`, so their existence is not disclosed.
 
-## Safety rules
+### Safety rules
 
 - **Anti-escalation.** Attaching a policy requires `policy:Attach` on it *and*
   that you already hold every action it allows on every resource it names
@@ -259,15 +343,7 @@ resources you cannot read return `404`, so their existence is not disclosed.
   sessions, models and features the caller can read, and is re-evaluated on
   every tick, so policy changes apply to open streams.
 
-## Troubleshooting
+## Next steps
 
-- *"Your role and service assignments do not open ..."*: the coarse gate
-  refused. Assign the service or role; policies cannot open an API surface the
-  role and services keep closed.
-- *Default deny*: no statement allowed the action. Use the simulator to check
-  the resource name; remember a final `*` does not match the parent.
-- *A grant does not apply*: check the statement's conditions with the
-  simulator's source IP and resource profile fields.
-- *Explaining another user shows fewer roles than expected*: explain uses the
-  user's access profile. Roles that come only from OIDC claims are visible
-  when the user explains themselves.
+- [Set up single sign-on](../operations/single-sign-on.md).
+- [Set up team workspaces](distributed-workspaces.md).
