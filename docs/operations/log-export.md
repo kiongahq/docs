@@ -23,15 +23,14 @@ Helm chart does not include it.
 
 ## Steps
 
-1. **Store the credential as a file.** Compose mounts the `config/secrets/`
-   folder of your workspace folder (the folder that holds `deploy/`, so
-   `config/secrets/` sits beside `deploy/`) read-only at `/run/kionga-secrets`
-   in the exporter. For example:
+1. **Store the credential as a file.** Compose mounts `deploy/config/secrets/`
+   read-only at `/run/kionga-secrets` in the exporter. Everything in that
+   folder except its README is ignored by Git. For example:
 
     ```bash
-    mkdir -p config/secrets
-    printf '%s' "$ES_API_KEY" > config/secrets/es-api-key
-    chmod 600 config/secrets/es-api-key
+    mkdir -p deploy/config/secrets
+    printf '%s' "$ES_API_KEY" > deploy/config/secrets/es-api-key
+    chmod 600 deploy/config/secrets/es-api-key
     ```
 
     Keep this folder out of Git.
@@ -56,8 +55,8 @@ Helm chart does not include it.
     | `KIONGA_LOG_EXPORT_CA_FILE` | PEM bundle for a private CA |
     | `KIONGA_LOG_EXPORT_ANONYMOUS` | `true` allows an unauthenticated test cluster |
     | `MLAIOPS_TENANT` | Tenant to export (default `default`); run one exporter per tenant |
-    | `KIONGA_LOG_EXPORT_BATCH` | Documents per bulk request (default 500). Exporter environment only: Compose does not pass it from `deploy/.env` |
-    | `KIONGA_LOG_EXPORT_INSECURE_TLS` | `true` turns off certificate checks, for testing only. Exporter environment only: Compose does not pass it from `deploy/.env` |
+    | `KIONGA_LOG_EXPORT_BATCH` | Documents per bulk request (default 500). Set in `deploy/.env` |
+    | `KIONGA_LOG_EXPORT_INSECURE_TLS` | `true` turns off certificate checks, for testing only. Set in `deploy/.env` |
 
     The exporter sends credentials only over HTTPS to remote hosts and never
     includes them in errors, logs or its status.

@@ -66,7 +66,7 @@ autoscaling.
 The **LLM egress** for OpenAI-protocol backends. Compose points
 `MLAIOPS_LLM_BASE_URL` here, so `openai` and `openai-compatible` agent calls are
 forwarded to the configured provider and published to Kafka without changes to
-agent code. Provider keys never appear in traces or logs. The `anthropic` backend
+agent code. Trace records carry agent, version, session ID, status code, duration and timestamp only: no prompt, response or `Authorization` header. The client's `Authorization` header is forwarded upstream unchanged. The `anthropic` backend
 does not use it.
 
 | | |

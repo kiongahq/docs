@@ -19,3 +19,6 @@ operate Kionga, read the [product documentation](https://kiongahq.github.io/docs
 
 Start with [architecture](architecture/index.md) for the big picture, or with
 [contributing](contributing/index.md) to make your first change.
+
+Every component repository also carries a `README.md`, a `CONTRIBUTING.md`
+(development setup, tests, release) and an `ARCHITECTURE.md` (a map of its code).

@@ -24,8 +24,9 @@ interoperability API, Ceph RGW, RustFS, Wasabi or Cloudflare R2.
       `environment` in `deploy/compose.yaml`, then run
       `make -C deploy local-up`. Values in `deploy/.env` reach the gateway only
       when `deploy/compose.yaml` passes them through.
-    - **Kubernetes:** the Helm chart has no setting for extra gateway
-      environment variables; see [Related](#related).
+    - **Kubernetes:** add the variable to the gateway with the chart's
+      `components.gateway.extraEnv`, read from a Secret with
+      `valueFrom.secretKeyRef`.
 
 ## Register a bucket
 
@@ -148,9 +149,8 @@ different classes, run one installation per group.
 
 - On Kubernetes, prefer short-lived cloud credentials (IRSA on EKS, Workload
   Identity on GKE and AKS) for buckets. The storage proxy currently uses the
-  mounted `S3_ACCESS_KEY` and `S3_SECRET_KEY`, and the Helm chart has no
-  setting for extra gateway environment variables such as a `secret_ref`
-  variable. Add the variable to the gateway Deployment with your own
-  deployment tooling, from a Secret, never from a ConfigMap.
+  mounted `S3_ACCESS_KEY` and `S3_SECRET_KEY`,. Give the gateway a
+  `secret_ref` variable through `components.gateway.extraEnv` with
+  `valueFrom.secretKeyRef`, never as a plain value or from a ConfigMap.
 - [Feature store integrations](../guides/feature-stores.md)
 - [Deploy on Kubernetes](managed-kubernetes.md)

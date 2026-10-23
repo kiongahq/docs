@@ -201,8 +201,9 @@ and needs no key. To use a real provider on Compose:
     ```
 
 With `openai` and `openai-compatible`, every call goes through the trace proxy,
-which forwards it to the provider and publishes it to the Kafka topic
-`mlaiops.llm.traces`. With `anthropic`, the runtime calls Anthropic directly, so
+which forwards it to the provider and publishes a trace record (agent, version,
+session, status code and duration, not the prompt or response) to the Kafka
+topic `mlaiops.llm.traces`. With `anthropic`, the runtime calls Anthropic directly, so
 the trace proxy does not capture the call; Langfuse tracing and measured token
 usage still work. Keys stay in the environment and are never written to traces,
 logs or the store.

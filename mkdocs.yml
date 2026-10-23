@@ -176,7 +176,7 @@ nav:
       - operations/index.md
       - Run locally: operations/local.md
       - Single server: operations/public-vm.md
-      - Public hosting with Compose: hosting.md
+      - Compose public overlay (legacy): hosting.md
       - Kubernetes:
           - Deploy on Kubernetes: operations/managed-kubernetes.md
           - Amazon EKS: operations/providers/aws-eks.md

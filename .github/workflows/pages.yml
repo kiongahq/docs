@@ -41,6 +41,19 @@ jobs:
   # against the main branches of the component repositories. A separate job so
   # drift introduced by a code change is reported without blocking publication
   # of unrelated documentation fixes.
+  # Prose style: the Google developer documentation style guide via Vale.
+  # Errors fail the job; warnings and suggestions are advisory.
+  prose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Vale
+        run: |
+          curl -sSL https://github.com/errata-ai/vale/releases/download/v3.23.0/vale_3.23.0_Linux_64-bit.tar.gz | tar xz -C /usr/local/bin vale
+          vale --version
+      - run: vale sync
+      - run: vale --minAlertLevel=error docs engineering/docs README.md CONTRIBUTING.md
+
   references:
     runs-on: ubuntu-latest
     env:
