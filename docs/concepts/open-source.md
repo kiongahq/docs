@@ -1,22 +1,34 @@
+---
+description: Kionga is released under the MIT License; learn what that covers and how to contribute.
+---
+
 # Open source and licensing
 
-Kionga's component repositories are licensed under the MIT License. The source,
-deployment definitions, SDK, and documentation are available as separate
-repositories in the [kiongahq organization](https://github.com/kiongahq).
+Kionga is open source under the MIT License. Its source code, deployment
+definitions, Python SDK and documentation are separate repositories in the
+[kiongahq organization on GitHub](https://github.com/kiongahq).
 
-The MIT license permits use, modification, and distribution subject to preserving
-the copyright and permission notice. Read the `LICENCE` file in the repository
-you use for the authoritative text. Third-party services, container images,
-libraries, models, and datasets retain their own licenses and terms; the Kionga
-license does not replace them.
+## License
+
+The MIT License lets you use, copy, modify and distribute Kionga, including
+commercially, provided you keep the copyright and permission notice. Each
+repository contains the authoritative text in its `LICENCE` file.
+
+Third-party software that Kionga runs or connects to, such as container images,
+libraries, language models and datasets, keeps its own license and terms. The
+Kionga license does not replace them.
 
 ## Contribute
 
-Each component has its own issue tracker and release cycle. Start with the
-[repository map](https://kiongahq.github.io/docs/engineering/components/) to find the owner of a change. For documentation
-changes, follow the [documentation contribution guide](https://github.com/kiongahq/docs/blob/main/CONTRIBUTING.md).
+Each repository has its own issue tracker and release cycle. To find the
+repository that owns a change, see the
+[component map in the engineering handbook](https://kiongahq.github.io/docs/engineering/components/).
+To improve this documentation, follow the
+[documentation contribution guide](https://github.com/kiongahq/docs/blob/main/CONTRIBUTING.md).
 
-Open source does not mean a self-hosted installation is automatically ready to
-serve users. Choose a [deployment path](../hosting.md), configure identity and
-secrets, and complete the [production acceptance checklist](../operations/production-operations.md)
-for your environment.
+## Before you serve users
+
+Open source does not make an installation production ready by itself. Choose a
+deployment from [Deploy and operate](../operations/index.md), configure
+identity and secrets, and complete the
+[production readiness checklist](../operations/production-operations.md).

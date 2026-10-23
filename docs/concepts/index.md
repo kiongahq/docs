@@ -1,17 +1,17 @@
-# Understand Kionga
+---
+description: Understand what Kionga is, the vocabulary it uses, how its parts fit together, and how it is licensed.
+---
 
-Read this section for the platform's boundaries and vocabulary before choosing a
-workload or deployment model.
+# Concepts
+
+Read these pages to understand Kionga before you choose a workload or a
+deployment.
 
 | Question | Page |
 | --- | --- |
-| What does the platform provide? | [What is Kionga](what-is-kionga.md) |
-| What do project, run, connection, and workspace mean? | [Core concepts](core-concepts.md) |
-| How do services and data flow together? | [Architecture](https://kiongahq.github.io/docs/engineering/architecture/) |
-| Which repository owns a component? | [Repositories](https://kiongahq.github.io/docs/engineering/components/) |
-| How is Kionga licensed and contributed to? | [Open source and licensing](open-source.md) |
-| Which open-source systems are used? | [Technology](https://kiongahq.github.io/docs/engineering/architecture/technology/) |
+| What does Kionga do, and what does it not do? | [What is Kionga](what-is-kionga.md) |
+| What do project, run, model, agent, connection and workspace mean? | [Core concepts](core-concepts.md) |
+| How do the console, engines, data stores and identity fit together? | [How Kionga works](how-it-works.md) |
+| How is Kionga licensed, and how do I contribute? | [Open source and licensing](open-source.md) |
 
-For the difference between bundled code, optional integrations, and features
-that still need live-environment validation, see
-[implementation status](https://kiongahq.github.io/docs/engineering/status/implementation-status/).
+To learn by doing instead, start with the [Quickstart](../getting-started/quickstart.md).

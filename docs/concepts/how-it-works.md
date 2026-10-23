@@ -1,224 +1,183 @@
-# Architecture
+---
+description: How Kionga's console and API, workspaces, execution engines, data stores, identity and deployment options fit together.
+---
 
-Kionga is a set of small, single-purpose services on one Compose network. A Go
-**control plane** owns state and orchestration; Python **workloads** do the ML and
-agent execution; a shared **data plane** (Postgres, Redis, Kafka, RustFS) holds
-durable state and carries events.
+# How Kionga works
 
-## Component diagram
+Kionga is a control plane: one API and console that you use to manage ML and AI
+work, plus the engines and stores that do the work. You describe what you want
+(a project, a pipeline run, a model deployment, an agent), and Kionga records it,
+checks that you are allowed to do it, and drives the engine that carries it out.
+
+This page explains the parts at the level you need to use and operate Kionga. For
+the full design, see the
+[architecture in the engineering handbook](https://kiongahq.github.io/docs/engineering/architecture/).
 
 ```mermaid
-flowchart TB
-    subgraph you["You"]
-        browser["Browser console<br/>:8080"]
-        nb["Jupyter workbench<br/>via gateway"]
-        ide["Browser IDE<br/>via gateway, optional"]
-        cli["CLI / SDK"]
+flowchart LR
+    subgraph clients["You"]
+        console["Console<br/>(browser)"]
+        code["SDK, CLI,<br/>scripts"]
+        ws["Jupyter workbench<br/>and browser IDE"]
     end
 
-    subgraph control["Control plane (Go)"]
-        gw["gateway<br/>API + embedded console :8080"]
-        dex["dex<br/>single sign-on :5556"]
-        op["operator<br/>Kubernetes reconcilers"]
-        mc["metrics-collector :9090"]
-        iw["integration-worker<br/>Kafka → CRDs"]
+    subgraph kionga["Kionga control plane"]
+        api["Console and API"]
     end
 
-    subgraph exec["Execution & serving (Go + Python)"]
-        prefect["prefect-server :4200"]
-        runner["pipeline-runner"]
-        sm["serving-manager :8085"]
-        serve["mlflow-serve<br/>containers"]
-        fn["OpenFaaS<br/>external functions"]
+    subgraph engines["Execution engines"]
+        prefect["Pipelines<br/>(Prefect)"]
+        serving["Model serving<br/>(MLflow model servers)"]
+        agents["Agent runtime<br/>(LangGraph)"]
+        functions["Functions<br/>(OpenFaaS, optional)"]
+        stream["Real-time processor<br/>(Kafka consumers)"]
     end
 
-    subgraph ai["AI & observability"]
-        ar["agent-runtime :19000"]
-        tp["trace-proxy :8081"]
-        lf["langfuse :3000"]
-        rt["realtime-processor"]
+    subgraph data["Data"]
+        pg[("PostgreSQL")]
+        obj[("Object storage")]
+        redis[("Redis<br/>online features")]
+        kafka[["Kafka"]]
+        mlflow["MLflow<br/>tracking and registry"]
     end
 
-    subgraph dataplane["Data plane"]
-        pg[("postgres +pgvector :5432")]
-        redis[("redis :6379")]
-        kafka[["kafka :9092<br/>kafka-rest :8082"]]
-        objectstore[("objectstore (RustFS) :9000/:9001")]
-        mlflow["mlflow :15000"]
-    end
+    idp["Identity provider<br/>(OIDC)"]
 
-    subgraph edge["Feature & storage services (Go)"]
-        fg["feature-gateway :8083"]
-        sp["storage-proxy :8084"]
-    end
-
-    browser --> gw
-    gw --> dex
-    gw --> nb
-    gw --> ide
-    cli --> gw
-    gw --> prefect --> runner --> mlflow
-    gw --> sm --> serve
-    gw -. when configured .-> fn
-    gw --> ar --> tp --> kafka
-    gw --> sp --> objectstore
-    gw --> fg --> redis
-    gw --> lf
-    runner --> objectstore
-    ar --> pg
-    ar --> lf
-    rt --> kafka
-    rt --> fg
-    mc --> gw
-    gw --> pg
-    gw --> kafka
-    gw --> kafka --> iw --> op
-    op -. scale path .-> gw
+    console --> api
+    code --> api
+    ws --> api
+    api --> idp
+    api --> prefect
+    api --> serving
+    api --> agents
+    api -.-> functions
+    api --> pg
+    api --> kafka
+    prefect --> mlflow
+    serving --> mlflow
+    agents --> pg
+    stream --> kafka
+    stream --> redis
+    mlflow --> obj
 ```
 
-## The two DNS worlds
+## The console and API
 
-This is the single most important operational fact:
+Everything in Kionga goes through one API under `/api/v1`. The web console is a
+client of that same API, and so are the Python SDK, the `mlaiops` CLI, and your
+own scripts. Anything you can do in the console you can automate. See the
+[REST API reference](../reference/api.md).
 
-- **Inside the stack**, services reach each other by their Compose service name:
-  `http://gateway:8080`, `http://mlflow:5000`, `http://objectstore:9000`, …
-- **From your machine**, the same services are on published `localhost` ports,
-  bound to `127.0.0.1` unless `KIONGA_BIND_ADDRESS` widens them.
+For every request, the API:
 
-When you register a connection in the console (so the gateway health-checks it), use
-**in-stack hostnames**: the check runs from inside the gateway container. When you
-point an external tool at a service, use **localhost**. See
-[Connecting all services](../reference/service-endpoints.md).
+1. Identifies the caller (see [Identity and access](#identity-and-access)).
+2. Checks the caller's role, service grants, project scope and policies.
+3. For a change, checks quotas and resource limits, records the change, and
+   writes an audit event.
+4. Calls the engine that does the work, such as the pipeline engine for a run or
+   the serving manager for a model deployment.
 
-## The three planes
+If an engine rejects the work, Kionga records the failure (for example, the run
+is marked `failed`) instead of reporting success. The console stays current
+through a live event stream, so run graphs, sessions and dashboards update
+without a page reload.
 
-### Control plane (Go)
+## Projects and workspaces
 
-The **gateway** is the heart of the system. It exposes the full REST API and serves
-the embedded web console. Every resource mutation (create project, submit pipeline,
-register model, deploy agent…) writes its resource, an immutable **audit** record,
-and **Kafka outbox** entries in a single transaction. State persists to PostgreSQL
-when `DATABASE_URL` is set; otherwise a local JSON file is used.
+A **project** is the unit of ownership. Pipelines, models, agents, functions and
+their history belong to a project, and access is granted per project. A project
+is created from a versioned **project template** that records its framework,
+accelerator and resource profile, and can be connected to a Git repository.
 
-The project-template catalog is a backend contract shared by the console, SDK, and
-workspace generator. Creation resolves a canonical template/version, supported
-framework and accelerator, requested resource profile, capabilities, and scaffold
-command. This records workload intent without allocating resources or bypassing an
-administrator's grants.
+A **workspace** is where you write code: JupyterLab (the workbench) and a browser
+IDE (code-server). You open both from the console with your console session. Inside a
+workspace, the SDK and the `kionga` command already know how to reach Kionga, and
+calls run as the workspace owner with that owner's current permissions, so you do
+not need an API key. On the local stack, everyone shares one workspace owned by
+the local `admin` account. On Kubernetes, each user
+gets an isolated workspace sized by their resource profile.
 
-Agent deployment follows the same boundary: the gateway validates quantities and
-replica bounds, then reserves every agent owned by a normal user at maximum replicas
-against the aggregate CPU/RAM/GPU and workload grant. The calculation includes each
-possible trace sidecar rather than assuming the HPA remains at its minimum.
+See [Core concepts](core-concepts.md) for every resource.
 
-The gateway is also a **proxy and orchestrator**: it drives Prefect for pipelines,
-the serving manager for model endpoints, the agent runtime for agent turns, the
-storage proxy for object browsing, the feature gateway for lookups, and Langfuse for
-prompts. It fails closed: if a downstream engine rejects a request, the control
-plane records the failure (for example, a run is marked failed).
+## Execution engines
 
-For live agent traffic, Compose supplies the explicit shared `AGENT_RUNTIME_URL`.
-On Kubernetes, the gateway and operator share the immutable-ID-to-DNS mapping: the
-operator creates one Deployment/Service and the gateway selects that Service in
-`MLAIOPS_AGENT_NAMESPACE`. Agent list calls use bounded health probes, while invoke
-performs a separate readiness gate and returns `503` instead of sending work to an
-unavailable pod.
+Kionga orchestrates proven open-source engines rather than replacing them.
 
-Supporting Go services: the **operator** (Kubernetes reconcilers for the scale
-path), the **metrics-collector** (Prometheus exposition of platform metrics), the
-**feature-gateway**, and the **storage-proxy** from the `platform` repository, plus
-the **trace-proxy** and the **serving-manager** from their own repositories. The **integration-worker** consumes durable lifecycle commands
-and creates or updates CRDs, including per-user `KiongaWorkspace` resources.
-It commits Kafka offsets manually only after a complete batch reconciles; failed
-dispatch/commit retries terminate the worker so redelivery starts from the last
-durable commit. Agent reconciliation applies requested resources and probes, reports
-readiness from available pods, and owns a CPU-target HPA only for elastic min/max
-replica ranges. Kubernetes must expose resource metrics for that HPA.
+| Work | Engine | What Kionga adds |
+| --- | --- | --- |
+| Pipelines | Prefect runs flows; container steps run as isolated containers | Versioned flow definitions, validated dependency graphs, schedules, run history, step logs, resource admission |
+| Experiment tracking and registry | MLflow | Project ownership, quality gates, promotion stages, audit |
+| Model serving | One MLflow model server per deployed model version | Deploy, test, roll back, and a live endpoint per model |
+| Agents | The agent runtime runs LangGraph graphs over HTTP | Agent registry, sessions, turn and token accounting, traces, capacity checks |
+| LLM calls | Your provider (OpenAI, Anthropic, or any OpenAI-compatible server) | A trace proxy that records OpenAI-protocol calls; a `mock` model that needs no provider key |
+| Functions | OpenFaaS or faasd, which you provide | Function registry, quotas, triggers, invocation, use as pipeline steps |
+| Real-time | Kafka consumers | Enrichment with online features and scoring with models or agents |
 
-### Data plane
+An engine that is not configured shows as **not configured** in the console. For
+example, functions stay unavailable until an administrator sets `OPENFAAS_URL`.
 
-| Store | Role |
+## Where data lives
+
+| Store | Holds |
 | --- | --- |
-| **PostgreSQL** (with pgvector) | Control-plane state, the Kafka outbox, MLflow backend, Langfuse backend, agent checkpoints, and vector memory |
-| **Redis** | The online feature store (low-latency lookups) |
-| **Kafka** (+ REST proxy) | Durable lifecycle/audit events, LLM traces, and real-time demo topics |
-| **RustFS** | S3-compatible object storage: models, artifacts, feature snapshots, traces, agent state, pipeline logs |
-| **MLflow** | Experiment tracking and the model registry (Postgres-backed, artifacts in RustFS) |
+| PostgreSQL | Kionga's own records (projects, runs, models, agents, users, policies, audit), MLflow and Langfuse metadata, agent conversation checkpoints, and agent long-term memory (pgvector) |
+| Object storage (S3-compatible) | Model artifacts, pipeline artifacts and logs, offline feature snapshots, agent state, and traces |
+| Redis | Online features for low-latency lookups |
+| Kafka | Lifecycle events, LLM traces, and real-time streams |
+| MLflow | Experiments, runs, metrics, and the model registry (stored in PostgreSQL and object storage) |
 
-### Execution, serving, and AI (Python + Go)
+Kionga keeps credentials out of its records. Connections to infrastructure,
+storage and feature stores store only a reference to an environment variable on
+the server. LLM provider keys stay in the environment. Personal API keys are
+stored as hashes, and a user's Hugging Face token is stored encrypted.
 
-- **Prefect** runs pipelines; the **pipeline-runner** serves platform flows as
-  Prefect deployments and executes real training runs, logging to MLflow.
-- The gateway validates pipeline dependencies and cycles. The console then uses
-  open-source Dagre to lay out that persisted graph; presentation coordinates never
-  enter the execution contract.
-- The **serving-manager** launches an `mlflow models serve` container per deployed
-  model version over the Docker API and records the live endpoint URL.
-- The **agent-runtime** serves LangGraph agents over HTTP, with Postgres
-  checkpoints, feature/memory retrieval, and Langfuse tracing.
-- The **trace-proxy** is the LLM egress for OpenAI-protocol backends: it forwards
-  to the configured provider and publishes every call to a Kafka traces topic.
-- The **realtime-processor** consumes Kafka topics, enriches events with online
-  features, scores them with a model or agent, and publishes results.
-- Reusable function DAGs invoke project-owned OCI workloads through OpenFaaS when
-  its external gateway is configured; definitions remain persisted and validated
-  even when that execution engine is absent.
-- Heavy distributed-training projects use rank-aware PyTorch DDP/checkpoint
-  starters and explicit accelerator intent; multi-node GPU placement is handled by
-  the Kubernetes scheduler on the scale path.
+## Identity and access
 
-## Request lifecycle examples
+People sign in to the console in one of two ways:
 
-=== "Submit a pipeline"
+- **Single sign-on** through any OIDC provider. The local stack includes Dex,
+  which connects to LDAP, SAML, GitHub, Google, Microsoft and other directories.
+- **Local accounts**, for development or as break-glass access next to single
+  sign-on.
 
-    1. Console → `POST /api/v1/pipelines/submit` on the gateway.
-    2. Gateway persists a `queued` run (+ audit + outbox) and creates a **Prefect
-       flow run** carrying the run id and project id.
-    3. The **pipeline-runner** executes the flow; each step reports back via
-       `POST /api/v1/pipelines/runs/{id}/steps`.
-    4. The gateway recomputes run status/progress deterministically; the console's
-       DAG updates live over SSE.
-    5. The training step logs the model to **MLflow** and registers it with the
-       control plane.
+Code authenticates with a **personal API key** (outside Kionga) or automatically
+through the workspace identity (inside a workspace). Kionga's own services use an
+internal service token that can only report status.
 
-=== "Deploy and predict a model"
+Access is deny by default and has three layers:
 
-    1. Console → `POST /api/v1/models/{id}/deploy`.
-    2. Gateway calls the **serving-manager**, which starts an `mlflow models serve`
-       container and returns the live endpoint URL.
-    3. Gateway records the endpoint and marks the model `serving`.
-    4. Console → `POST /api/v1/models/{id}/predict` → gateway proxies to the
-       endpoint's `/invocations` → live prediction returns.
+1. **Role**: `admin`, `operator`, `engineer`, `user`, or `viewer`.
+2. **Access profile**: for a normal `user`, the services, projects, storage
+   buckets and compute quotas an administrator grants.
+3. **Policies**: optional allow and deny statements on specific actions and
+   resources. An explicit deny always wins.
 
-=== "Ask an agent"
+The console hides what you cannot use, but the API enforces every rule. See
+[Permissions](../reference/rbac.md) and
+[Users, roles and policies](../guides/access-control.md).
 
-    1. Console → `POST /api/v1/agents/{id}/invoke`.
-    2. Gateway proxies to the **agent-runtime** with the agent's identity headers.
-    3. The runtime runs the LangGraph graph: it loads the Postgres checkpoint,
-       retrieves features/memory, and calls the LLM (the `mock` backend by
-       default; OpenAI-protocol backends go **through the trace-proxy**).
-    4. The trace-proxy forwards to the provider and publishes the call to Kafka;
-       the runtime reports the session (turns, tokens, cost) back to the gateway.
-    5. The reply returns; the console's Session Monitor and cost dashboard update.
+## Deployment options
 
-## Live updates
+The same Kionga runs in three shapes. They differ in who provides the engines and
+stores, and in how isolated each user is.
 
-The console avoids polling storms: the gateway exposes `GET /api/v1/events` as
-Server-Sent Events carrying a cheap **state digest**. When the digest changes, the
-active panel re-fetches its own data. This keeps the DAG, sessions, and real-time
-cards live without hammering the API.
+| | Local | Single server | Kubernetes |
+| --- | --- | --- | --- |
+| For | Learning, development, demos | A small team pilot | Teams and production |
+| What Kionga runs | Everything: the control plane, every engine and store, Dex, and the workbench | The control plane behind a TLS edge (Caddy) | The control plane, Kubernetes operator, feature and storage services, and trace proxy, with replicas and autoscaling |
+| What you provide | Docker | An OIDC provider, PostgreSQL, and the ML services you connect | An OIDC provider, PostgreSQL, Kafka, MLflow, a pipeline engine, object storage, and an ingress |
+| Workspaces | One shared workbench | Not included | One isolated workspace per user |
+| Agents | One shared runtime | Not included | One runtime per agent, with optional autoscaling |
+| Access from other machines | No, ports bind to `127.0.0.1` | HTTPS only, ports 80 and 443 | Through your ingress |
+| Guide | [Run locally](../operations/local.md) | [Single server](../operations/public-vm.md) | [Deploy on Kubernetes](../operations/managed-kubernetes.md) |
 
-## Deployment topology
+Inside the local stack, services reach each other by service name (for example,
+`http://mlflow:5000`), while you reach them on `localhost` ports. Connections you
+register in the console are checked from inside the stack, so they use service
+names. See [Service endpoints](../reference/service-endpoints.md).
 
-- **Local:** `deploy/compose.yaml` runs the bundled services with ports bound to
-  `127.0.0.1`. Sign-in is required: single sign-on through the bundled Dex, or the
-  local `admin` account, whose role comes from `MLAIOPS_LOCAL_ROLE` (default
-  `admin`).
-- **Public VM pilot:** `deploy/vm/compose.yaml` runs a digest-pinned gateway behind
-  Caddy TLS. Identity, PostgreSQL, and ML services are external; this is not the
-  local stack with ports exposed. The older Compose/Dex overlay is retained only
-  for compatibility testing.
-- **Multi-user scale path:** the Helm package and operator under `deploy/helm/`
-  and `deploy/config/` target managed Kubernetes. `deploy/kind/` is a local
-  fidelity environment. Production use requires the
-  [acceptance checklist](../operations/production-operations.md).
+## Related
+
+- [What is Kionga](what-is-kionga.md)
+- [Core concepts](core-concepts.md)
+- [Services and ports](../reference/services.md)
