@@ -1,4 +1,8 @@
-# Python SDK & workload modules
+---
+description: The Python SDK and the workload modules in the agent-runtime and pipeline-runner repositories.
+---
+
+# Python SDK and workload modules
 
 Python owns the ML-facing surface: a typed SDK, the agent runtime, pipeline flows,
 feature definitions, and the real-time demos. The package is `mlaiops-sdk`
@@ -125,7 +129,7 @@ in environment/config volumes rather than the generated repository.
 The `distributed-training` starter separates a portable training function from
 `torchrun` launch, rank-aware MLflow logging, mixed precision, and checkpoint
 storage. The `production-agent` starter includes an executable graph/runtime,
-tool loop, `AgentMemoryClient` boundary, selectable Postgres/in-memory checkpointing,
+tool loop, `AgentMemoryClient` boundary, selectable PostgreSQL/in-memory checkpoints,
 Langfuse callback, deterministic tests and evaluation runner, and container
 packaging. See the [template catalog](https://kiongahq.github.io/docs/guides/project-templates/).
 
@@ -137,7 +141,7 @@ The FastAPI service that serves LangGraph agents and framework-neutral adapters 
 | Module | Role |
 | --- | --- |
 | `app.py` | FastAPI app: `POST /invoke`, `POST /stream` (SSE), `GET /healthz`; wires checkpointer + memory + tracing; prefers per-request `X-MLAIOps-Agent-*` headers |
-| `graphs.py` | `build_graph(spec, *, model, checkpointer)` handles compiled graphs, `StateGraph`, or factory callables |
+| `graphs.py` | `build_graph(spec, *, model, checkpointer)` handles compiled graphs, `StateGraph`, or factory callable objects |
 | `reporting.py` | `Usage` (measured tokens → cost), `usage_from_messages`, `report_session` back to the gateway |
 | `__main__.py` | Entrypoint |
 
@@ -174,13 +178,13 @@ adapter examples.
 | --- | --- |
 | `service.py` | The consumer loop: poll Kafka → enrich → score → produce → report stats (resilient to REST timeouts) |
 | `demos.py` | `score_fraud`, `analyze_transcript`, `recommend`, `get_features` |
-| `kafka.py` | `KafkaRest` producer + `Consumer` (via the REST proxy, httpx only) |
+| `kafka.py` | `KafkaRest` producer + `Consumer` (via the REST proxy, `httpx` only) |
 | `produce.py` | CLI to produce demo events (`python -m realtime.produce --demo fraud --count 5`) |
 
 ## Tests
 
 Each repository has its own `tests/` (`sdk-python`, `agent-runtime`,
 `pipeline-runner`, `workspace`, `contracts`), and its CI runs `ruff check` and
-`pytest -q`. Gate tests use the mock LLM and deterministic embedder: fast, free,
-no network. The paid eval lane (LLM-as-judge) runs only when `MLAIOPS_RUN_EVALS=1`
+`pytest -q`. Gate tests use the mock LLM and deterministic embedding function: fast, free,
+no network. The paid evaluation lane (LLM-as-judge) runs only when `MLAIOPS_RUN_EVALS=1`
 with a real provider key.

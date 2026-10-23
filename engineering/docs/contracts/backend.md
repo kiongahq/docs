@@ -1,3 +1,7 @@
+---
+description: "The contracts between the control plane, its clients and its workers: projects, training, pipeline graphs, agents, persistence and delivery."
+---
+
 # Backend contracts
 
 Kionga's backend is a control plane: it validates intent, enforces authorization and
@@ -106,7 +110,7 @@ Agent list responses enrich persisted desired state with bounded live probes and
 `endpoint_url`. Invocation repeats a three-second health gate and returns `503
 agent_not_ready` without forwarding when the selected runtime is unavailable. A
 healthy runtime receives platform identity headers, loads the graph, restores its
-Postgres checkpoint, accesses provisioned tools/features/memory, calls the LLM
+PostgreSQL checkpoint, accesses provisioned tools/features/memory, calls the LLM
 through the trace proxy, and reports measured usage and session state.
 
 Agent project scaffolds are runnable and testable before provider credentials are

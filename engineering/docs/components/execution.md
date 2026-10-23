@@ -1,9 +1,13 @@
-# Execution & serving services
+---
+description: "How pipelines run and models serve: Prefect, the pipeline runner, the serving manager and external OpenFaaS."
+---
+
+# Execution and serving services
 
 How pipelines run and how models serve: the Compose-native equivalents of
 KFP/Argo and KServe/Knative.
 
-## prefect-server
+## `prefect-server`
 
 The pipeline execution engine. Pipelines submitted through the console/API become
 real Prefect flow runs.
@@ -18,6 +22,8 @@ real Prefect flow runs.
 The gateway talks to Prefect at `PREFECT_API_URL` (`http://prefect-server:4200/api`).
 When you submit a pipeline, the gateway creates a flow run carrying the platform
 run id and project id so the flow reports its steps back.
+
+**Code map and tests:** the `prefect-server` service in `deploy/compose.yaml`; `platform/go/internal/httpapi/pipeline_engine_test.go` covers the gateway side against a fake Prefect API.
 
 ## pipeline-runner
 
@@ -63,6 +69,8 @@ Kionga persists the project/template/version, pipeline definition, resources, Gi
 commit, step state, and artifact lineage regardless of execution adapter. It does
 not claim local distributed capacity that the host does not have.
 
+**Code map and tests:** `pipeline-runner/pipelines/` (`serve.py`, `training.py`, `definition.py`, `report.py`); `pipeline-runner/tests`, run with `python -m pytest -q`.
+
 ## serving-manager
 
 Go service that turns a "deploy" into a **real live endpoint**. It launches an
@@ -77,7 +85,7 @@ API and records the endpoint URL.
 | **Special** | Runs as `user: "0:0"` and mounts `/var/run/docker.sock`; this is a privileged local control boundary (the pipeline-runner is the other socket consumer) |
 
 Endpoints: `POST /deployments` (start a serving container), `GET /deployments`
-(list), `DELETE /deployments/{name}` (undeploy). Serving containers attach to the
+(list), `DELETE /deployments/{name}` (removal). Serving containers attach to the
 platform network (`PLATFORM_NETWORK`) so the gateway can reach them by name and
 proxy predictions to `/invocations`.
 
@@ -98,6 +106,8 @@ proxy predictions to `/invocations`.
 3. Gateway records the endpoint and marks the model `serving` (fails closed to a
    `failed` status if the manager rejects it).
 4. Gateway `POST /api/v1/models/{id}/predict` proxies to `endpoint/invocations`.
+
+**Code map and tests:** `serving/cmd/serving-manager`, `serving/internal/serving/manager.go`; `make -C serving verify` (gofmt, vet, race tests, build).
 
 ## serverless (OpenFaaS / faasd)
 

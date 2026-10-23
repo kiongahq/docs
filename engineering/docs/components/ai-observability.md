@@ -1,4 +1,8 @@
-# AI & observability services
+---
+description: The agent runtime, the trace proxy, Langfuse, the real-time processor and the Jupyter workbench.
+---
+
+# AI and observability services
 
 The agent execution runtime, the LLM egress that captures every call, the
 observability UI, and the real-time stream processor.
@@ -12,7 +16,7 @@ whose name is derived from the immutable control-plane agent ID.
 
 | | |
 | --- | --- |
-| **Build** | `agent-runtime/Dockerfile` (Python 3.11, FastAPI + Uvicorn) |
+| **Build** | `agent-runtime/Dockerfile` (Python 3.11, FastAPI + `Uvicorn`) |
 | **Host port** | `19000` (container listens on 9000; the object store owns host 9000) |
 | **Health** | `GET /healthz` |
 | **Source** | `agent-runtime/agent_runtime/` |
@@ -20,7 +24,7 @@ whose name is derived from the immutable control-plane agent ID.
 ### What it does per turn
 
 1. Loads the agent's graph (`MLAIOPS_GRAPH_MODULE`, or the per-request identity).
-2. Loads the **Postgres checkpoint** for the session (state persists across turns,
+2. Loads the **PostgreSQL checkpoint** for the session (state persists across turns,
    keyed per agent).
 3. Runs the LangGraph graph: reasoning, tool calls, feature/memory retrieval.
 4. Calls the LLM. The `openai` and `openai-compatible` backends go **through the
@@ -55,6 +59,8 @@ returns `503 agent_not_ready` before invocation if `/healthz` fails. Compose set
 `AGENT_RUNTIME_URL` to retain the shared runtime and does not emulate Kubernetes
 autoscaling.
 
+**Code map and tests:** `agent-runtime/agent_runtime/` (`app.py`, `graphs.py`, `reporting.py`); `agent-runtime/tests`; evaluations in `agent-runtime/agent_runtime/evals`.
+
 ## trace-proxy
 
 The **LLM egress** for OpenAI-protocol backends. Compose points
@@ -78,10 +84,12 @@ does not use it.
 It presents an **OpenAI-compatible** surface, so any OpenAI-style client works by
 setting its base URL to the proxy.
 
-## langfuse
+**Tests:** `trace-proxy/internal/traceproxy/proxy_test.go`; `make -C trace-proxy verify`.
+
+## `langfuse`
 
 LLM/agent **observability UI**. Pinned to v2, which self-hosts on the platform
-Postgres (v3 needs ClickHouse, Redis, and workers, which is too heavy for one VM).
+PostgreSQL (v3 needs ClickHouse, Redis, and workers, which is too heavy for one VM).
 
 | | |
 | --- | --- |
@@ -94,7 +102,7 @@ Postgres (v3 needs ClickHouse, Redis, and workers, which is too heavy for one VM
 The gateway proxies Langfuse prompt management under `GET /api/v1/prompts` for the
 console's Prompt Library, reporting `configured: false` when keys are unset.
 
-## realtime-processor
+## `realtime-processor`
 
 Kafka consumer service demonstrating three real-time patterns. It reads input
 topics, enriches events with **online features**, scores them with a model or agent,
@@ -124,10 +132,12 @@ docker compose -f deploy/compose.yaml exec jupyter \
   python -m realtime.produce --demo fraud --count 5
 ```
 
-## jupyter
+**Code map and tests:** `agent-runtime/realtime/`; `agent-runtime/tests/test_realtime.py`.
+
+## `jupyter`
 
 The development workbench; see the [workbench guide](https://kiongahq.github.io/docs/guides/workbench/).
-JupyterLab (with a browser terminal) preloaded with the SDK and every connection.
+JupyterLab (with a browser terminal) with the SDK and every connection.
 Open it through the gateway at
 <http://localhost:8080/workspace.html?tool=workbench>; its own port (8888) binds
 to `127.0.0.1` for diagnostics only.
@@ -138,3 +148,5 @@ Configured object-store buckets are mounted with S3FS under
 <http://localhost:8080/workspace.html?tool=ide>) mounts the same `jupyter-data`
 volume, publishes no port, and does not receive FUSE privileges. Kubernetes replaces the shared development profile with isolated
 per-user `KiongaWorkspace` workloads.
+
+**Code map and tests:** `workspace/jupyter/` and `workspace/ide/`; see [workspace](workspace.md).

@@ -1,3 +1,7 @@
+---
+description: What is implemented in the Kionga repositories, how each capability is delivered, and how far it is verified.
+---
+
 # Implementation status
 
 This page records the implementation scope in the Kionga repositories. “Implemented”
@@ -20,8 +24,8 @@ external systems. Before admitting users, complete the
 | Shared browser IDE | **Optional Compose profile** | `make -C deploy ide-up`; code-server mounts the same persistent workspace as Jupyter |
 | Per-user Jupyter/IDE workspaces | **Kubernetes scale path** | `KiongaWorkspace` reconciles bounded workloads, PVC, service, credentials, suspension, and revocation from user grants |
 | Container pipelines | **Implemented and verified (trusted Compose profile)** | Prefect runs validated container DAGs with ready-set scheduling (a node starts when its own dependencies succeed), bounded parallelism, per-node timeout/retry backoff, `when` conditions, skip-downstream-on-failure, rerun-from-failure; nodes report start/end, attempt, exit code, container id and image digest. Verified end to end in the browser with parallel-branch overlap. |
-| Pipeline definitions | **Implemented and verified** | `kionga.dev/v1 Pipeline` YAML and form editors over one canonical definition; field/node/line validation (cycle paths, missing deps, cron/timezone); immutable revisions with diff and rollback; runs pin revision + SHA-256, overrides, policy decision and image digests; JSON Schema in `contracts/pipeline`. Git: export/import through the YAML API; Kionga never commits for you. |
-| Schedules | **Implemented and verified** | Cron + IANA timezone triggers, leased single scheduler, exactly-once slot claims, bounded catch-up, runs as the schedule owner with quotas; pause/resume in the console |
+| Pipeline definitions | **Implemented and verified** | `kionga.dev/v1 Pipeline` YAML and form editors over one canonical definition; field/node/line validation (cycle paths, missing dependencies, cron/timezone); immutable revisions with diff and rollback; runs pin revision + SHA-256, overrides, policy decision and image digests; JSON Schema in `contracts/pipeline`. Git: export/import through the YAML API; Kionga never commits for you. |
+| Schedules | **Implemented and verified** | Cron + IANA timezone triggers, leased single scheduler, exactly once slot claims, bounded catch-up, runs as the schedule owner with quotas; pause/resume in the console |
 | Manual run configuration | **Implemented and verified** | Server-enforced preflight: overridable parameters, digest-pinned and registry-allowlisted images, resources within quota, retries/timeouts, node selection, parallelism, rerun-from-failure; preflight summary before start |
 | Logs and events | **Implemented and verified locally** | Structured `log_entries` (PostgreSQL, RLS) with runner streaming, platform step events, redaction, filters, cursor pagination, SSE tail, retention, project isolation; node log panel and Logs page |
 | Log export to Elasticsearch/OpenSearch | **Implemented, unverified against a live cluster** | Separate adapters (data stream vs daily index), at-least-once cursor, partial-failure retry, dead-letter counts, TLS/API key/basic auth from files, health states on the Platform page; tested against protocol fakes only |
@@ -38,22 +42,22 @@ external systems. Before admitting users, complete the
 | Object storage filesystem in Jupyter | **Bundled local workbench** | S3FS mounts configured object-store buckets under `/workspace/object-store`; production multi-user mounts require per-workspace isolation |
 | Functions and event-driven microservices | **External integration** | Project-owned OCI functions, quotas, HTTP/async/Cron/Kafka trigger metadata, invocation, and function DAG execution require `OPENFAAS_URL` |
 | Public VM edge | **Gateway-only pilot** | `make -C deploy public-up` runs the digest-pinned gateway behind Caddy TLS with external OIDC, PostgreSQL, and ML services. The separate legacy Compose/Dex overlay is a development compatibility path, not the recommended public package. |
-| Engineering blog and editorial workspace | **Bundled** | Editor.js block content with a server renderer sanitized by bluemonday, separate `/editorial.html` workspace with its own `kionga_editorial` session and author/editor/editorial_admin memberships, draft → review → scheduled/published workflow with a leased scheduled publisher, immutable revisions with compare/restore, autosave with 409 conflicts and local recovery, image uploads (sniffed, EXIF stripped, 480/960/1600 variants) to S3 (RustFS locally) or the filesystem, public search/tag/author pages with highlighted code. See [engineering blog](https://kiongahq.github.io/docs/guides/engineering-blog/) |
+| Engineering blog and editorial workspace | **Bundled** | Editor.js block content with a server renderer sanitized by `bluemonday`, separate `/editorial.html` workspace with its own `kionga_editorial` session and author/editor/editorial_admin memberships, draft → review → scheduled/published workflow with a leased scheduled publisher, immutable revisions with compare/restore, autosave with 409 conflicts and local recovery, image uploads (sniffed, EXIF stripped, 480/960/1600 variants) to S3 (RustFS locally) or the filesystem, public search/tag/author pages with highlighted code. See [engineering blog](https://kiongahq.github.io/docs/guides/engineering-blog/) |
 | Kubernetes-native execution/serving | **Scale path** | CRDs, operator, RBAC, NetworkPolicy, workspace reconciliation, KFP/Argo and KServe contracts, plus an at-least-once lifecycle worker with manual Kafka commits; elastic agent scaling requires resource metrics |
 
 ## Scaffolding, feature stores and external storage
 
 | Item | Status | Evidence |
 | --- | --- | --- |
-| Structured scaffold jobs (`/api/v1/projects/{id}/scaffold-jobs`), catalog-derived argv, project access, one job per project, stale-job recovery | **Implemented** | Go unit + Postgres integration tests; live run against a local gateway, the real sidecar and `kionga.py` |
-| Console Run in workspace (confirmation with exact argv, live progress, files, git status, errors) | **Implemented** | jsdom tests; Playwright `features-scaffold.spec.cjs` against a local gateway |
-| Workspace sidecar `POST /scaffold-jobs` (argv allowlist, token, no shell, scrubbed env, timeout) | **Implemented** | `workspace/tests/test_workspace_directories.py` incl. a real HTTP server |
+| Structured scaffold jobs (`/api/v1/projects/{id}/scaffold-jobs`), catalog-derived `argv`, project access, one job per project, stale-job recovery | **Implemented** | Go unit + PostgreSQL integration tests; live run against a local gateway, the real sidecar and `kionga.py` |
+| Console Run in workspace (confirmation with exact `argv`, live progress, files, git status, errors) | **Implemented** | `jsdom` tests; Playwright `features-scaffold.spec.cjs` against a local gateway |
+| Workspace sidecar `POST /scaffold-jobs` (`argv` allowlist, token, no shell, scrubbed `env`, timeout) | **Implemented** | `workspace/tests/test_workspace_directories.py` incl. a real HTTP server |
 | Sidecar reached through `jupyter-server-proxy` in the Jupyter image and `/proxy/8890` in the IDE | **Implemented, unverified live** | Image and entrypoint changes need `make -C deploy local-rebuild`; exercised locally with a Jupyter stand-in |
 | One project path for Jupyter, IDE and scaffold | **Implemented** | `TestProjectPathIsSharedByJupyterIDEAndScaffold` |
 | Scaffold as Kubernetes Jobs | **Planned** | Per-user workspace sidecars run jobs today |
 | Feature store adapter registry; `internal` and `feast` adapters; other providers listed as contract only | **Implemented** | Adapter conformance suite with Feast HTTP fakes |
-| Feature store connections (admin CRUD, test, scoped summaries, secrets by reference only) | **Implemented** | Go handler tests, Postgres integration, Playwright against a local Feast stand-in |
-| Feature definition versions, lineage, freshness API and console cards | **Implemented** | Go tests, jsdom, Playwright |
+| Feature store connections (admin CRUD, test, scoped summaries, secrets by reference only) | **Implemented** | Go handler tests, PostgreSQL integration, Playwright against a local Feast stand-in |
+| Feature definition versions, lineage, freshness API and console cards | **Implemented** | Go tests, `jsdom`, Playwright |
 | Point-in-time join, Redis TTL/retention sweep | **Implemented** | Python leakage fixture and sweep tests (no live Redis run) |
 | External S3-compatible storage connections with signed `HEAD` health check and CA bundles | **Implemented** | Signature-verifying fake S3, TLS CA tests, handler tests; not run against a real cloud bucket |
 | Operator tenant storage admission (no `hostPath`, allowlisted StorageClasses) | **Implemented** | Unit test and fake-client reconcile test |

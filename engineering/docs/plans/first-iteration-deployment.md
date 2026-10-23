@@ -1,3 +1,7 @@
+---
+description: The proposed first rollout of Kionga on Amazon EKS for a small invited team, with gates, risks and the procedure.
+---
+
 # First-iteration deployment plan
 
 > Proposed rollout for a small, invited engineering team, not a record of a live
@@ -161,7 +165,7 @@ Keep credentials in the cloud secret manager, not in `.env`, Helm
 - External Secrets mappings for gateway, feature gateway, and storage proxy;
   add optional engine credentials to both the corresponding ExternalSecret
   and component secret list.
-- Reviewed egress CIDRs/ports, including Kubernetes API, DB, IdP, Kafka REST,
+- Reviewed egress CIDR ranges/ports, including Kubernetes API, DB, IdP, Kafka REST,
   storage and engines. Do not leave the documentation CIDR or globally allow
   external traffic.
 
@@ -215,7 +219,7 @@ listed keys. Secret files are read at process startup: rotate by updating the
 secret and rolling out consumers deliberately. The internal token is shared
 service authentication, not per-workload mTLS.
 
-## 5. Phased deployment runbook
+## 5. Phased deployment procedure
 
 ### Phase 0: Local release candidate
 

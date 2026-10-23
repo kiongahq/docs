@@ -1,9 +1,13 @@
-# Data & messaging services
+---
+description: "The data plane: PostgreSQL, Redis, Kafka and its REST proxy, RustFS, MLflow, and the feature gateway and storage proxy that front them."
+---
+
+# Data and messaging services
 
 The stores that hold durable state and carry events, plus the two Go services that
 front object storage and the online feature store.
 
-## postgres
+## `postgres`
 
 PostgreSQL 16 with the **pgvector** extension. One database backs many concerns.
 
@@ -19,7 +23,9 @@ Holds: control-plane state + the Kafka **outbox**, the MLflow backend store, the
 Langfuse backend, LangGraph agent **checkpoints**, and the `agent_memories`
 pgvector table for long-term memory / RAG.
 
-## redis
+**Code map and tests:** `postgres` service and `deploy/postgres/init.sql` in `deploy`; the platform integration suite (`make -C platform test-integration`) runs against `pgvector/pgvector:pg16`.
+
+## `redis`
 
 The **online feature store**: low-latency reads for real-time scoring.
 
@@ -30,9 +36,9 @@ The **online feature store**: low-latency reads for real-time scoring.
 | **Volume** | `redis-data` |
 | **Accessed via** | the feature gateway (`REDIS_URL`) |
 
-## kafka & kafka-rest
+## `kafka` and `kafka-rest`
 
-Apache Kafka in KRaft mode (no ZooKeeper), fronted by Karapace's
+Apache Kafka in `KRaft` mode (no ZooKeeper), fronted by Karapace's
 Confluent-v2-compatible REST API so Python services stay dependency-free (HTTP
 only). Karapace is Apache-licensed, multi-architecture, and materially smaller than
 the JVM proxy image it replaces.
@@ -59,7 +65,9 @@ at-least-once boundary can redeliver an already reconciled command, so lifecycle
 dispatch is an ID-keyed create-or-update operation rather than a non-idempotent
 create.
 
-## objectstore & objectstore-init
+**Code map and tests:** `kafka` and `kafka-rest` services in `deploy/compose.yaml`, topics in `deploy/scripts/local-topics.sh`; consumer code in `platform/go/internal/integrations/kafka_consumer.go` with its tests.
+
+## `objectstore` and `objectstore-init`
 
 S3-compatible object storage, served by [RustFS](https://github.com/rustfs/rustfs)
 (Apache-2.0). `objectstore-init` is a one-shot job that creates the buckets and exits.
@@ -81,7 +89,9 @@ replacement: renames and directory listings map to object-store operations. Only
 Jupyter receives FUSE/SYS_ADMIN; application services continue through S3 APIs or
 the bounded storage proxy.
 
-## mlflow
+**Code map and tests:** `deploy/objectstore-init.py`; `deploy/tests/test_local_bootstrap.py`.
+
+## `mlflow`
 
 Experiment tracking and the model registry. Custom image (`mlaiops-mlflow`) pinning
 `mlflow==3.16.1`, `scikit-learn==1.7.0`, and `uvicorn` so the tracking server, the
@@ -95,6 +105,8 @@ trainer, and the serving containers agree, preventing training-serving skew.
 | **Artifacts** | `s3://mlaiops-models` in the object store |
 | **Schema** | `mlflow db upgrade` runs before the server starts, so an older database migrates on the first start after an upgrade |
 | **Allowed hosts** | `MLFLOW_SERVER_ALLOWED_HOSTS`: `mlflow`, `mlflow:5000`, `localhost:*`, `127.0.0.1:*`. Other `Host` headers get `403` (DNS-rebinding protection). Add your hostname there to reach MLflow by another name. |
+
+**Code map and tests:** `deploy/mlflow/Dockerfile`; `deploy/tests/test_mlflow_server.py`.
 
 ## feature-gateway
 
@@ -111,6 +123,8 @@ shape, backed by Redis (or a Feast feature server when `FEAST_URL` is set).
 Endpoints: `POST /get-online-features` (lookup) and
 `PUT /internal/v1/features/{service}/{entity}` (write from the materializer).
 
+**Tests:** `platform/go/internal/feature` adapter conformance tests with Feast HTTP fakes.
+
 ## storage-proxy
 
 Go service that is the **sole holder of object-store credentials**. It generates
@@ -126,6 +140,8 @@ short-lived AWS SigV4 URLs and provides bounded browse/preview for the console.
 Endpoints: `GET /buckets`, `GET /objects`, `GET /object` (bounded preview),
 `POST /presign`. The gateway proxies these under `/api/v1/storage/*`.
 
+**Tests:** `platform/go/internal/storage` (signature-verifying `presign`, browse and health tests).
+
 ## feature-materializer
 
 One-shot Python job: applies the feature definitions in `agent-runtime/features/` and
@@ -135,3 +151,5 @@ exits (`restart: "no"`). Re-run it with:
 ```bash
 docker compose -f deploy/compose.yaml up feature-materializer
 ```
+
+**Code map and tests:** `agent-runtime/features/`; `agent-runtime/tests/test_features.py` and `agent-runtime/tests/test_feature_store_correctness.py`.

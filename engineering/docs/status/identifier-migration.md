@@ -1,3 +1,7 @@
+---
+description: How runtime identifiers moved to the Kionga vocabulary, and how to upgrade local, single-server and Kubernetes installations.
+---
+
 # Migrating to Kionga identifiers
 
 The Kionga rename is a clean contract migration, not only a visual label change.

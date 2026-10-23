@@ -1,3 +1,7 @@
+---
+description: "The Go module of the platform repository: commands, internal packages, public API types and their tests."
+---
+
 # Go packages
 
 The Go module is `github.com/kiongahq/platform` (Go 1.26, toolchain 1.26.10).
@@ -157,6 +161,7 @@ Both build with `make -C <repo> build` and test with `make -C <repo> verify`.
 
 Packages have table-driven `_test.go` files. The platform CI runs `gofmt -l`
 (must be empty), `go vet`, `go test -race`, the tagged integration suite against a
-real PostgreSQL, `go build ./cmd/...`, the banned-tech scan, `govulncheck`, and
-the console UI tests. Run locally with `make -C platform test-go`,
+real PostgreSQL, `go build ./cmd/...`, the architecture-exclusion scan, the console UI tests, and a security job with
+`govulncheck`, `gosec` and `gitleaks` (`make -C platform test-security` runs the same
+scanners). Run locally with `make -C platform test-go`,
 `make -C platform test-integration`, and `make -C platform test-ui`.
