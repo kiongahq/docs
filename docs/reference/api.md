@@ -1,4 +1,5 @@
 ---
+icon: material/api
 description: Every Kionga REST API route, with its method, who can call it, and what it does.
 ---
 

@@ -1,4 +1,5 @@
 ---
+icon: material/information-outline
 description: Kionga is an open-source, self-hosted platform for machine learning, data and AI agents, with one API and console on infrastructure you control.
 ---
 

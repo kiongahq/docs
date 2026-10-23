@@ -1,0 +1,17 @@
+<script>
+(() => {
+  const update = () => {
+    const links = [...document.querySelectorAll('.kg-wayfinding-links a')];
+    const path = location.pathname;
+    // Prefer the most specific section; ordinary guides belong to Documentation.
+    const active = links.slice(1).find(link => path.startsWith(new URL(link.href).pathname)) || links[0];
+    links.forEach(link => {
+      link.classList.toggle('kg-wayfinding-active', link === active);
+      if (link === active) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
+    });
+  };
+  if (typeof document$ !== 'undefined') document$.subscribe(update);
+  else update();
+})();
+</script>

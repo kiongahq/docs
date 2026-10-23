@@ -1,4 +1,5 @@
 ---
+icon: material/rocket-launch-outline
 description: Install Kionga on your machine and run your first project, pipeline, model and agent.
 ---
 

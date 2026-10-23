@@ -64,3 +64,12 @@ back to documentation search. The site does not include or provision this servic
 The theme override lives in `overrides/main.html`; presentation and interaction
 live in `docs/stylesheets/kionga.css` and `docs/javascripts/assistant.js`.
 The engineering handbook shares the stylesheet; keep both copies identical.
+
+## Versions and changelog
+
+The [changelog](https://kiongahq.github.io/docs/changelog/) publishes documentation
+release notes from `CHANGELOG.md`. Release Please proposes semantic version bumps
+from conventional commits and creates a tag and GitHub release when the release
+pull request is merged. The header displays `version.txt`, or **Development**
+before the first release. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and
+release checks. Documentation versions are independent of component versions.

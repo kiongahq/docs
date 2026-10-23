@@ -1,4 +1,5 @@
 ---
+icon: material/file-check-outline
 description: The log of Kionga architecture decision records in MADR 4 format, and how to propose a new one.
 ---
 

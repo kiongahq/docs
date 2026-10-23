@@ -1,4 +1,5 @@
 ---
+icon: material/lightbulb-outline
 description: Understand what Kionga is, the vocabulary it uses, how its parts fit together, and how it is licensed.
 ---
 

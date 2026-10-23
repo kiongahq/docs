@@ -1,4 +1,5 @@
 ---
+icon: material/sitemap-outline
 description: How Kionga's console and API, workspaces, execution engines, data stores, identity and deployment options fit together.
 ---
 

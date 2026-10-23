@@ -1,4 +1,5 @@
 ---
+icon: material/graph-outline
 description: Define a versioned pipeline in the console or YAML, keep it in Git, schedule it, run it with checked overrides, watch each node, and roll back to an earlier revision.
 ---
 

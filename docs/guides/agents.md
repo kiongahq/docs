@@ -1,4 +1,5 @@
 ---
+icon: material/robot-outline
 description: Register tools, deploy an agent, chat with it, connect a real LLM provider, watch sessions, traces and cost, shift canary traffic, and build your own agent from the production-agent template.
 ---
 

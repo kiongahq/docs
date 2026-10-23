@@ -1,4 +1,5 @@
 ---
+icon: material/code-braces
 description: Start and open the browser IDE, install VS Code extensions, and generate project starters with Codex, Claude Code, or your own coding agent.
 ---
 

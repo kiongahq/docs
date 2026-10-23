@@ -1,4 +1,5 @@
 ---
+icon: material/language-python
 description: Reference for the Kionga Python SDK, covering installation, configuration, every MLAIOpsClient method, and the tracing, tools, pipeline, language model and agent helpers.
 ---
 

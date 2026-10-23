@@ -1,4 +1,5 @@
 ---
+icon: material/cube-scan
 description: Search the Hugging Face Hub from Kionga, register a pinned model revision in a project, connect a personal account for private models, and download the weights in your workspace.
 ---
 

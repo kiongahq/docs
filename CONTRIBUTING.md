@@ -33,3 +33,36 @@ make docs-build docs-lint docs-check docs-test
 
 All four must pass. Commit with a conventional message, for example
 `docs(guides): add the feature store guide`.
+
+## Documentation releases
+
+Use conventional commits so the release workflow can group changes and choose a
+semantic version:
+
+- `feat:` adds a feature and increments the minor version.
+- `fix:` corrects a defect and increments the patch version.
+- `docs:` updates documentation and increments the patch version.
+- `!` after a type or a `BREAKING CHANGE:` footer increments the major version.
+
+Release Please opens or updates a release pull request after changes reach
+`main`. Review its generated `CHANGELOG.md`, `version.txt` and
+`.release-please-manifest.json` together. Merge the release pull request to create
+the version tag and GitHub release. The normal Pages workflow publishes the
+updated changelog and version badge. Until the first release, the badge reads
+**Development**. These versions apply to this documentation repository, not the
+component repositories. Historical tags preserve documentation sources; the live
+site follows `main` and does not host separate copies of older versions.
+
+The repository must allow GitHub Actions to create pull requests under
+**Settings > Actions > General > Workflow permissions**. The workflow uses the
+repository token by default. GitHub does not run CI automatically for release
+pull requests opened by that token. To trigger normal pull request checks, set
+`RELEASE_PLEASE_TOKEN` to a GitHub App token or fine-grained personal access token
+with repository contents, issues and pull request write permissions. Do not merge
+a release pull request with required checks missing. A maintainer can close and
+reopen the pull request to trigger its checks when using the repository token.
+
+The public changelog page reads the root changelog during the MkDocs build. Edit
+release notes in the release pull request; do not copy them into a second page.
+Run `make docs-test docs-build` before merging changes to release metadata or the
+site hook. `docs-test` also needs Node.js 22 for the assistant tests.

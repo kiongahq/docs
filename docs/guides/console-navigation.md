@@ -1,4 +1,5 @@
 ---
+icon: material/view-dashboard-outline
 description: Filter the console by project, bookmark and share views, open workspaces, create a personal API key, and choose the Prefect or OpenFaaS runtime for new operations.
 ---
 

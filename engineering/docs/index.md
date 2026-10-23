@@ -1,4 +1,5 @@
 ---
+icon: material/wrench-outline
 description: The Kionga engineering handbook, how Kionga is designed and built, for contributors, maintainers and reviewers.
 ---
 

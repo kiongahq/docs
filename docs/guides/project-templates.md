@@ -1,4 +1,5 @@
 ---
+icon: material/view-grid-outline
 description: Choose a versioned project template and create a Kionga project from the console, the Python SDK, or the REST API.
 ---
 

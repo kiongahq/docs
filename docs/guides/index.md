@@ -1,4 +1,5 @@
 ---
+icon: material/book-open-page-variant-outline
 description: Task-oriented guides for building with Kionga, from projects and workspaces to pipelines, models, features, agents, collaboration and administration.
 ---
 

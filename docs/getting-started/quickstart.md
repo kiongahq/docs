@@ -1,4 +1,5 @@
 ---
+icon: material/play-circle-outline
 description: Create a project, train and deploy a model, get a live prediction, and chat with an agent on your local Kionga stack.
 ---
 

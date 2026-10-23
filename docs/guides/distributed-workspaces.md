@@ -1,4 +1,5 @@
 ---
+icon: material/source-branch
 description: Provision a teammate's workspace and resource profile, connect a project to Git and sync it into a workspace, and deploy serverless functions you can compose into pipelines.
 ---
 

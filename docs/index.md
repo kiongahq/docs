@@ -1,4 +1,5 @@
 ---
+icon: material/compass-outline
 title: Overview
 description: Kionga is a self-hosted platform for machine learning, data and AI agents on infrastructure you control.
 hide:
@@ -7,15 +8,15 @@ hide:
 
 <div class="kg-hero" markdown>
 
-<p class="kg-eyebrow">Kionga documentation</p>
+<p class="kg-eyebrow">:material-book-open-page-variant-outline: Kionga documentation</p>
 
-# Build on your own terms.
+# Your platform. Your infrastructure.
 
 Machine learning, data and AI agents. One platform to build, train, serve and observe models
 and AI agents: workspaces, pipelines, a model registry, feature stores and agent
 operations behind a single console and API, running in your own environment.
 
-[Get started](getting-started/index.md){ .md-button .md-button--primary }
+[Start building :octicons-arrow-right-16:](getting-started/index.md){ .md-button .md-button--primary }
 [See how it works](concepts/how-it-works.md){ .md-button }
 
 </div>
@@ -27,6 +28,30 @@ operations behind a single console and API, running in your own environment.
 Start with the [installation guide](getting-started/installation.md), then follow
 the [quickstart](getting-started/quickstart.md). Need a specific answer? Use search
 or open **Ask Kionga**.
+
+</div>
+
+## Find your starting point
+
+<div class="grid cards kg-starting-points" markdown>
+
+-   :material-download-outline:{ .lg .middle } **Install Kionga**
+
+    Set up your environment on a laptop, a server or Kubernetes.
+
+    [Installation guide :octicons-arrow-right-16:](getting-started/installation.md)
+
+-   :material-play-circle-outline:{ .lg .middle } **Build your first project**
+
+    Follow the quickstart from workspace to a running model.
+
+    [Follow the quickstart :octicons-arrow-right-16:](getting-started/quickstart.md)
+
+-   :material-history:{ .lg .middle } **Keep up with changes**
+
+    Read versioned documentation updates and release notes.
+
+    [Read the changelog :octicons-arrow-right-16:](changelog.md)
 
 </div>
 

@@ -10,10 +10,13 @@ repo_name: kiongahq
 repo_url: https://github.com/kiongahq
 edit_uri: https://github.com/kiongahq/docs/edit/main/engineering/docs/
 docs_dir: docs
+hooks:
+  - ../scripts/site_hooks.py
 copyright: Copyright &copy; 2026 Kionga contributors. Released under the MIT License.
 
 theme:
   name: material
+  custom_dir: ../overrides
   language: en
   logo: assets/logo.svg
   favicon: assets/favicon.svg

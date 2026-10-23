@@ -1,4 +1,5 @@
 ---
+icon: material/puzzle-outline
 description: The map of Kionga repositories, what each one ships, how they connect, and how to work across them.
 ---
 

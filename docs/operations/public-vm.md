@@ -1,4 +1,5 @@
 ---
+icon: material/server-outline
 description: Deploy the Kionga gateway behind Caddy on one Linux server from digest-pinned images, with configuration in JSON and secrets delivered as files.
 ---
 

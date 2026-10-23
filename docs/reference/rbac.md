@@ -1,4 +1,5 @@
 ---
+icon: material/shield-lock-outline
 description: Kionga roles, services, access profiles, resource profiles, personal API keys, policy actions, and the security controls enforced on every request.
 ---
 

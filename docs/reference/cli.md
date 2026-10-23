@@ -1,4 +1,5 @@
 ---
+icon: material/console
 description: Reference for the Kionga command-line client and the workspace command.
 ---
 

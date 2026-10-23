@@ -1,4 +1,5 @@
 ---
+icon: material/text-box-search-outline
 description: Read, filter, search and stream the logs and events of pipeline runs in the console or through the API.
 ---
 

@@ -1,4 +1,5 @@
 ---
+icon: material/notebook-outline
 description: Open the JupyterLab workbench, call Kionga from notebooks without an API key, use object storage as files, install your own tools, and train and register a model.
 ---
 

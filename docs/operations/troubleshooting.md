@@ -1,4 +1,5 @@
 ---
+icon: material/lifebuoy
 description: Symptoms, causes and fixes for common problems with the local stack, the single-server deployment and Kubernetes deployments of Kionga.
 ---
 

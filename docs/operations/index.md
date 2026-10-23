@@ -1,4 +1,5 @@
 ---
+icon: material/server-network-outline
 description: Compare the three ways to run Kionga (local Compose stack, single server, managed Kubernetes) and pick the one that fits your users, infrastructure and trust boundary.
 ---
 

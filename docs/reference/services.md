@@ -1,4 +1,5 @@
 ---
+icon: material/lan
 description: Every service in the Kionga local stack and Kubernetes package, with its role, image, published port and health check.
 ---
 

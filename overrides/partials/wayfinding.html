@@ -1,0 +1,25 @@
+{% set handbook = config.site_name == 'Kionga Engineering' %}
+{% set product = 'https://kiongahq.github.io/docs/' if handbook else ('.' | url) %}
+<nav class="kg-wayfinding" aria-label="Documentation sections">
+  <div class="kg-wayfinding-inner md-grid">
+    <div class="kg-wayfinding-links">
+      <a href="{{ product }}" {% if not handbook and page.url != 'changelog/' %}class="kg-wayfinding-active"{% endif %}>
+        {% include ".icons/material/book-open-page-variant-outline.svg" %} Documentation
+      </a>
+      <a href="{{ 'https://kiongahq.github.io/docs/reference/api/' if handbook else ('reference/api/' | url) }}">
+        {% include ".icons/material/code-tags.svg" %} API reference
+      </a>
+      <a href="{{ ('.' | url) if handbook else 'https://kiongahq.github.io/docs/engineering/' }}" {% if handbook %}class="kg-wayfinding-active"{% endif %}>
+        {% include ".icons/material/wrench-outline.svg" %} Engineering
+      </a>
+      <a href="{{ 'https://kiongahq.github.io/docs/changelog/' if handbook else ('changelog/' | url) }}" {% if page.url == 'changelog/' %}class="kg-wayfinding-active"{% endif %}>
+        {% include ".icons/material/history.svg" %} Changelog
+      </a>
+    </div>
+    {% if config.extra.docs_version %}
+    <a class="kg-version" href="{{ 'https://kiongahq.github.io/docs/changelog/' if handbook else ('changelog/' | url) }}" aria-label="Documentation version: {{ config.extra.docs_version }}">
+      <span class="kg-version-dot" aria-hidden="true"></span>{{ config.extra.docs_version }}
+    </a>
+    {% endif %}
+  </div>
+</nav>

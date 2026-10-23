@@ -1,10 +1,15 @@
 {% extends "base.html" %}
+{% block header %}
+{{ super() }}
+{% include "partials/wayfinding.html" %}
+{% endblock %}
 {% block scripts %}
-<button class="kg-assistant-launch" id="kg-assistant-launch" aria-haspopup="dialog" aria-controls="kg-assistant">✧ <span>Ask Kionga</span></button>
+{% if config.extra.assistant_enabled %}
+<button class="kg-assistant-launch" id="kg-assistant-launch" aria-haspopup="dialog" aria-controls="kg-assistant"><span class="kg-ui-icon" aria-hidden="true">{% include ".icons/material/creation-outline.svg" %}</span><span>Ask Kionga</span></button>
 <dialog id="kg-assistant" class="kg-assistant" aria-labelledby="kg-assistant-title" data-index="{{ 'search/search_index.json' | url }}" data-endpoint="{{ config.extra.assistant_endpoint | default('', true) | e }}">
   <header class="kg-assistant-header">
-    <div><span class="kg-assistant-eyebrow">DOCUMENTATION ASSISTANT</span><h2 id="kg-assistant-title">Ask Kionga <span>✧</span></h2></div>
-    <button type="button" id="kg-assistant-close" aria-label="Close assistant">×</button>
+    <div><span class="kg-assistant-eyebrow">DOCUMENTATION ASSISTANT</span><h2 id="kg-assistant-title">Ask Kionga <span class="kg-ui-icon" aria-hidden="true">{% include ".icons/material/creation-outline.svg" %}</span></h2></div>
+    <button type="button" id="kg-assistant-close" aria-label="Close assistant"><span class="kg-ui-icon" aria-hidden="true">{% include ".icons/material/close.svg" %}</span></button>
   </header>
   <div class="kg-assistant-body">
     <p id="kg-assistant-mode">Find the right guide, without leaving your page.</p>
@@ -17,9 +22,11 @@
   </div>
   <form id="kg-assistant-form">
     <label for="kg-question">Your question</label>
-    <div class="kg-composer"><input id="kg-question" placeholder="Ask about Kionga…" maxlength="2000" required autocomplete="off"><button type="submit" aria-label="Send question">↑</button></div>
+    <div class="kg-composer"><input id="kg-question" placeholder="Ask about Kionga…" maxlength="2000" required autocomplete="off"><button type="submit" aria-label="Send question"><span class="kg-ui-icon" aria-hidden="true">{% include ".icons/material/arrow-up.svg" %}</span></button></div>
     <p id="kg-assistant-notice">Documentation search · Answers link to the source.</p>
   </form>
 </dialog>
+{% endif %}
 {{ super() }}
+{% include "partials/navigation-state.html" %}
 {% endblock %}

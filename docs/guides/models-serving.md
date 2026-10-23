@@ -1,4 +1,5 @@
 ---
+icon: material/rocket-launch-outline
 description: Register a model version, pass its quality gate, promote it, deploy it to a live REST endpoint, send predictions, and roll it back.
 ---
 

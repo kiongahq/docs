@@ -1,4 +1,5 @@
 ---
+icon: material/puzzle-outline
 description: Run agents built with Agno, NVIDIA-labs OO-Agents (NOOA) or your own framework on the Kionga agent runtime, through the same deployment API as LangGraph agents.
 ---
 

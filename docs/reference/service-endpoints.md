@@ -1,4 +1,5 @@
 ---
+icon: material/connection
 description: Addresses and local credentials for every Kionga service, from your machine and from inside the stack, and the values to register as console connections.
 ---
 

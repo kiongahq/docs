@@ -1,4 +1,5 @@
 ---
+icon: material/text-box-outline
 description: Write, review, schedule and publish posts on the Kionga engineering blog, manage editorial members, and configure blog media storage.
 ---
 

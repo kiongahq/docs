@@ -1,4 +1,5 @@
 ---
+icon: material/source-repository
 description: Kionga is released under the MIT License; learn what that covers and how to contribute.
 ---
 

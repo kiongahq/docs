@@ -1,4 +1,5 @@
 ---
+icon: material/sitemap-outline
 description: Kionga's architecture documented in the twelve arc42 sections, from goals and constraints to risks and the glossary.
 ---
 

@@ -1,4 +1,5 @@
 ---
+icon: material/cube-outline
 description: The vocabulary used across the Kionga console, API and documentation, from projects and runs to connections, roles and features.
 ---
 

@@ -1,4 +1,5 @@
 ---
+icon: material/clipboard-check-outline
 description: What is implemented in the Kionga repositories, how each capability is delivered, and how far it is verified.
 ---
 

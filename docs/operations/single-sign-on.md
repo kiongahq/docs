@@ -1,4 +1,5 @@
 ---
+icon: material/key-outline
 description: Sign people in to Kionga through Dex with LDAP, Active Directory, SAML, OIDC, GitHub, GitLab, Google or Microsoft, and control how first-time users get access.
 ---
 

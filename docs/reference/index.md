@@ -1,4 +1,5 @@
 ---
+icon: material/code-tags
 description: Exact reference for Kionga's API, SDK, CLI, configuration, permissions, services and endpoints.
 ---
 

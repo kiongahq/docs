@@ -9,6 +9,8 @@ repo_name: kiongahq
 repo_url: https://github.com/kiongahq
 edit_uri: https://github.com/kiongahq/docs/edit/main/docs/
 docs_dir: docs
+hooks:
+  - scripts/site_hooks.py
 copyright: Copyright &copy; 2026 Kionga contributors. Released under the MIT License.
 
 theme:
@@ -67,6 +69,7 @@ extra_javascript:
   - javascripts/assistant.js
 
 extra:
+  assistant_enabled: true
   generator: false
   social:
     - icon: fontawesome/brands/github
@@ -138,7 +141,8 @@ plugins:
         "reference/decisions/object-store.md": "https://kiongahq.github.io/docs/engineering/decisions/0003-object-store/"
 
 nav:
-  - Home: index.md
+  - Overview: index.md
+  - Changelog: changelog.md
   - Get started:
       - getting-started/index.md
       - Install Kionga: getting-started/installation.md

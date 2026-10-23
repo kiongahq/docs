@@ -1,4 +1,5 @@
 ---
+icon: material/kubernetes
 description: Install Kionga on a managed Kubernetes cluster with the Helm chart, external dependencies, private images and secrets from your secret manager.
 ---
 

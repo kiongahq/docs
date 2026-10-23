@@ -1,4 +1,5 @@
 ---
+icon: material/lightning-bolt-outline
 description: Produce events for the bundled real-time demos, watch scored results in the console, and connect the demos to a deployed model or agent.
 ---
 

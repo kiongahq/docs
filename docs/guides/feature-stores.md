@@ -1,4 +1,5 @@
 ---
+icon: material/database-sync-outline
 description: Connect an external feature store such as Feast to Kionga, test its health, share it with projects, and serve online lookups from it through the feature gateway.
 ---
 

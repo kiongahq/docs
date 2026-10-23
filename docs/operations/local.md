@@ -1,4 +1,5 @@
 ---
+icon: material/laptop
 description: Start, check, update, back up and reset the local Kionga stack that runs on one machine with Docker Compose.
 ---
 

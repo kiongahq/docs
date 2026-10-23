@@ -1,4 +1,5 @@
 ---
+icon: material/database-outline
 description: Use Kionga's built-in feature store to browse feature views, read online features, define and materialize views, build leakage-free training sets, and expire stale online rows.
 ---
 

@@ -1,4 +1,5 @@
 ---
+icon: material/folder-plus-outline
 description: Generate a project's starter code in your Jupyter or IDE workspace, from the console, a workspace terminal, or the REST API.
 ---
 

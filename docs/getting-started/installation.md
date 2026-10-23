@@ -1,4 +1,5 @@
 ---
+icon: material/download-outline
 description: Install the full Kionga platform on one machine with Docker Compose and confirm that it works.
 ---
 

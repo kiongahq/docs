@@ -1,4 +1,5 @@
 ---
+icon: material/file-document-outline
 description: "The contracts between the control plane, its clients and its workers: projects, training, pipeline graphs, agents, persistence and delivery."
 ---
 

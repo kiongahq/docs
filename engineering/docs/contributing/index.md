@@ -1,4 +1,5 @@
 ---
+icon: material/source-pull
 description: How to contribute to Kionga, from setting up the workspace and running each repository's tests to the CI gates and commit conventions.
 ---
 

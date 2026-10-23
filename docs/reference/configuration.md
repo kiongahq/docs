@@ -1,4 +1,5 @@
 ---
+icon: material/tune-variant
 description: Every environment variable and configuration file setting Kionga services read, with defaults and purpose.
 ---
 
