@@ -1,24 +1,30 @@
 ---
 icon: material/download-outline
-description: Install the full Kionga platform on one machine with Docker Compose and confirm that it works.
+description: Install Kionga on Linux, macOS or Windows with Docker or Podman and confirm that it works.
 ---
 
 # Install Kionga
 
 In this tutorial you install the complete Kionga platform on your own machine,
 sign in to the console, and run a check that exercises every bundled capability.
-Kionga runs locally as one Docker Compose stack that it builds from its component
-repositories.
+Kionga runs locally as one Compose stack that it builds from its component
+repositories. Docker is the default engine; Podman is optional.
 
 ## Before you begin
 
 | Requirement | Notes |
 | --- | --- |
-| Docker Engine with Docker Compose v2 | Docker Desktop on macOS or Windows, Docker Engine on Linux. The Docker daemon must be running. |
-| At least 8 GB of memory for Docker | On Docker Desktop, set it under **Settings → Resources**. |
+| Container engine and Compose provider | Docker Desktop on macOS or Windows with WSL 2, Docker Engine on Linux, or Podman with a Compose provider. Docker is the default. |
+| At least 8 GB of memory for the container engine | Allocate this to the desktop VM, or make it available on the Linux host. |
 | 25 to 35 GB of free disk space | The first build downloads and compiles several large images. Later starts need much less. |
-| Git, Make, and Python 3 | Git clones the repositories, Make runs the commands, and the startup script uses Python 3 (standard library only). |
+| Bash, Git, Make, and Python 3 | Git clones the repositories, Make runs the commands, and the startup script uses Python 3 (standard library only). |
 | curl | Optional. The startup script uses it to wait until the console is ready. |
+
+For OS-specific prerequisites and Podman instructions, see
+[Choose an operating system and container engine](../operations/local.md#choose-an-operating-system-and-container-engine).
+On Windows, run the commands below in WSL 2, not PowerShell. The examples use
+Docker by default; Podman users should keep `KIONGA_ENGINE=podman` set for
+local Make targets.
 
 ## Step 1: Get the code
 
@@ -44,7 +50,7 @@ make -C deploy local-up
 
 The command:
 
-1. Checks that Docker and Compose v2 are available, that the Docker daemon is
+1. Checks that the selected engine and Compose are available, that the engine is
    running, and that every component repository is present.
 2. Keeps each default port, or moves a busy one to a free port 10000 higher and
    prints the change (for example, `8080` becomes `18080`).
@@ -56,7 +62,7 @@ The command:
 
 The first run builds several images and takes the longest. Later runs reuse the
 built images and start much faster. If a download fails even after the retries,
-run the command again: Docker resumes from the layers it already has.
+run the command again: the engine reuses the layers it already has.
 
 When the stack is ready, the command prints:
 
@@ -145,12 +151,14 @@ make -C deploy workspace-pull # fast-forward clean repository checkouts
 ```
 
 Your projects, models, object storage, online features, pipeline history, and
-notebooks live in named Docker volumes (`postgres-data`, `objectstore-data`,
+notebooks live in named container volumes (`postgres-data`, `objectstore-data`,
 `redis-data`, `prefect-data`, `jupyter-data`), so they survive restarts.
 
-Services restart automatically (`restart: unless-stopped`): after Docker or the
-machine restarts, the stack comes back as it was. A stack you stopped with
-`make -C deploy local-down` stays stopped.
+Services use `restart: unless-stopped`. Restart behavior after a host or VM
+reboot also depends on the engine and its startup settings. Start the engine,
+then run `make -C deploy local-up` to bring the stack back and check readiness.
+A stack you stopped with `make -C deploy local-down` stays stopped until you
+start it again.
 
 ## What you built
 

@@ -108,3 +108,5 @@ Pydantic
 (?i)materializations?
 (?i)unpublish(ed|es)?
 NOOA
+(?i)podman('s)?
+(?i)rootful

@@ -1,24 +1,140 @@
 ---
 icon: material/laptop
-description: Start, check, update, back up and reset the local Kionga stack that runs on one machine with Docker Compose.
+description: Start, check, update, back up and reset Kionga on Docker or Podman across Linux, macOS and Windows.
 ---
 
 # Run Kionga locally
 
-This guide shows you how to run the local Kionga stack on one machine with
-Docker Compose and how to operate it day to day: start and stop it, check its
-health, change ports, back up its data and reset it. The local stack is for
+This guide shows you how to run the local Kionga stack with Docker or Podman
+and how to operate it day to day: start and stop it, check its health, change
+ports, back up its data and reset it. The local stack is for
 evaluation and development by one person; to serve other people, see
 [Choose a deployment](index.md).
 
 ## Before you begin
 
-- Install Docker Engine or Docker Desktop with Compose v2 and Make.
-- Give Docker about 8 GB of memory and 25 to 35 GB of free disk for the first
+- Install Docker Engine or Docker Desktop with Compose v2, or use the Podman
+  setup below. Install Bash, Make, Git, Python 3, and curl.
+- Give the container engine about 8 GB of memory and 25 to 35 GB of free disk for the first
   build. Cached starts need much less.
 - Clone the component repositories into one workspace folder, as described in
   [Install Kionga](../getting-started/installation.md). Run every command on
   this page from that folder (the one that holds `deploy/`).
+
+## Choose an operating system and container engine
+
+Docker is the default engine. Podman is an alternative; installing Podman or
+Podman Desktop is not required for Docker users. Both run the same Linux
+containers. Docker Hub is an image registry, not a container engine.
+
+| Host | Docker setup | Podman setup |
+| --- | --- | --- |
+| Linux | Install Docker Engine and the Compose plugin. Start the daemon and ensure your account can run `docker info`. | Install Podman and a Docker Compose provider. Use the rootful setup below. A Podman VM is not required. |
+| macOS | Install Docker Desktop and start it before running Kionga. | Install Podman using its official installer or Podman Desktop. Create and start a rootful Podman machine. |
+| Windows | Use Docker Desktop with Linux containers and WSL 2 integration. Run Kionga commands inside the integrated Linux distribution. | Run Kionga inside a systemd-enabled WSL 2 Linux distribution, with Podman installed there, using the Linux setup below. |
+
+The startup scripts require Bash, Make, Git, Python 3, and curl in the same
+shell as the engine CLI. Native PowerShell and Command Prompt do not run these
+scripts. On Windows, keep the repositories in the WSL Linux filesystem, such as
+`~/kionga`, rather than `/mnt/c`, for bind-mount performance. See
+[Docker's WSL guidance](https://docs.docker.com/desktop/features/wsl/best-practices/).
+
+### Docker: default setup
+
+In the shell where you run Kionga, check the engine and Compose:
+
+```bash
+docker info
+docker compose version
+KIONGA_ENGINE=docker make -C deploy local-up
+```
+
+A fresh checkout uses Docker even without `KIONGA_ENGINE=docker`. The explicit
+setting overrides any engine choice saved locally for that checkout.
+`docker` uses the endpoint selected by its context or `DOCKER_HOST`; check
+`docker context show` and `docker version` if you have configured more than one
+engine. Selecting `docker` does not change that endpoint. To persist Docker
+after using Podman, run `bash deploy/scripts/select-engine.sh docker`. If you previously
+configured Podman-specific `COMPOSE_FILE` or `KIONGA_ENGINE_SOCKET` values in
+`.env`, remove those overrides when returning to Docker.
+
+### Podman: macOS
+
+Install Podman and a Compose provider using the
+[Podman installation instructions](https://podman.io/docs/installation).
+Kionga's wrapper uses `docker-compose` as its Compose provider by default.
+Podman Desktop can help configure the CLI tools, but the desktop application is
+not required.
+
+Create the machine once, then start it:
+
+```bash
+podman machine init --cpus 4 --memory 8192 --disk-size 64 --rootful
+podman machine start
+podman info
+bash deploy/scripts/select-engine.sh podman
+make -C deploy local-up
+```
+
+For an existing machine, inspect its configuration before creating another.
+Changing from rootless to rootful switches container storage; it does not move
+existing images or volumes.
+
+### Podman: Linux and Windows with WSL 2
+
+Install Podman and `docker-compose` in the Linux environment. This local
+configuration uses the rootful engine socket, `/run/podman/podman.sock`, for
+pipeline jobs and model serving. On a systemd-based distribution:
+
+```bash
+sudo systemctl enable --now podman.socket
+sudo podman info
+bash deploy/scripts/select-engine.sh podman
+sudo make -C deploy local-up
+```
+
+Run subsequent local Make targets and direct container commands with `sudo` on
+this rootful Linux setup. The saved per-checkout engine choice selects Podman.
+Mixing rootful and rootless commands selects different containers and
+volumes. Builds can create root-owned files in the checkout’s local build cache.
+Windows users should run these commands inside WSL, not in PowerShell.
+
+Using Podman Desktop's separate Windows machine from another WSL distribution
+requires additional socket, permissions, and source-path configuration. See
+[Podman's WSL connection guide](https://podman-desktop.io/docs/podman/accessing-podman-from-another-wsl-instance).
+That remote arrangement is not covered by the commands above.
+
+### Podman builds and Docker-compatible commands
+
+Use `make -C deploy local-up` after saving the Podman choice above, or
+`KIONGA_ENGINE=podman make -C deploy local-up` for a one-off command. The wrapper selects `compose.podman.yaml`, mounts the engine socket, and
+uses Podman's native builder for images with additional source directories.
+Plain `docker compose build` does not handle those Podman builds.
+
+For Docker-compatible inspection and runtime commands, first configure your
+Docker CLI to use Podman's API as described in
+[Podman's compatibility guide](https://podman-desktop.io/docs/migrating-from-docker/managing-docker-compatibility).
+Then, from the `deploy` directory, use both Compose files:
+
+```bash
+KIONGA_ENGINE_SOCKET=/run/podman/podman.sock \
+  docker compose -f compose.yaml -f compose.podman.yaml ps
+```
+
+Use the same files for `logs`, `stop`, and `up --no-build` after images have been
+built. The Podman override disables SELinux label confinement only for the two
+trusted services that control the engine: the pipeline runner and serving
+manager. Ordinary application and job containers retain their confinement.
+Do not add this override to the Docker setup.
+
+Engine preferences, Docker contexts, socket paths, and `.env` files are local
+configuration. Do not commit settings from one developer's machine as defaults
+for everyone. Switching engines does not migrate images, containers, or volumes;
+back up and restore data before removing the old engine.
+
+The Podman migration has been exercised on macOS. The Linux and WSL instructions
+follow the engine setup documented above; they have not yet been validated by
+Kionga's full end-to-end smoke test on those hosts.
 
 ## Start the stack
 
@@ -28,7 +144,7 @@ evaluation and development by one person; to serve other people, see
     make -C deploy local-up
     ```
 
-    The command checks that Docker is running and that every checkout is
+    The command checks that the selected engine is running and that every checkout is
     present, downloads missing images with at most two concurrent downloads and
     retries, rebuilds only the images whose sources changed, starts the
     services, waits for the gateway and creates the Kafka topics. It is safe to
@@ -79,13 +195,14 @@ is healthy when there are zero failures. OpenFaaS checks are skipped unless you
 | Stop the stack (data volumes are kept) | `make -C deploy local-down` |
 | Show running, unhealthy and completed services | `make -C deploy local-status` |
 | Print the most recent logs of every service | `make -C deploy local-logs` |
-| Follow one service's logs | `docker compose -f deploy/compose.yaml logs -f gateway` |
+| Follow one service's logs | `bash deploy/scripts/container.sh compose -f deploy/compose.yaml logs -f gateway` |
 | Start the optional browser IDE | `make -C deploy ide-up` |
 | Stop the browser IDE (its workspace is kept) | `make -C deploy ide-down` |
 | Rebuild every image, then start | `make -C deploy local-rebuild` |
 
 Long-running services use the Compose restart policy `unless-stopped`: after a
-crash, a Docker restart or a reboot, they start again on their own. One-shot
+crash, the selected engine restarts them. After a host reboot, start the engine
+and run `make -C deploy local-up` to check that every service is ready. One-shot
 jobs do not restart. To keep the stack down, stop it with
 `make -C deploy local-down`.
 
@@ -99,7 +216,7 @@ After you change the source of one service, rebuild and restart only that
 service:
 
 ```bash
-docker compose -f deploy/compose.yaml up -d --build gateway
+bash deploy/scripts/container.sh compose -f deploy/compose.yaml up -d --build gateway
 ```
 
 The console is part of the gateway image, so console changes also need a
@@ -108,8 +225,8 @@ gateway rebuild.
 ### Re-run a one-shot job
 
 ```bash
-docker compose -f deploy/compose.yaml up feature-materializer   # materialize features again
-docker compose -f deploy/compose.yaml up objectstore-init       # create missing buckets
+bash deploy/scripts/container.sh compose -f deploy/compose.yaml up feature-materializer   # materialize features again
+bash deploy/scripts/container.sh compose -f deploy/compose.yaml up objectstore-init       # create missing buckets
 ```
 
 ## Update
@@ -199,9 +316,9 @@ The local `admin` account takes its role from `MLAIOPS_LOCAL_ROLE` (default
 `admin`). To see the console as a viewer:
 
 ```bash
-MLAIOPS_LOCAL_ROLE=viewer docker compose -f deploy/compose.yaml up -d gateway
+MLAIOPS_LOCAL_ROLE=viewer bash deploy/scripts/container.sh compose -f deploy/compose.yaml up -d gateway
 # ... then restore the default:
-docker compose -f deploy/compose.yaml up -d gateway
+bash deploy/scripts/container.sh compose -f deploy/compose.yaml up -d gateway
 ```
 
 Recreating the gateway ends existing local sessions; sign in again to get the
@@ -242,9 +359,9 @@ their volumes:
 
 ```bash
 make -C deploy local-down
-docker run --rm -v mlaiops_postgres-data:/data -v "$PWD":/backup alpine \
+bash deploy/scripts/container.sh run --rm -v mlaiops_postgres-data:/data -v "$PWD":/backup alpine \
   tar czf /backup/postgres-data.tgz -C /data .
-docker run --rm -v mlaiops_objectstore-data:/data -v "$PWD":/backup alpine \
+bash deploy/scripts/container.sh run --rm -v mlaiops_objectstore-data:/data -v "$PWD":/backup alpine \
   tar czf /backup/objectstore-data.tgz -C /data .
 make -C deploy local-up
 ```
@@ -254,7 +371,7 @@ make -C deploy local-up
 To delete all local state and start clean:
 
 ```bash
-docker compose -f deploy/compose.yaml down -v   # -v deletes the named volumes
+bash deploy/scripts/container.sh compose -f deploy/compose.yaml down -v   # -v deletes the named volumes
 make -C deploy local-up
 ```
 

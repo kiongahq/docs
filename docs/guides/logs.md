@@ -15,8 +15,8 @@ node's logs, search across runs, and stream new lines from a script.
   `engineer`, `operator` or `admin` roles, plus the `logs:Read` permission, which
   these roles include. When a policy denies `logs:Read`, runs are still visible
   but without their logs.
-- You see only projects you can read. A run in another project returns "not
-  found".
+- You see only projects you can read. A run in another project returns a 404
+  response.
 - For the API, export `MLAIOPS_URL` and a credential (see
   [Authentication](../reference/api.md#authentication)).
 
