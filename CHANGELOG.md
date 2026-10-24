@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/kiongahq/docs/compare/v1.1.0...v1.1.1) (2026-10-24)
+
+
+### Documentation
+
+* cover Docker and Podman on supported host systems ([cb85f34](https://github.com/kiongahq/docs/commit/cb85f3408c1e1dbb37ddd81dd891e8a387fd6793))
+
 ## [1.1.0](https://github.com/kiongahq/docs/compare/v1.0.0...v1.1.0) (2026-10-23)
 
 
