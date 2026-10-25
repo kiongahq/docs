@@ -46,6 +46,8 @@ The managed image executes the exported JSON with LFX 1.13.x and pinned OpenAI, 
 
 An administrator can register a Qdrant or pgvector backend for a project in **Langflow > Register knowledge base** or through `POST /api/v1/admin/knowledge-bases`. Set the credential on the **gateway** first. Kionga stores only an `env:VARIABLE` reference and keeps the endpoint and credential out of the project-facing catalog and flow JSON. Use a separate Qdrant API key or PostgreSQL role with the minimum access needed for each deployment.
 
+For local Compose, pass the optional credential variables through `deploy/.env`. On Kubernetes, add the gateway variables through the chart's `gateway.extraEnv` entries backed by Kubernetes Secrets. The Langflow editor and agent runtime do not need the backend credentials.
+
 For Qdrant, set `KIONGA_QDRANT_KEY` on the gateway and register:
 
 ```json
