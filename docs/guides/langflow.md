@@ -26,6 +26,8 @@ The Kionga Langflow image includes a **Kionga** component category:
 - **Kionga Storage** lists authorized object storage buckets.
 - **Kionga Objects** browses dataset and artifact keys within an authorized bucket.
 - **Kionga Object Text** reads a bounded text preview from an authorized object.
+- **Kionga Datasets** lists named project datasets in authorized storage buckets.
+- **Kionga Dataset Objects** browses a selected dataset prefix; **Kionga Dataset Text** reads a bounded text preview from that prefix.
 - **Kionga Feature Views** lists available feature view metadata.
 - **Kionga Tools** lists registered tool schemas. Registered tools are catalog entries; invoke a function through **Kionga Function**.
 - **Kionga Knowledge Bases** lists Qdrant and pgvector bases assigned to the project.
@@ -36,6 +38,8 @@ The Kionga Langflow image includes a **Kionga** component category:
 - **Kionga Chat API** sends messages to an approved OpenAI-compatible chat-completions operation and returns its text. The selected provider model ID and connection ID are saved in the flow; the API key stays on the gateway.
 
 The components call a loopback helper in the same workspace pod. The helper holds the revocable workspace API credential and forwards requests through Kionga's existing authorization checks. A flow contains resource IDs and inputs, not the helper credential. A model must have an active endpoint before inference works; a function needs an active OpenFaaS deployment.
+
+An administrator can open **Langflow > Register dataset** to assign a name, project, bucket, and relative object prefix. The API equivalent is `POST /api/v1/admin/datasets`. Kionga lists a dataset only when the user has both project access and a grant for its bucket. Browsing appends a relative prefix, and object previews cannot read a key outside the registered prefix. The gateway uses the existing storage proxy; credentials never enter the Langflow flow.
 
 Langflow's canvas supports building and testing flows. Its flow database and configuration are stored on the workspace volume. After saving a flow, return to **Langflow** in Kionga and select **Capture flow**. Choose the saved flow and a project; Kionga stores a versioned snapshot and rejects exports that contain embedded credentials. Select an existing snapshot to save a new revision. Kionga retains the current revision and up to 20 earlier revisions.
 

@@ -219,6 +219,8 @@ access again for each operation. Connection credentials remain on the gateway.
 | Method | Purpose |
 | --- | --- |
 | `list_knowledge_bases()` | List authorized Qdrant and pgvector bases. |
+| `list_datasets()` | List project datasets in authorized storage buckets. |
+| `list_dataset_objects(dataset_id, *, prefix="")` and `preview_dataset_object(dataset_id, key)` | Browse and preview data within a registered dataset prefix. |
 | `search_knowledge_base(base_id, vector, *, limit=5)` | Search with a matching embedding vector. |
 | `add_knowledge_chunk(base_id, text, vector, *, metadata=None)` | Index one chunk. |
 | `list_agent_api_connections()` | List approved project API operations without URLs or keys. |
