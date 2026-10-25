@@ -42,7 +42,7 @@ The managed image executes the exported JSON with LFX 1.13.x and pinned OpenAI, 
 
 ## Configure project knowledge bases
 
-An administrator can register a Qdrant or pgvector backend for a project through `POST /api/v1/admin/knowledge-bases`. Set the credential on the **gateway** first. Kionga stores only an `env:VARIABLE` reference and keeps the endpoint and credential out of the project-facing catalog and flow JSON. Use a separate Qdrant API key or PostgreSQL role with the minimum access needed for each deployment.
+An administrator can register a Qdrant or pgvector backend for a project in **Langflow > Register knowledge base** or through `POST /api/v1/admin/knowledge-bases`. Set the credential on the **gateway** first. Kionga stores only an `env:VARIABLE` reference and keeps the endpoint and credential out of the project-facing catalog and flow JSON. Use a separate Qdrant API key or PostgreSQL role with the minimum access needed for each deployment.
 
 For Qdrant, set `KIONGA_QDRANT_KEY` on the gateway and register:
 
