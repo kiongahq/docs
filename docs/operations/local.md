@@ -107,8 +107,11 @@ That remote arrangement is not covered by the commands above.
 ### Podman builds and Docker-compatible commands
 
 Use `make -C deploy local-up` after saving the Podman choice above, or
-`KIONGA_ENGINE=podman make -C deploy local-up` for a one-off command. The wrapper selects `compose.podman.yaml`, mounts the engine socket, and
-uses Podman's native builder for images with additional source directories.
+`KIONGA_ENGINE=podman make -C deploy local-up` for a one-off command. This
+starts cached images only. To build changed source images explicitly, run
+`make -C deploy local-build-up`. The wrapper selects `compose.podman.yaml`,
+mounts the engine socket, and uses Podman's native builder for images with
+additional source directories.
 Plain `docker compose build` does not handle those Podman builds.
 
 For Docker-compatible inspection and runtime commands, first configure your
@@ -144,25 +147,20 @@ Kionga's full end-to-end smoke test on those hosts.
     make -C deploy local-up
     ```
 
-    The command checks that the selected engine is running and that every checkout is
-    present, downloads missing images with at most two concurrent downloads and
-    retries, rebuilds only the images whose sources changed, starts the
-    services, waits for the gateway and creates the Kafka topics. It is safe to
-    run again at any time; `make -C deploy local` is a shorter alias.
+    The command starts images already cached by the selected engine, waits for
+    the gateway, and creates Kafka topics. It does not download images or run
+    Dockerfile builds. If an image is missing, it stops with a clear error.
+    `make -C deploy local` and `make -C deploy local-start` are aliases.
 
-    Image downloads, `apt-get`, and `pip install` lines in this terminal are
-    output from Dockerfile steps running inside the selected container engine.
-    They don't install packages into macOS, Linux, or Windows directly. The
-    host still stores the engine's images and build layers; on macOS, Podman's
-    Linux machine uses a disk file on the Mac. `local-up` refuses new downloads
-    below 5 GiB free and stale image builds below 15 GiB free so they do not
-    fill the host disk. Free space before retrying. An operator who has a
+    To download missing images and build stale source images, run
+    `make -C deploy local-build-up`. Image downloads, `apt-get`, and
+    `pip install` lines in that terminal are output from Dockerfile steps
+    inside the container engine. They don't install packages into macOS,
+    Linux, or Windows directly. The host still stores image layers; on macOS,
+    Podman's Linux machine uses a disk file on the Mac. Builds require at
+    least 15 GiB free and new downloads require 5 GiB. An operator with a
     separate storage arrangement can override these checks with
     `KIONGA_MIN_PULL_FREE_GB=0` or `KIONGA_MIN_BUILD_FREE_GB=0`.
-
-    To start only images already cached by the engine, use
-    `make -C deploy local-start`. It does not download or build images. If a
-    required image is missing, use `local-up` after freeing disk space.
 
     When it finishes, it prints the console address and the local sign-in:
 
@@ -207,7 +205,8 @@ is healthy when there are zero failures. OpenFaaS checks are skipped unless you
 | Task | Command |
 | --- | --- |
 | Stop the stack (data volumes are kept) | `make -C deploy local-down` |
-| Start cached images without downloads or builds | `make -C deploy local-start` |
+| Start cached images without downloads or builds | `make -C deploy local-up` |
+| Download and build changed source images, then start | `make -C deploy local-build-up` |
 | Show running, unhealthy and completed services | `make -C deploy local-status` |
 | Print the most recent logs of every service | `make -C deploy local-logs` |
 | Follow one service's logs | `bash deploy/scripts/container.sh compose -f deploy/compose.yaml logs -f gateway` |
