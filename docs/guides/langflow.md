@@ -61,6 +61,8 @@ For Qdrant, set `KIONGA_QDRANT_KEY` on the gateway and register:
 }
 ```
 
+For an intentionally unauthenticated local Qdrant instance, set `secret_ref` to `none`. Production Qdrant should use an API key.
+
 For pgvector, enable PostgreSQL's `vector` extension in the target database, grant the gateway's database role permission to create and use the `kionga_knowledge_chunks` table, set `KIONGA_KNOWLEDGE_DSN` on the gateway, and register:
 
 ```json
