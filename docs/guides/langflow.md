@@ -24,13 +24,18 @@ The Kionga Langflow image includes a **Kionga** component category:
 - **Kionga Model Inference** lists deployed model IDs when you toggle **Refresh Kionga models**, then invokes the selected model.
 - **Kionga Function** invokes an authorized Kionga function.
 - **Kionga Storage** lists authorized object storage buckets.
+- **Kionga Objects** browses dataset and artifact keys within an authorized bucket.
+- **Kionga Object Text** reads a bounded text preview from an authorized object.
+- **Kionga Feature Views** lists available feature view metadata.
 - **Kionga Tools** lists registered tool schemas. Registered tools are catalog entries; invoke a function through **Kionga Function**.
 
 The components call a loopback helper in the same workspace pod. The helper holds the revocable workspace API credential and forwards requests through Kionga's existing authorization checks. A flow contains resource IDs and inputs, not the helper credential. A model must have an active endpoint before inference works; a function needs an active OpenFaaS deployment.
 
-Langflow's canvas supports building and testing flows. Its flow database and configuration are stored on the workspace volume. After saving a flow, return to **Langflow** in Kionga and select **Capture flow**. Choose the saved flow and a project; Kionga stores a versioned snapshot and rejects exports that contain embedded credentials. Select an existing snapshot to save a new revision.
+Langflow's canvas supports building and testing flows. Its flow database and configuration are stored on the workspace volume. After saving a flow, return to **Langflow** in Kionga and select **Capture flow**. Choose the saved flow and a project; Kionga stores a versioned snapshot and rejects exports that contain embedded credentials. Select an existing snapshot to save a new revision. Kionga retains the current revision and up to 20 earlier revisions.
 
-Snapshots preserve the flow definition outside the workspace volume. Publishing one as a managed Kionga agent, running it independently of the workspace, and mapping execution telemetry into Kionga are still being developed under [workspace issue #39](https://github.com/kiongahq/workspace/issues/39). Until those are available, use [Kionga agent deployment](agents.md) for managed runtime endpoints, scaling, and rollback.
+On Kubernetes, a user with both `langflow` and `agents` access can select **Publish** on a snapshot, choose its current or retained earlier revision, and set CPU, memory, and replica limits. Kionga creates a managed agent with an independent flow artifact, API endpoint, autoscaler, and project-scoped resource sidecar. Open **Agents** to check status, invoke it, and inspect sessions and usage. Publishing an earlier revision creates a new deployment and endpoint; it does not replace the current deployment in place. Publish is unavailable in local Compose because that profile has only a shared agent runtime.
+
+The managed image executes the exported JSON with LFX 1.13.x. Runtime components and provider dependencies must exist in that image. Kionga resource components use a separate, revocable agent identity to reach the internal gateway; flow JSON must not contain raw credentials. The current capture validator checks common credential fields, so review custom components before publishing. Kionga records execution summaries through its agent tracing path; token counts are shown as unavailable when the LFX result does not provide usage metadata. Connection catalogs, vector databases, and knowledge bases are not yet exposed as dedicated Langflow nodes under [workspace issue #39](https://github.com/kiongahq/workspace/issues/39).
 
 ## Local Compose
 
@@ -48,6 +53,6 @@ Open `http://localhost:8080/console.html?view=langflow`. Local Compose provides 
 
 ## Kubernetes setup
 
-Build and publish `workspace/langflow/Dockerfile` and `workspace/langflow/Dockerfile.sidecar`. Set `images.langflow` and `images.langflow-sidecar` in your Helm values to those images. Install the updated KiongaWorkspace CRD and chart; the gateway service account needs create, update, and delete access to KiongaWorkspace resources. Configure an isolated workspace base domain and wildcard TLS as described in [Kubernetes workspace access](../operations/managed-kubernetes.md#how-workspace-access-works).
+Build and publish `workspace/langflow/Dockerfile`, `workspace/langflow/Dockerfile.sidecar`, and the Langflow flavor of `agent-runtime/Dockerfile` (`RUNTIME_FLAVOR=langflow`). Set `images.langflow`, `images.langflow-sidecar`, and `images.langflow-agent-runtime` in Helm values to immutable image references. Install the updated KiongaWorkspace and KiongaAgent CRDs and chart; the gateway service account needs create, update, and delete access to KiongaWorkspace resources. Configure an isolated workspace base domain and wildcard TLS as described in [Kubernetes workspace access](../operations/managed-kubernetes.md#how-workspace-access-works).
 
 The operator creates one Deployment, Service, Secret, and persistent volume claim per Langflow instance. Langflow has readiness, liveness, and startup probes. The workload namespace's network policy allows ingress from Kionga's control namespace and limits egress; permit only the external model or data endpoints your flows require. Langflow runs user-authored flow code, so grant the service to trusted users and apply the same workload isolation controls used for code workspaces.
