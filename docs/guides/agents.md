@@ -15,6 +15,10 @@ Agents run on LangGraph, Agno, NOOA or your own adapter. LangGraph gets built-in
 checkpoints and Langfuse callbacks. For the other frameworks, see
 [Run agents built with other frameworks](agent-frameworks.md).
 
+To build visually, open the [native agent designer](../guides/console-navigation.md)
+or a [Langflow canvas](langflow.md). Langflow flows currently remain in their
+workspace; use the deployment path below for managed Kionga agent endpoints.
+
 ## Before you begin
 
 - **To deploy, chat with and change agents:** the `agents` service for a normal

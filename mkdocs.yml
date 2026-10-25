@@ -172,6 +172,7 @@ nav:
       - AI agents:
           - Build agents: guides/agents.md
           - Agent frameworks: guides/agent-frameworks.md
+          - Langflow canvas: guides/langflow.md
       - Collaboration:
           - Engineering blog: guides/engineering-blog.md
           - Logs and events: guides/logs.md
