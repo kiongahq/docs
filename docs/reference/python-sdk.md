@@ -223,6 +223,7 @@ access again for each operation. Connection credentials remain on the gateway.
 | `list_dataset_objects(dataset_id, *, prefix="")` and `preview_dataset_object(dataset_id, key)` | Browse and preview data within a registered dataset prefix. |
 | `list_registered_storage()` | Discover existing project-authorized S3-compatible connections. |
 | `list_registered_objects(source_id, *, prefix="")` and `preview_registered_object(source_id, key)` | Browse and preview a registered source through the gateway. |
+| `agent_metrics(agent_id)` | Read live Kubernetes CPU and memory use for a managed agent, or `available: false`. |
 | `search_knowledge_base(base_id, vector, *, limit=5)` | Search with a matching embedding vector. |
 | `add_knowledge_chunk(base_id, text, vector, *, metadata=None)` | Index one chunk. |
 | `list_agent_api_connections()` | List approved project API operations without URLs or keys. |
