@@ -33,6 +33,7 @@ The Kionga Langflow image includes a **Kionga** component category:
 - **Kionga Knowledge Chunk** stores text with a matching JSON embedding in an authorized base.
 - **Kionga API Connections** lists administrator-approved external API operations for the project.
 - **Kionga API Invoke** sends a JSON body to one approved operation. Kionga adds the server-side bearer credential.
+- **Kionga Chat API** sends messages to an approved OpenAI-compatible chat-completions operation and returns its text. The selected provider model ID and connection ID are saved in the flow; the API key stays on the gateway.
 
 The components call a loopback helper in the same workspace pod. The helper holds the revocable workspace API credential and forwards requests through Kionga's existing authorization checks. A flow contains resource IDs and inputs, not the helper credential. A model must have an active endpoint before inference works; a function needs an active OpenFaaS deployment.
 
@@ -92,6 +93,8 @@ An administrator can open **Langflow > Register agent API** and assign a fixed H
 ```
 
 The canvas lists the connection ID and description, never its URL or secret reference. **Kionga API Invoke** accepts a JSON body and calls only the registered URL. The gateway checks project membership on every call, sends the configured bearer token, blocks redirects, and limits request and response size. Configure narrowly scoped upstream credentials: anyone granted this project and Langflow access can call the approved operation.
+
+For an OpenAI-compatible language model, register its full chat-completions URL (for example, `https://api.example.com/v1/chat/completions`) as the operation. In **Kionga Chat API**, refresh the approved connections, select that connection ID, and enter the provider's model ID. This also works with a self-hosted OpenAI-compatible inference server reachable from the gateway. Kionga sends the system and user messages through the approved connection and returns the first text completion. The registered endpoint controls which provider is called; changing the model ID does not change the destination.
 
 ## Local Compose
 
