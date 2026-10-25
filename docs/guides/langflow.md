@@ -28,7 +28,9 @@ The Kionga Langflow image includes a **Kionga** component category:
 
 The components call a loopback helper in the same workspace pod. The helper holds the revocable workspace API credential and forwards requests through Kionga's existing authorization checks. A flow contains resource IDs and inputs, not the helper credential. A model must have an active endpoint before inference works; a function needs an active OpenFaaS deployment.
 
-Langflow's own canvas supports building and testing flows. Its flow database and configuration are stored on the workspace volume. Publishing a Langflow flow as a Kionga agent, running it independently of the workspace, and mapping its execution telemetry into Kionga are still being developed under [workspace issue #39](https://github.com/kiongahq/workspace/issues/39). Until those are available, use [Kionga agent deployment](agents.md) for managed runtime endpoints, scaling, and rollback.
+Langflow's canvas supports building and testing flows. Its flow database and configuration are stored on the workspace volume. After saving a flow, return to **Langflow** in Kionga and select **Capture flow**. Choose the saved flow and a project; Kionga stores a versioned snapshot and rejects exports that contain embedded credentials. Select an existing snapshot to save a new revision.
+
+Snapshots preserve the flow definition outside the workspace volume. Publishing one as a managed Kionga agent, running it independently of the workspace, and mapping execution telemetry into Kionga are still being developed under [workspace issue #39](https://github.com/kiongahq/workspace/issues/39). Until those are available, use [Kionga agent deployment](agents.md) for managed runtime endpoints, scaling, and rollback.
 
 ## Local Compose
 
