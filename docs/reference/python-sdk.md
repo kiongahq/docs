@@ -210,6 +210,39 @@ print(follow_up["reply"])
 When the agent's runtime is not ready, Kionga answers `503` with
 `agent_not_ready` and the call raises `httpx.HTTPStatusError`.
 
+### Langflow and project resources
+
+The SDK can discover the same project-scoped resources as the Langflow canvas.
+These methods return JSON dictionaries; Kionga filters the catalogs and checks
+access again for each operation. Connection credentials remain on the gateway.
+
+| Method | Purpose |
+| --- | --- |
+| `list_knowledge_bases()` | List authorized Qdrant and pgvector bases. |
+| `search_knowledge_base(base_id, vector, *, limit=5)` | Search with a matching embedding vector. |
+| `add_knowledge_chunk(base_id, text, vector, *, metadata=None)` | Index one chunk. |
+| `list_agent_api_connections()` | List approved project API operations without URLs or keys. |
+| `invoke_agent_api_connection(connection_id, payload)` | Invoke one approved operation. |
+| `list_langflow_flows(workspace_id)` | List saved flows in an assigned editor workspace. |
+| `capture_langflow_flow(workspace_id, flow_id, project_id, *, snapshot_id="", revision=0)` | Capture a new or updated flow revision. |
+| `list_langflow_snapshots()` and `get_langflow_snapshot(snapshot_id)` | Inspect version history and the active route. |
+| `publish_langflow_snapshot(snapshot_id, *, revision=0, min_replicas=1, max_replicas=1, cpu="500m", memory="1Gi")` | Deploy a retained or current revision. |
+| `activate_langflow_deployment(snapshot_id, agent_id)` | Switch the stable route to a ready deployment. |
+| `invoke_langflow_snapshot(snapshot_id, message, *, session_id="", user_id="")` | Invoke the active revision. |
+
+For example, after saving a flow in Langflow:
+
+```python
+snapshot = client.capture_langflow_flow("workspace-1", "flow-1", "prj-1")
+agent = client.publish_langflow_snapshot(snapshot["id"], revision=snapshot["revision"])
+# Wait until the deployment is ready before activation.
+client.activate_langflow_deployment(snapshot["id"], agent["id"])
+reply = client.invoke_langflow_snapshot(snapshot["id"], "Hello")
+```
+
+Publishing requires a Kubernetes-managed runtime. See the
+[Langflow guide](../guides/langflow.md) for workspace setup and credentials.
+
 ### Tools, functions, connections and status
 
 | Method | Returns | API call |
