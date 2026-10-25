@@ -31,6 +31,8 @@ The Kionga Langflow image includes a **Kionga** component category:
 - **Kionga Knowledge Bases** lists Qdrant and pgvector bases assigned to the project.
 - **Kionga Knowledge Search** searches a selected base using a JSON embedding from the same embedding model used to index it.
 - **Kionga Knowledge Chunk** stores text with a matching JSON embedding in an authorized base.
+- **Kionga API Connections** lists administrator-approved external API operations for the project.
+- **Kionga API Invoke** sends a JSON body to one approved operation. Kionga adds the server-side bearer credential.
 
 The components call a loopback helper in the same workspace pod. The helper holds the revocable workspace API credential and forwards requests through Kionga's existing authorization checks. A flow contains resource IDs and inputs, not the helper credential. A model must have an active endpoint before inference works; a function needs an active OpenFaaS deployment.
 
@@ -70,6 +72,22 @@ For pgvector, enable PostgreSQL's `vector` extension in the target database, gra
 ```
 
 The `dimensions` value must match your embedding model. In Langflow, refresh **Kionga Knowledge Search**, select the base ID, and pass a JSON array of numbers in **Embedding JSON**. **Kionga Knowledge Chunk** accepts the same array with text to index. The gateway checks the caller's current project grant on every list, write, and search, limits text and metadata size, and returns only the authorized base's matches. This integration uses Kionga's gateway API; Langflow's built-in Qdrant and pgvector components remain available for separately managed connections, but their own credential fields are not suitable for Kionga flow publishing.
+
+## Register an external agent API
+
+An administrator can open **Langflow > Register agent API** and assign a fixed HTTPS POST operation to a project. The form accepts a name, description, full operation URL, and a credential reference such as `env:KIONGA_AGENT_API_TOKEN`; use `none` for an unauthenticated service. Set the variable on the gateway before invoking the operation. The API equivalent is `POST /api/v1/admin/agent-api-connections`:
+
+```json
+{
+  "project_id": "prj-example",
+  "name": "support-lookup",
+  "description": "Look up a support case",
+  "endpoint": "https://api.example.com/cases/lookup",
+  "secret_ref": "env:KIONGA_AGENT_API_TOKEN"
+}
+```
+
+The canvas lists the connection ID and description, never its URL or secret reference. **Kionga API Invoke** accepts a JSON body and calls only the registered URL. The gateway checks project membership on every call, sends the configured bearer token, blocks redirects, and limits request and response size. Configure narrowly scoped upstream credentials: anyone granted this project and Langflow access can call the approved operation.
 
 ## Local Compose
 
