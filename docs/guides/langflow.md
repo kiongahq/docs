@@ -28,6 +28,9 @@ The Kionga Langflow image includes a **Kionga** component category:
 - **Kionga Object Text** reads a bounded text preview from an authorized object.
 - **Kionga Feature Views** lists available feature view metadata.
 - **Kionga Tools** lists registered tool schemas. Registered tools are catalog entries; invoke a function through **Kionga Function**.
+- **Kionga Knowledge Bases** lists Qdrant and pgvector bases assigned to the project.
+- **Kionga Knowledge Search** searches a selected base using a JSON embedding from the same embedding model used to index it.
+- **Kionga Knowledge Chunk** stores text with a matching JSON embedding in an authorized base.
 
 The components call a loopback helper in the same workspace pod. The helper holds the revocable workspace API credential and forwards requests through Kionga's existing authorization checks. A flow contains resource IDs and inputs, not the helper credential. A model must have an active endpoint before inference works; a function needs an active OpenFaaS deployment.
 
@@ -35,7 +38,38 @@ Langflow's canvas supports building and testing flows. Its flow database and con
 
 On Kubernetes, a user with both `langflow` and `agents` access can select **Publish** on a snapshot, choose its current or retained earlier revision, and set CPU, memory, and replica limits. Kionga creates a managed agent with an independent flow artifact, API endpoint, autoscaler, and project-scoped resource sidecar. Open **Agents** to check status, invoke it, and inspect sessions and usage. Publishing an earlier revision creates a new deployment and endpoint; it does not replace the current deployment in place. Publish is unavailable in local Compose because that profile has only a shared agent runtime.
 
-The managed image executes the exported JSON with LFX 1.13.x and pinned OpenAI, OpenAI-compatible, Anthropic, and Ollama extensions. Other provider bundles require an extended runtime image before publishing. Kionga resource components use a separate, revocable agent identity to reach the internal gateway; flow JSON must not contain raw credentials. The current capture validator checks common credential fields, so review custom components before publishing. Kionga records execution summaries through its agent tracing path; token counts are shown as unavailable when the LFX result does not provide usage metadata. Connection catalogs, vector databases, and knowledge bases are not yet exposed as dedicated Langflow nodes under [workspace issue #39](https://github.com/kiongahq/workspace/issues/39).
+The managed image executes the exported JSON with LFX 1.13.x and pinned OpenAI, OpenAI-compatible, Anthropic, and Ollama extensions. Other provider bundles require an extended runtime image before publishing. Kionga resource components use a separate, revocable agent identity to reach the internal gateway; flow JSON must not contain raw credentials. The current capture validator checks common credential fields, so review custom components before publishing. Kionga records execution summaries through its agent tracing path; token counts are shown as unavailable when the LFX result does not provide usage metadata.
+
+## Configure project knowledge bases
+
+An administrator can register a Qdrant or pgvector backend for a project through `POST /api/v1/admin/knowledge-bases`. Set the credential on the **gateway** first. Kionga stores only an `env:VARIABLE` reference and keeps the endpoint and credential out of the project-facing catalog and flow JSON. Use a separate Qdrant API key or PostgreSQL role with the minimum access needed for each deployment.
+
+For Qdrant, set `KIONGA_QDRANT_KEY` on the gateway and register:
+
+```json
+{
+  "project_id": "prj-example",
+  "name": "support-docs",
+  "backend": "qdrant",
+  "dimensions": 1536,
+  "endpoint": "http://qdrant:6333",
+  "secret_ref": "env:KIONGA_QDRANT_KEY"
+}
+```
+
+For pgvector, enable PostgreSQL's `vector` extension in the target database, grant the gateway's database role permission to create and use the `kionga_knowledge_chunks` table, set `KIONGA_KNOWLEDGE_DSN` on the gateway, and register:
+
+```json
+{
+  "project_id": "prj-example",
+  "name": "support-docs",
+  "backend": "pgvector",
+  "dimensions": 1536,
+  "dsn_ref": "env:KIONGA_KNOWLEDGE_DSN"
+}
+```
+
+The `dimensions` value must match your embedding model. In Langflow, refresh **Kionga Knowledge Search**, select the base ID, and pass a JSON array of numbers in **Embedding JSON**. **Kionga Knowledge Chunk** accepts the same array with text to index. The gateway checks the caller's current project grant on every list, write, and search, limits text and metadata size, and returns only the authorized base's matches. This integration uses Kionga's gateway API; Langflow's built-in Qdrant and pgvector components remain available for separately managed connections, but their own credential fields are not suitable for Kionga flow publishing.
 
 ## Local Compose
 
