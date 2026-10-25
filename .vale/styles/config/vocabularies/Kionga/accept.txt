@@ -5,6 +5,7 @@ Prefect
 Kafka
 Karapace
 RustFS
+Qdrant
 MinIO
 PostgreSQL
 Redis
@@ -14,6 +15,7 @@ Caddy
 OpenFaaS
 faasd
 Langfuse
+Langflow('s)?
 LangGraph
 LangChain
 Agno
@@ -60,6 +62,10 @@ Dagre
 pgvector
 Editor.js
 Dockerfiles?
+Docker('s)?
+SELinux
+(?i)liveness
+(?i)validator
 gofmt
 npm
 (?i)workbench(es)?
