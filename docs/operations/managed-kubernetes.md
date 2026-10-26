@@ -263,6 +263,40 @@ Suspending a grant denies access, and signing out of the console revokes the
 user's workspace sessions. Do not log POST bodies at the ingress. Test Host
 header forwarding, the wildcard certificate and browser cookies in staging.
 
+## Enable the Agent Designer runner
+
+The playground and evaluations in the [Agent Designer](../guides/agent-designer.md)
+need the designer runner, which is off by default. Deploying a published
+version needs only `images.agent-runtime`.
+
+1. Create the token Secret in the release namespace, or deliver it through
+   `externalSecrets.targets`:
+
+    ```bash
+    kubectl -n kionga-system create secret generic kionga-agent-designer \
+      --from-literal=KIONGA_DESIGNER_RUNNER_TOKEN="$(openssl rand -hex 32)"
+    ```
+
+2. Set these values and upgrade the release:
+
+    ```yaml
+    images:
+      agent-runtime: ghcr.io/kiongahq/agent-runtime@sha256:<digest>
+    agentDesigner:
+      enabled: true
+      replicas: 2          # at least 2
+      maxRuns: 8           # concurrent runs per pod before it returns 429
+      secretName: kionga-agent-designer
+      llm: {backend: openai-compatible, model: <model served by your LLM upstream>}
+    ```
+
+The runner pods run as a non-root user on a read-only root filesystem, with no
+capabilities and no service account token. Their NetworkPolicy admits only the
+gateway, and lets them reach only DNS, the gateway's internal listener (8087)
+and the trace-proxy (8081). Model calls use the trace-proxy's upstream
+credential, so the runner holds no provider key. If you run without the
+chart's NetworkPolicies, enforce the same fence yourself.
+
 ## Upgrade and roll back
 
 **Upgrade.** Update the image digests in your overlay and run step 5 and step 6

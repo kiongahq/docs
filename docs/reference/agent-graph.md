@@ -180,4 +180,8 @@ validation until it uses the operator grammar.
   must have passed, and must have evaluated the same behavior hash as the saved
   revision.
 - **Deploy returns 503.** Deploying needs the Kubernetes managed runtime and
-  `KIONGA_NATIVE_AGENT_IMAGE`. Locally, run the version from the designer.
+  `KIONGA_NATIVE_AGENT_IMAGE`, which Helm sets from `images.agent-runtime`.
+  Locally, run the version from the designer.
+- **Runs on Kubernetes report that the runner is not configured.** Set
+  `agentDesigner.enabled` and create its token Secret; see
+  [Enable the Agent Designer runner](../operations/managed-kubernetes.md#enable-the-agent-designer-runner).
