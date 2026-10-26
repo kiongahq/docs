@@ -116,3 +116,5 @@ Pydantic
 NOOA
 (?i)podman('s)?
 (?i)rootful
+[Ss]ubflows?
+[Gg]roundedness

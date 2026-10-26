@@ -123,6 +123,48 @@ the run.
 To use one field of a JSON result, such as `result.items.0.name`, add an
 **Extract field** node after the tool or API call.
 
+### Route, branch in parallel and join
+
+- A **Router** checks up to four conditions in order and sends the value to the
+  first route that matches, or to **D** (default). Only that branch runs.
+- Nodes whose inputs are ready run at the same time, so two knowledge searches
+  that don't depend on each other overlap. A **Join** waits for every upstream
+  branch and combines their results into one JSON object keyed by node ID. Set
+  **Branches required** to `all` to fail when a branch was skipped.
+
+### Reuse published agents: subflow, map and bounded loop
+
+These three nodes run a **published version** of another design as one step.
+The version ID pins it, so later edits to that design never change your flow.
+
+- **Subflow** runs the version once and uses its reply. The **Multi-agent
+  handoff** template routes each request to a specialist subflow.
+- **Map** runs it once per item of a JSON list, or per line of text, up to 4 at a
+  time and 20 items, and returns the list of replies in order.
+- **Bounded loop** feeds each reply back in until **Stop when** matches (the `→`
+  port) or the iteration limit is reached (the **E** port).
+
+Nested runs share the parent's step, token and time budget and its side-effect
+approval. Flows can nest 3 levels deep, using at most 10 versions per run.
+
+### Require a human approval
+
+A **Human approval** node pauses the run and shows its request message (rendered
+with `{input}`, `{context}` or `{node-id}`). In the playground the request
+appears in the chat with **Approve** and **Reject**. Anyone in the project with
+agents write access can decide it from there, or through
+`/api/v1/agent-approvals`, including for deployed agents. The value continues
+through **✓** (approved) or **✗** (rejected). A request nobody decides within
+its timeout (at most 290 seconds) goes to **✗**. The **Human approval** template
+holds a drafted reply until someone approves it.
+
+### Watch the reply stream
+
+Model nodes stream their reply into the playground token by token. The final
+reply replaces the streamed text when the run finishes. Deployed agents stream
+through `/stream` as well, but only from model nodes connected straight to the
+output, so intermediate drafts never reach users.
+
 ## 5. Use templates, groups and revisions
 
 - **Start from** opens a template as a new, unsaved design. **Import** loads a
@@ -157,6 +199,26 @@ To use one field of a JSON result, such as `result.items.0.name`, add an
 
 ![An evaluation of revision 1 against a 100% gate, with the pass-rate trend and the per-case result.](../assets/agent-designer/evaluations.png)
 
+### Judged metrics, tool accuracy and slices
+
+- **Judge criteria** asks the runner's model to score the reply from 0 to 1 for
+  groundedness (against the text the run retrieved), task completion (optionally
+  against a reference answer), relevance and safety. A score below **Min score**
+  (default 0.7) fails the case. If the judge cannot score, for example under the
+  keyless `mock` model, the case fails with `judge_unavailable` instead of
+  passing. Each result records the judge model and rubric version, and its
+  reasons appear when you hover over a score.
+- **Must call** lists tool or API node IDs that must complete; the evaluation
+  reports tool accuracy.
+- **Tags** group cases. The case detail shows a heat table of pass rate and mean
+  judge scores per tag.
+- **Review** records a person's verdict on a case (accept, needs changes or
+  reject) with a note. Reviews annotate results; they do not change the gate.
+
+A judge is itself a model, so spot-check judged results. Kionga treats the
+evaluated reply as data, not instructions, but a reply can still try to sway
+its score.
+
 Every evaluation stores a copy of its cases, so you can reproduce it later. The
 newest 20 evaluations per design are kept, along with any evaluation a published
 version cites.
@@ -181,8 +243,12 @@ version cites.
    select **Only deploy versions published with a passing evaluation**. In the
    local Compose profile, Deploy reports that a managed runtime is required; use
    **Run** on the version instead.
-6. Watch the deployment in **Agents**: readiness, sessions, traces, tokens and
-   cost. Set canary traffic there.
+6. Watch the deployment in the **Operations** tab. Pick a deployment and a window
+   (1 hour to 7 days) to see status, requests, success rate, P95, tokens and
+   cost. The tab charts requests, errors, latency (P50/P95/P99) and cost, and
+   lists the rollout timeline across the design's deployments and the recent
+   turns. Set the canary weight there. A window without traffic says so
+   instead of showing zeros.
 7. To roll back, deploy an earlier version.
 
 The metric cards at the top of the designer count designs, published versions,

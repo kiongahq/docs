@@ -54,6 +54,12 @@ registry and test against the same fixtures.
 | `condition` | `text`, `chat`, `json`, `documents` | `true`, `false`: `text` | `expression`* | no | 1 s / 0 |
 | `memory` | `text`, `chat` | `out`: `chat` | `strategy` (`window`, `none`), `turns` 1–50 (6) | no | 5 s / 0 |
 | `extract` | `json`, `text` | `out`: `json` | `path`* (dotted keys and list indexes), `missing` (`fail`, `empty`) | no | 1 s / 0 |
+| `router` | any | `route_1`–`route_4`, `default`: `text` | `route_1`* to `route_4` (conditions, checked in order) | no | 1 s / 0 |
+| `join` | any | `out`: `json` | `require` (`any`, `all`) | no | 1 s / 0 |
+| `subflow` | `text`, `chat`, `json`, `documents` | `out`: `text`, `error` | `subflow`* (published version) | no | 120 s / 0 |
+| `map` | `json`, `text` | `out`: `json`, `error` | `subflow`*, `max_items` 1–20 (10), `concurrency` 1–4 (4) | no | 120 s / 0 |
+| `loop` | `text`, `chat`, `json` | `out`, `exhausted`: `text`, `error` | `subflow`*, `until`*, `max_iterations` 1–10 (3) | no | 180 s / 0 |
+| `approval` | any | `approved`, `rejected`: `text` | `message`, `timeout_seconds` 10–290 (120) | no | 300 s / 0 |
 
 `model`, `tool`, `api`, `knowledge` and `storage` also have an `error` output.
 When one of these nodes fails with `node_error`, `resource_denied`,
@@ -82,9 +88,14 @@ of at most 200 characters (use the RE2 subset; Python evaluates it).
 
 Runs stream events that follow `run-event.v1.schema.json`: `run.started`,
 `node.started`, `node.retrying`, `node.completed` (with `port` for a condition),
-`node.skipped`, `node.failed`, and then exactly one of `run.completed`,
-`run.failed` or `run.cancelled`. `seq` starts at 0 and increases by one per
-event. Previews are redacted and truncated to 2,000 characters; the final
+`node.skipped`, `node.failed`, `node.delta` (streamed model text),
+`approval.requested` and `approval.resolved` (with `approval_id`), and then
+exactly one of `run.completed`, `run.failed` or `run.cancelled`. Map and loop
+completions carry `iterations`. `seq` starts at 0 and strictly increases.
+Stored runs omit `node.delta`: deltas reach live Server-Sent Event streams
+(`event: delta`) on the gateway replica running the run, best effort, and
+`node.completed` always carries the full text. Events of nodes that run
+concurrently interleave. Previews are redacted and truncated to 2,000 characters; the final
 `output` is truncated at 64 KiB.
 
 ## Published versions
@@ -92,7 +103,9 @@ event. Previews are redacted and truncated to 2,000 characters; the final
 `artifact.v1.schema.json` defines a version. It records the version number,
 `content_sha256`, the registry version, the normalized graph, the source
 revision, the author, notes, the runtime module
-`agents.native_graph:build_native` and an optional evaluation summary.
+`agents.native_graph:build_native`, an optional evaluation summary and
+`subflows`: every version the graph reaches through subflow, map and loop, each
+with its own `content_sha256`, which the runtime verifies at startup.
 
 `content_sha256` hashes the graph's behavior only. Node IDs, kinds and non-empty
 config, edges with their ports, and settings are serialized as canonical JSON
@@ -120,6 +133,17 @@ Names, positions and groups are excluded.
 | `GET /api/v1/agent-designs/{id}/versions`; `GET /api/v1/agent-versions/{id}` | Versions and their deployments; one version's artifact. |
 | `POST /api/v1/agent-versions/{id}/runs` | Run a published version. |
 | `POST /api/v1/agent-versions/{id}/deploy` | `{autoscaling, resources, require_evaluation}`. Deploys to the managed runtime. |
+| `GET /api/v1/agent-versions?project_id=` | Published versions in your projects (for flow pickers), without graphs. |
+| `GET, POST /api/v1/agent-approvals`; `GET /api/v1/agent-approvals/{id}` | List requests (`status`, `project_id`, `run_id`); create (agent run or deployed agent identity only); read one. |
+| `POST /api/v1/agent-approvals/{id}/decision` | `{decision: approve or reject, comment}`; signed-in people with agents write access. Decided or expired requests return 409. |
+| `POST /api/v1/agent-evaluations/{id}/cases/{case_id}/review` | `{status: accepted, rejected or needs_changes, note}`. |
+| `GET /api/v1/agents/{id}/operations?hours=1-168` | KPIs, a 24-bucket series (requests, errors, P50/P95/P99, tokens, cost), recent turns, rollout timeline and sibling deployments. |
+
+Test cases accept `expected.calls` (node IDs that must complete) and
+`expected.judge` (`criteria` from `groundedness`, `task_completion`, `relevance`,
+`safety`; optional `reference` and `min_score`, default 0.7). Evaluations report
+`judge_scores`, `tool_accuracy`, per-tag `slices`, `reviews` and the judge's
+`backend`, `model` and `rubric_version`.
 
 ## Security model
 
@@ -145,9 +169,18 @@ Names, positions and groups are excluded.
   root filesystem, no capabilities and no Docker socket, and it has PID, memory
   and CPU limits. It caps concurrent runs (`KIONGA_DESIGNER_MAX_RUNS`, default 8)
   and bounds each run by its step, time and token budgets.
+- **Approvals.** Only an agent run (for itself) or a deployed agent's project
+  identity can request an approval; only a signed-in person can decide one. Run
+  credentials can create and poll requests but cannot reach the decision route.
+- **Judge.** The judge uses the runner's model through the trace-proxy, or
+  `KIONGA_JUDGE_BACKEND` and `KIONGA_JUDGE_MODEL`. The evaluated texts are fenced
+  as data. A judge that cannot score fails the case instead of passing it.
+- **Flows.** Nested versions must belong to the design's project. Their
+  resources are re-checked against your current access on every run and deploy.
 - **Audit.** Kionga writes an audit event when a run starts, finishes, is
-  cancelled or is pruned, when an evaluation starts or finishes, and when a
-  version is published.
+  cancelled or is pruned, when an evaluation starts or finishes or a case is
+  reviewed, when a version is published, and when an approval is requested
+  or decided.
 
 ## Configuration
 
@@ -160,6 +193,7 @@ Names, positions and groups are excluded.
 | `KIONGA_DESIGNER_RUNNER_TOKEN` | runner | Must equal the gateway's token. It must be at least 16 characters, or the runner refuses to start. |
 | `KIONGA_DESIGNER_PORT`, `KIONGA_DESIGNER_MAX_RUNS` | runner | Listen port (9100) and the concurrency cap (8). |
 | `MLAIOPS_LLM_BACKEND`, `MLAIOPS_LLM_MODEL`, `MLAIOPS_LLM_BASE_URL` | runner | The platform chat model used by `model` nodes set to `llm`. |
+| `KIONGA_JUDGE_BACKEND`, `KIONGA_JUDGE_MODEL` | runner | Optional judge model for evaluations; defaults to the platform chat model. The `mock` backend cannot judge. |
 
 ## Migration from version 1 drafts
 
