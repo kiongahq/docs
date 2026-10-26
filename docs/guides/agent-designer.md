@@ -41,6 +41,8 @@ call.
    appear on the affected nodes. Select **Show node** to jump to one.
 7. Select **Save revision**.
 
+![The customer-support template on the canvas: a condition routes refund requests to a dedicated prompt (T) and everything else to a support prompt (F); the model has an error port (!) for fallbacks.](../assets/agent-designer/canvas.png)
+
 Templates can use these placeholders:
 
 | Placeholder | Value |
@@ -81,6 +83,8 @@ scanned again for placeholders.
    no call.
 
 ## 4. Debug a failed node and inspect its trace
+
+![A playground run: the reply, then the run trace with each node's status, time, tokens and output. The condition took the true branch, so the support prompt was skipped.](../assets/agent-designer/playground.png)
 
 Each run streams events into **Run trace**. A row shows a node's status, how
 long it took, its tokens, and its redacted input and output. Kionga masks bearer
@@ -151,6 +155,8 @@ To use one field of a JSON result, such as `result.items.0.name`, add an
    failed. Select two evaluations, then **Compare selected**, to see which cases
    were fixed or regressed and how pass rate, latency and cost changed.
 
+![An evaluation of revision 1 against a 100% gate, with the pass-rate trend and the per-case result.](../assets/agent-designer/evaluations.png)
+
 Every evaluation stores a copy of its cases, so you can reproduce it later. The
 newest 20 evaluations per design are kept, along with any evaluation a published
 version cites.
@@ -166,6 +172,9 @@ version cites.
 3. Moving nodes or renaming them does not change behavior. Publishing again
    without other changes returns the existing version.
 4. **Run** on a version executes it independently of the draft.
+
+    ![Version 1, published from revision 1 with a passing evaluation, showing its behavior hash, Run and Deploy.](../assets/agent-designer/versions.png)
+
 5. **Deploy** creates a managed agent on the Kubernetes agent runtime. Kionga
    mounts the version read-only, and the runtime refuses to start if the
    behavior hash does not match. To require a passing evaluation at deploy time,
