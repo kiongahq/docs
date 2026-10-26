@@ -1,6 +1,6 @@
 ---
 icon: material/file-tree-outline
-description: Reference for native agent graphs — schema version 2, components and typed ports, run events, published versions, REST routes, limits, security model and migration from version 1 drafts.
+description: Reference for native agent graphs, covering schema version 2, components and typed ports, run events, published versions, REST routes, limits, security model and migration from version 1 drafts.
 ---
 
 # Agent graph reference
@@ -43,23 +43,23 @@ registry and test against the same fixtures.
 
 | Kind | Input accepts | Output | Settings | Side effects | Timeout / retries |
 | --- | --- | --- | --- | --- | --- |
-| `input` | — | `out`: text | — | no | 1 s / 0 |
-| `output` | text, chat, json, documents | — | — | no | 1 s / 0 |
-| `prompt` | text, chat, json, documents | `out`: text | `template`* | no | 1 s / 0 |
-| `model` | text, chat | `out`: text | `model` (`llm` or a Kionga model ID), `system` | no | 60 s / 1 |
-| `tool` | text, json | `out`: json | `tool`* (registered tool) | **yes** | 30 s / 0 |
-| `api` | text, json | `out`: json | `connection`*, `request` | **yes** | 15 s / 0 |
-| `knowledge` | text, chat | `out`: documents | `knowledge_base`*, `query` (`{input}`), `limit` 1–20 (4) | no | 15 s / 1 |
-| `storage` | any (optional) | `out`: documents | `dataset`*, `key`* | no | 15 s / 1 |
-| `condition` | text, chat, json, documents | `true`, `false`: text | `expression`* | no | 1 s / 0 |
-| `memory` | text, chat | `out`: chat | `strategy` (`window`, `none`), `turns` 1–50 (6) | no | 5 s / 0 |
+| `input` | none | `out`: `text` | none | no | 1 s / 0 |
+| `output` | `text`, `chat`, `json`, `documents` | none | none | no | 1 s / 0 |
+| `prompt` | `text`, `chat`, `json`, `documents` | `out`: `text` | `template`* | no | 1 s / 0 |
+| `model` | `text`, `chat` | `out`: `text` | `model` (`llm` or a Kionga model ID), `system` | no | 60 s / 1 |
+| `tool` | `text`, `json` | `out`: `json` | `tool`* (registered tool) | **yes** | 30 s / 0 |
+| `api` | `text`, `json` | `out`: `json` | `connection`*, `request` | **yes** | 15 s / 0 |
+| `knowledge` | `text`, `chat` | `out`: `documents` | `knowledge_base`*, `query` (`{input}`), `limit` 1–20 (4) | no | 15 s / 1 |
+| `storage` | any (optional) | `out`: `documents` | `dataset`*, `key`* | no | 15 s / 1 |
+| `condition` | `text`, `chat`, `json`, `documents` | `true`, `false`: `text` | `expression`* | no | 1 s / 0 |
+| `memory` | `text`, `chat` | `out`: `chat` | `strategy` (`window`, `none`), `turns` 1–50 (6) | no | 5 s / 0 |
 
 \* required. `GET /api/v1/agent-designs/components` returns the full registry,
 including labels, help text and the conversion table.
 
-**Conversions.** json → text (compact JSON), documents → text (texts joined by
-blank lines), chat → text (newest turn), text → chat (one user turn), text →
-json (parsed, or `{"input": text}`).
+**Conversions.** `json` → `text` (compact JSON), `documents` → `text` (texts
+joined by blank lines), `chat` → `text` (newest turn), `text` → `chat` (one user
+turn), `text` → `json` (parsed, or `{"input": text}`).
 
 **Execution.** Nodes run in topological order. A node with inbound edges runs
 when at least one edge carried a value; otherwise it is `skipped`. A node with

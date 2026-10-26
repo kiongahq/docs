@@ -56,11 +56,11 @@ scanned again for placeholders.
 
 1. Under **Start from**, choose **RAG assistant**.
 2. On the **Search knowledge** node, choose a knowledge base. The list shows only
-   the bases in your project. Queries are embedded with the SDK hashing embedder
-   at the base's dimensions, so add chunks with the same embedder.
+   the bases in your project. Queries are embedded with the SDK `HashingEmbedder`
+   at the base's dimensions, so add chunks with the same `HashingEmbedder`.
 3. To ground the answer in a file instead, use the **Dataset-grounded answer**
    template. Pick a project dataset and an object key. Kionga reads the object
-   from RustFS and keeps the read inside the dataset's prefix.
+   from RustFS and keeps the read inside the prefix of the dataset.
 4. Save, then ask a question in the **Playground**. Expand the knowledge node's
    row in **Run trace** to see the retrieved text.
 
