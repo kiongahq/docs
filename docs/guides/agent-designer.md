@@ -106,13 +106,30 @@ selected branch runs; nodes on the other branch show as `skipped`. A condition
 is `operator:argument`: `contains:refund`, `not_contains:`, `equals:`,
 `matches:<regex>`, `longer_than:<n>`, `empty` or `not_empty`.
 
+### Add a fallback for a failing node
+
+Model, tool, API call, knowledge base and dataset nodes have a second output
+port marked **!**. Connect it to a fallback, such as a prompt that apologizes,
+or a different model. When the node fails because a resource denied access, was
+unavailable, timed out or raised an error, the run sends the redacted failure
+message down that branch and continues. Nodes connected only to the normal
+output are skipped. Approval refusals, budget limits and cancellation still end
+the run.
+
+To use one field of a JSON result, such as `result.items.0.name`, add an
+**Extract field** node after the tool or API call.
+
 ## 5. Use templates, groups and revisions
 
 - **Start from** opens a template as a new, unsaved design. **Import** loads a
   graph that was exported with **Export JSON**.
 - To organize a large canvas, give nodes a **Group** label. Groups are visual
-  only. Use **Fit** and the zoom buttons to navigate. **Undo** and **Redo**
-  (Ctrl+Z / Ctrl+Shift+Z) cover graph edits.
+  only. Use **Fit**, the zoom buttons and the **Overview** map to navigate, and
+  **Search components** to find a node type. **Snap to grid** aligns moved nodes.
+- Shift-click to select several nodes, then drag or use the arrow keys to move
+  them together. Ctrl+C and Ctrl+V copy them with the connections between them,
+  and Delete removes them. **Undo** and **Redo** (Ctrl+Z / Ctrl+Shift+Z) cover
+  graph edits.
 - Every save creates a revision. If someone else saved first, your save is
   rejected and nothing is lost: reload, then reapply your change. Restore any of
   the 20 earlier revisions from the inspector, and save it as a new revision.

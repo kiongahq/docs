@@ -53,6 +53,13 @@ registry and test against the same fixtures.
 | `storage` | any (optional) | `out`: `documents` | `dataset`*, `key`* | no | 15 s / 1 |
 | `condition` | `text`, `chat`, `json`, `documents` | `true`, `false`: `text` | `expression`* | no | 1 s / 0 |
 | `memory` | `text`, `chat` | `out`: `chat` | `strategy` (`window`, `none`), `turns` 1–50 (6) | no | 5 s / 0 |
+| `extract` | `json`, `text` | `out`: `json` | `path`* (dotted keys and list indexes), `missing` (`fail`, `empty`) | no | 1 s / 0 |
+
+`model`, `tool`, `api`, `knowledge` and `storage` also have an `error` output.
+When one of these nodes fails with `node_error`, `resource_denied`,
+`resource_unavailable` or a node `timeout`, and its `error` port is connected,
+the redacted failure message (text) goes down that branch and the run
+continues. Nodes fed only by its `out` port are skipped.
 
 \* required. `GET /api/v1/agent-designs/components` returns the full registry,
 including labels, help text and the conversion table.
