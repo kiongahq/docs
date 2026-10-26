@@ -137,7 +137,7 @@ Names, positions and groups are excluded.
 | `GET, POST /api/v1/agent-approvals`; `GET /api/v1/agent-approvals/{id}` | List requests (`status`, `project_id`, `run_id`); create (agent run or deployed agent identity only); read one. |
 | `POST /api/v1/agent-approvals/{id}/decision` | `{decision: approve or reject, comment}`; signed-in people with agents write access. Decided or expired requests return 409. |
 | `POST /api/v1/agent-evaluations/{id}/cases/{case_id}/review` | `{status: accepted, rejected or needs_changes, note}`. |
-| `GET /api/v1/agents/{id}/operations?hours=1-168` | KPIs, a 24-bucket series (requests, errors, P50/P95/P99, tokens, cost), recent turns, rollout timeline and sibling deployments. |
+| `GET /api/v1/agents/{id}/operations?hours=1-168` | Totals and success rate, a 24-bucket series (requests, errors, P50/P95/P99, tokens, cost), recent turns, rollout timeline and sibling deployments. |
 
 Test cases accept `expected.calls` (node IDs that must complete) and
 `expected.judge` (`criteria` from `groundedness`, `task_completion`, `relevance`,

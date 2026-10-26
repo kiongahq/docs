@@ -205,7 +205,7 @@ output, so intermediate drafts never reach users.
   groundedness (against the text the run retrieved), task completion (optionally
   against a reference answer), relevance and safety. A score below **Min score**
   (default 0.7) fails the case. If the judge cannot score, for example under the
-  keyless `mock` model, the case fails with `judge_unavailable` instead of
+  `mock` model used when no provider key is set, the case fails with `judge_unavailable` instead of
   passing. Each result records the judge model and rubric version, and its
   reasons appear when you hover over a score.
 - **Must call** lists tool or API node IDs that must complete; the evaluation
