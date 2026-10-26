@@ -171,6 +171,7 @@ nav:
           - Real-time processing: guides/realtime.md
       - AI agents:
           - Build agents: guides/agents.md
+          - Agent Designer: guides/agent-designer.md
           - Agent frameworks: guides/agent-frameworks.md
           - Langflow canvas: guides/langflow.md
       - Collaboration:
@@ -197,6 +198,7 @@ nav:
   - Reference:
       - reference/index.md
       - REST API: reference/api.md
+      - Agent graph: reference/agent-graph.md
       - CLI: reference/cli.md
       - Python SDK: reference/python-sdk.md
       - Configuration: reference/configuration.md
