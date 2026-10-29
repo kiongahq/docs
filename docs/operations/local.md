@@ -108,8 +108,8 @@ That remote arrangement is not covered by the commands above.
 
 Use `make -C deploy local-up` after saving the Podman choice above, or
 `KIONGA_ENGINE=podman make -C deploy local-up` for a one-off command. This
-starts cached images only. To build changed source images explicitly, run
-`make -C deploy local-build-up`. The wrapper selects `compose.podman.yaml`,
+pulls and builds only images that are missing. To also rebuild images whose
+sources changed, run `make -C deploy local-build-up`. The wrapper selects `compose.podman.yaml`,
 mounts the engine socket, and uses Podman's native builder for images with
 additional source directories.
 Plain `docker compose build` does not handle those Podman builds.
@@ -147,19 +147,35 @@ Kionga's full end-to-end smoke test on those hosts.
     make -C deploy local-up
     ```
 
-    The command starts images already cached by the selected engine, waits for
-    the gateway, and creates Kafka topics. It does not download images or run
-    Dockerfile builds. If an image is missing, it stops with a clear error.
-    `make -C deploy local` and `make -C deploy local-start` are aliases.
+    The command downloads upstream images and builds source images that are
+    not cached yet, starts the stack, waits for the gateway, and creates Kafka
+    topics. Images that are already cached are reused even when their sources
+    have changed. `make -C deploy local` is an alias, and
+    `make -C deploy local-start` starts cached images only, without downloads
+    or builds.
 
-    To download missing images and build stale source images, run
+    It also recovers from common local problems:
+
+    - If the Podman machine is running but not answering (for example after
+      its port forwarder was stopped), it restarts the machine. Containers and
+      volumes are kept. On macOS it starts Docker Desktop when it is closed.
+    - A busy port moves to a free one (see [Change ports](#changing-ports)).
+    - Before a build, it counts the host's free space plus space the Podman
+      machine already holds but does not use. If that is less than 15 GiB, it
+      removes dangling images (untagged and unused by any container). Tagged
+      images, containers and volumes are never removed.
+
+    Set `KIONGA_AUTO_RECOVER_ENGINE=0` or `KIONGA_AUTO_PRUNE=0` to turn either
+    behaviour off.
+
+    To also rebuild images whose sources changed, run
     `make -C deploy local-build-up`. Image downloads, `apt-get`, and
     `pip install` lines in that terminal are output from Dockerfile steps
     inside the container engine. They don't install packages into macOS,
     Linux, or Windows directly. The host still stores image layers; on macOS,
-    Podman's Linux machine uses a disk file on the Mac. Builds require at
-    least 15 GiB free and new downloads require 5 GiB. An operator with a
-    separate storage arrangement can override these checks with
+    Podman's Linux machine uses a disk file on the Mac. Builds require about
+    15 GiB and new downloads require 5 GiB free. An operator with a separate
+    storage arrangement can override these checks with
     `KIONGA_MIN_PULL_FREE_GB=0` or `KIONGA_MIN_BUILD_FREE_GB=0`.
 
     When it finishes, it prints the console address and the local sign-in:
@@ -205,8 +221,9 @@ is healthy when there are zero failures. OpenFaaS checks are skipped unless you
 | Task | Command |
 | --- | --- |
 | Stop the stack (data volumes are kept) | `make -C deploy local-down` |
-| Start cached images without downloads or builds | `make -C deploy local-up` |
-| Download and build changed source images, then start | `make -C deploy local-build-up` |
+| Start, pulling and building only what is missing | `make -C deploy local-up` |
+| Also rebuild images whose sources changed, then start | `make -C deploy local-build-up` |
+| Start cached images only, without downloads or builds | `make -C deploy local-start` |
 | Show running, unhealthy and completed services | `make -C deploy local-status` |
 | Print the most recent logs of every service | `make -C deploy local-logs` |
 | Follow one service's logs | `bash deploy/scripts/container.sh compose -f deploy/compose.yaml logs -f gateway` |
@@ -272,17 +289,30 @@ make -C deploy local-up
 export GATEWAY=http://localhost:8090
 ```
 
-When a default port is already in use (a native PostgreSQL on 5432, Redis on
-6379, another app on 8080), `make -C deploy local-up` moves only that service to
-the first free port from default + 10000 to default + 10004 and prints the
-change, for example:
+When a port is already in use (a native PostgreSQL on 5432, another project's
+database on 15432, another app on 8080), `make -C deploy local-up` moves only
+that service. It tries default + 10000 to default + 10004, then the next few
+ports after the configured one, and prints the change, for example:
 
 ```text
-Port 5432 is in use; postgres uses 15432 instead (POSTGRES_PORT=15432).
+Port 15432 is in use; postgres uses 15433 instead (POSTGRES_PORT=15433, remembered in .local-state/ports.env).
 ```
 
-A port you set yourself is never moved: the command stops and names the
-variable to change. A running stack keeps the ports it already holds. See
+This applies to defaults and to ports set in `deploy/.env`. The choice is
+remembered in a `ports.env` file in the deploy repository's `.local-state`
+folder, so addresses stay the same on the next start; delete that file to
+start over. A port set in the shell for
+one command (`POSTGRES_PORT=25432 make -C deploy local-up`) is never moved:
+if it is busy, the command stops and names the variable. A running stack keeps
+the ports it already holds.
+
+!!! warning
+    Don't free a port with `kill -9 $(lsof -t -i:PORT)` while Podman runs.
+    Podman publishes every container port through one process (`gvproxy`), so
+    that command cuts the host off from all containers and from Podman itself.
+    Stop the container that owns the port instead, for example
+    `podman stop <container>`. If it already happened, `make -C deploy local-up`
+    restarts the Podman machine. See
 [Services and ports](../reference/services.md) for every port and variable.
 
 ## Network exposure
