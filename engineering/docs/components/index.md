@@ -45,8 +45,9 @@ flowchart LR
   the Jupyter workbench, pinned to a release tag (`SDK_VERSION`).
 - **Runtime calls** go through the platform gateway's HTTP API with a service token;
   components never import each other's code.
-- **Images** are published per repository (`latest`, `sha-<short>`, and semantic version on
-  `v*` tags). `deploy/vm/compose.yaml` and the Helm chart run them pinned by digest.
+- **Images** are published per repository: `edge` and SHA references for development,
+  exact versions for published releases. Existing `latest` aliases stop updating.
+  `deploy/vm/compose.yaml` and the Helm chart run them pinned by digest.
 
 ## Working across repositories
 
