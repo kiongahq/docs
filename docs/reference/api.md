@@ -7,7 +7,7 @@ description: Every Kionga REST API route, with its method, who can call it, and 
 
 Kionga exposes one JSON API under `/api/v1`. The console, the
 [Python SDK](python-sdk.md) and the [CLI](cli.md) all use it. A running Kionga also
-serves an interactive explorer at `/api-docs.html` and the OpenAPI document at
+serves an interactive explorer at `/api-docs` and the OpenAPI document at
 `/api/openapi.json`.
 
 ## Conventions
@@ -24,7 +24,7 @@ serves an interactive explorer at `/api-docs.html` and the OpenAPI document at
 ## Authentication
 
 Only these routes answer without a credential: `/api/v1/health`,
-`/api/v1/ready`, `/api/openapi.json`, `/api-docs.html`, the published blog reads
+`/api/v1/ready`, `/api/openapi.json`, `/api-docs`, the published blog reads
 (`GET /api/v1/blogs`, `GET /api/v1/blogs/{slug}`, and attached blog media), and
 the `/auth/*` sign-in routes. Any other `/api/` request without a credential
 returns `401`.

@@ -27,11 +27,11 @@ deployments replace all of them; see [Choose a deployment](../operations/index.m
 | Service | From your machine | Inside the stack | Credentials (local defaults) |
 | --- | --- | --- | --- |
 | Landing page | `http://localhost:8080` | `http://gateway:8080` | None |
-| Console and API | `http://localhost:8080/console.html` | `http://gateway:8080` | `admin` / `mlaiops-local` (role from `MLAIOPS_LOCAL_ROLE`), or single sign-on |
+| Console and API | `http://localhost:8080/console` | `http://gateway:8080` | `admin` / `mlaiops-local` (role from `MLAIOPS_LOCAL_ROLE`), or single sign-on |
 | Dex (single sign-on) | `http://localhost:5556/dex` | `http://dex:5556/dex` | Test directory password `kionga-sso-dev` |
-| Jupyter workbench | `http://localhost:8080/workspace.html?tool=workbench` | `http://jupyter:8888` | Your console session. For diagnostics only: `http://127.0.0.1:8888/workspaces/workbench/` with token `mlaiops-local` (`JUPYTER_TOKEN`). |
-| Browser IDE (optional) | `http://localhost:8080/workspace.html?tool=ide` | `http://ide:8080` | Your console session; no published port |
-| Langflow canvas (optional) | `http://localhost:8080/console.html?view=langflow` | `http://langflow:7860` | Your Kionga console session; no published port |
+| Jupyter workbench | `http://localhost:8080/workspace?tool=workbench` | `http://jupyter:8888` | Your console session. For diagnostics only: `http://127.0.0.1:8888/workspaces/workbench/` with token `mlaiops-local` (`JUPYTER_TOKEN`). |
+| Browser IDE (optional) | `http://localhost:8080/workspace?tool=ide` | `http://ide:8080` | Your console session; no published port |
+| Langflow canvas (optional) | `http://localhost:8080/console/langflow` | `http://langflow:7860` | Your Kionga console session; no published port |
 | MLflow | `http://localhost:15000` | `http://mlflow:5000` | None |
 | Prefect | `http://localhost:4200` | `http://prefect-server:4200` | None |
 | Langfuse | `http://localhost:3000` | `http://langfuse:3000` | `admin@local.dev` / `mlaiops-local-admin`; API keys `pk-lf-local-dev` / `sk-lf-local-dev` |
