@@ -14,7 +14,7 @@ too. This guide covers the everyday navigation tasks.
 
 ## Before you begin
 
-- Sign in to the console at `/console.html`. If your session expires, Kionga
+- Sign in to the console at `/console`. If your session expires, Kionga
   returns you to sign-in and then back to the page you were on.
 - To change the pipeline or function runtime, you need the `admin` or
   `operator` role.
@@ -38,7 +38,7 @@ Every page has its own address, so you can bookmark it or send it to a teammate
 who has the same access:
 
 ```text
-/console.html?view=pipelines&project=PROJECT_ID
+/console/pipelines&project=PROJECT_ID
 ```
 
 Pages that open one item, such as a project, run, model, agent or feature,

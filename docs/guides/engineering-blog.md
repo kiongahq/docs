@@ -6,10 +6,10 @@ description: Write, review, schedule and publish posts on the Kionga engineering
 # Write and publish on the engineering blog
 
 Kionga includes a public engineering blog and a separate **editorial workspace**
-for writing, reviewing and publishing posts. Readers use `/blogs.html` (with
-search, a tag filter and author pages at `/blogs.html?author=<name>`) and
-`/blog.html?slug=<slug>`; the landing page shows the three newest posts. Writers
-and editors work at `/editorial.html`.
+for writing, reviewing and publishing posts. Readers use `/blog` (with
+search, a tag filter and author pages at `/blog?author=<name>`) and
+`/blog/read?slug=<slug>`; the landing page shows the three newest posts. Writers
+and editors work at `/studio`.
 
 This guide covers writing a post, reviewing and publishing it, setting up the
 editorial team, and configuring media storage.
@@ -36,7 +36,7 @@ publish without an editorial role.
 
 ## Write a post
 
-1. Open `/editorial.html`, or in the console open **Engineering blog** and click
+1. Open `/studio`, or in the console open **Engineering blog** and click
    **Open editorial workspace**.
 2. Click **New post**. Type a title (the slug follows it until you edit the slug),
    a one-line summary, and the body.
@@ -86,12 +86,12 @@ revisions.
 To take a post down, click **Unpublish** (back to draft) or **Archive** (hidden).
 **Restore from archive** brings an archived post back as a draft.
 
-**Verify:** the post appears on `/blogs.html`.
+**Verify:** the post appears on `/blog`.
 
 ## Set up the editorial team
 
 1. The first time, sign in as the local bootstrap administrator (or as a platform
-   `admin` with single sign-on), open `/editorial.html`, and click **Become the
+   `admin` with single sign-on), open `/studio`, and click **Become the
    first editorial admin**. This works only while no active editorial admin
    exists, and it is audited.
 2. Open **Authors** and click **Add member**. Enter the person's platform
@@ -103,7 +103,7 @@ The last editorial admin cannot be removed, demoted or suspended. An editorial
 session lasts 4 hours, and membership is checked on every request, so removing a
 member takes effect at once.
 
-**Verify:** the new member can open `/editorial.html` and sees the actions of
+**Verify:** the new member can open `/studio` and sees the actions of
 their role.
 
 ## Configure media storage
