@@ -30,7 +30,7 @@ coding assistants and taking a model from a notebook to a live endpoint.
       `projects/<namespace>`.
     - Open **Settings > Developer workspaces** and choose **JupyterLab**.
 
-The workbench opens through the gateway at `/workspace.html?tool=workbench`
+The workbench opens through the gateway at `/workspace?tool=workbench`
 with your console session. You do not need a Jupyter token. The workspace
 toolbar switches between JupyterLab and the browser IDE and takes you back to
 the console.

@@ -59,7 +59,7 @@ To stop the IDE without deleting any files, run `make -C deploy ide-down`.
     - Open a project and click **Open in IDE ↗** to open its folder,
       `/workspace/projects/<namespace>`.
 
-The IDE opens at `/workspace.html?tool=ide`. The workspace toolbar switches to
+The IDE opens at `/workspace?tool=ide`. The workspace toolbar switches to
 JupyterLab and back to the console. If the link says the IDE is offline, an
 operator runs `make -C deploy ide-up`, and then you click the link again.
 
