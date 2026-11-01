@@ -6,6 +6,14 @@ date: 2026-10-09
 
 # 0002 Blog editor, canonical content and editorial identity
 
+## Current implementation
+
+The React editorial workspace replaces the browser-script editor described below.
+Its entry point is `platform/frontend/components/pages/EditorialPage.tsx`, and
+`platform/frontend/components/studio/PostEditor.tsx` implements editing. The
+block-content contract, server-side sanitization, and separate editorial identity
+remain authoritative. Browser packaging details in this record are historical.
+
 ## Context and problem statement
 
 Kionga publishes an engineering blog, written in a separate editorial workspace
@@ -54,8 +62,8 @@ Chosen options:
 1. **Editor.js**, because it ships browser-ready UMD builds, saves structured block
    JSON, and gives every block a stable ID. Editor.js 2.31.7 and the official header,
    list, quote, code, delimiter, embed, table, inline-code, marker and warning tools are
-   vendored as upstream UMD builds under
-   `platform/go/cmd/gateway/web/vendor/editorjs/` with their licenses.
+   originally vendored as upstream UMD builds with their licenses. Those browser
+   assets were removed during the React frontend migration.
 2. **Block JSON as canonical content, rendered and sanitized on the server**, because
    it is structured, comparable per block, and rendered without trusting browser HTML.
 3. **A separate editorial membership and session**, because it is the only option that

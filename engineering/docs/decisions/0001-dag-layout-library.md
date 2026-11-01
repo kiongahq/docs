@@ -1,10 +1,18 @@
 ---
 description: Lay out pipeline dependency graphs in the console with vendored Dagre and Kionga's own accessible SVG renderer.
-status: "accepted"
+status: "superseded"
 date: 2026-10-09
 ---
 
 # 0001 Lay out pipeline graphs with Dagre and a Kionga SVG renderer
+
+## Current status
+
+The React frontend supersedes the browser-script implementation described below.
+`platform/frontend/components/ui/GraphCanvas.tsx` now provides React Flow
+interaction, while `platform/frontend/features/operations/ExecutionGraph.tsx`
+derives execution layout from the recorded dependencies. The earlier decision
+remains here as design history; its vendored assets and tests have been removed.
 
 ## Context and problem statement
 
@@ -37,9 +45,7 @@ Chosen option: **Dagre**, because it is the only option that gives layered DAG l
 a small dependency-free classic script while leaving rendering, accessibility and
 interaction under Kionga's control.
 
-`@dagrejs/dagre` 2.0.0 (MIT) is vendored at
-`platform/go/cmd/gateway/web/vendor/dagre.min.js` and loaded with its
-integrity hash. Kionga's renderer is `platform/go/cmd/gateway/web/pipeline-graph.js`.
+`@dagrejs/dagre` 2.0.0 (MIT) was vendored with an integrity hash. A gateway browser script supplied Kionga's SVG renderer.
 
 ### Consequences
 
@@ -55,9 +61,7 @@ integrity hash. Kionga's renderer is `platform/go/cmd/gateway/web/pipeline-graph
 
 ### Confirmation
 
-`platform/tests/ui/pipeline-graph.test.cjs` runs the random-DAG edge property test and
-the interaction tests in `jsdom`. `platform/tests/ui/vendor-integrity.test.cjs` fails if
-a page loads a vendored file without its pinned hash.
+The former graph test suite ran random-DAG edge property tests and interaction tests in `jsdom`. The former vendor-integrity gate checked pinned asset hashes. Current graph tests live in `platform/frontend/tests/graph.test.ts`.
 
 ## Pros and cons of the options
 
