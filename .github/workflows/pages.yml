@@ -37,10 +37,19 @@ jobs:
       - run: npm test --prefix ui
       - run: mkdocs build --strict --site-dir _site
       - run: mkdocs build --strict -f engineering/mkdocs.yml --site-dir ../_site/engineering
-      - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
+      - name: Archive the Pages site
+        if: github.event_name != 'pull_request'
+        run: |
+          tar --dereference --hard-dereference --directory _site \
+            -cf "$RUNNER_TEMP/artifact.tar" --exclude=.git --exclude=.github .
+      - name: Upload the Pages archive
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: github.event_name != 'pull_request'
         with:
-          path: _site
+          name: github-pages
+          path: ${{ runner.temp }}/artifact.tar
+          retention-days: 1
+          if-no-files-found: error
 
   # Docs references (make targets, paths, env vars, routes, CLI, SDK) checked
   # against the main branches of the component repositories. A separate job so
