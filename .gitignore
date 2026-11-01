@@ -21,3 +21,8 @@ __pycache__/
 !.vale/styles/config/
 scripts/node_modules/
 scripts/package-lock.json
+
+# Compiled documentation interface
+ui/node_modules/
+docs/javascripts/interface.js
+engineering/docs/javascripts/interface.js
