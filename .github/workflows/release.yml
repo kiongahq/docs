@@ -20,8 +20,16 @@ jobs:
     steps:
       - uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4
         with:
-          # An optional App/PAT token lets bot-created release PRs trigger CI.
-          # The repository token still creates release PRs and GitHub releases.
+          # A dedicated token creates release PRs and triggers their required CI.
+          # The default token can publish approved releases but cannot create PRs.
           token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+          skip-github-pull-request: ${{ secrets.RELEASE_PLEASE_TOKEN == '' }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+      - name: Report release PR configuration
+        env:
+          RELEASE_PR_ENABLED: ${{ secrets.RELEASE_PLEASE_TOKEN != '' }}
+        run: |
+          if [ "$RELEASE_PR_ENABLED" != "true" ]; then
+            echo "::notice::Configure RELEASE_PLEASE_TOKEN to generate release pull requests. Publishing approved releases remains enabled."
+          fi

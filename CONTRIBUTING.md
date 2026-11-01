@@ -53,14 +53,17 @@ updated changelog and version badge. Until the first release, the badge reads
 component repositories. Historical tags preserve documentation sources; the live
 site follows `main` and does not host separate copies of older versions.
 
-The repository must allow GitHub Actions to create pull requests under
-**Settings > Actions > General > Workflow permissions**. The workflow uses the
-repository token by default. GitHub does not run CI automatically for release
-pull requests opened by that token. To trigger normal pull request checks, set
-`RELEASE_PLEASE_TOKEN` to a GitHub App token or fine-grained personal access token
-with repository contents, issues and pull request write permissions. Do not merge
-a release pull request with required checks missing. A maintainer can close and
-reopen the pull request to trigger its checks when using the repository token.
+The organization prevents the default workflow token from creating or approving
+pull requests. Set `RELEASE_PLEASE_TOKEN` to a GitHub App token or a
+fine-grained personal access token with contents, issues, and pull request write
+permissions for this repository. This dedicated token lets Release Please create
+release pull requests and trigger their required checks. It has no branch-rule
+bypass and cannot replace code-owner approval.
+
+Without this secret, the workflow skips release pull request creation and reports
+the missing configuration. It can still publish releases from approved and merged
+release pull requests. Keep the organization restriction enabled; never merge a
+release pull request with missing checks or reviews.
 
 The public changelog page reads the root changelog during the MkDocs build. Edit
 release notes in the release pull request; do not copy them into a second page.
