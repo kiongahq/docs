@@ -1,4 +1,4 @@
-.PHONY: docs-install docs-serve docs-serve-engineering docs-build docs-check docs-lint docs-diagrams docs-test
+.PHONY: docs-install docs-serve docs-serve-engineering docs-build docs-check docs-lint docs-diagrams docs-test docs-ui
 
 # Workspace folder holding the sibling Kionga checkouts (deploy, platform, ...).
 KIONGA_SRC ?= ..
@@ -7,14 +7,16 @@ export DISABLE_MKDOCS_2_WARNING := true
 
 docs-install:
 	python -m pip install -r requirements-docs.txt
+	npm ci --prefix ui
+	npm run build --prefix ui
 
-docs-serve:          ## product documentation, http://127.0.0.1:8000
+docs-serve: docs-ui          ## product documentation, http://127.0.0.1:8000
 	mkdocs serve
 
-docs-serve-engineering: ## engineering handbook, http://127.0.0.1:8001
+docs-serve-engineering: docs-ui ## engineering handbook, http://127.0.0.1:8001
 	mkdocs serve -f engineering/mkdocs.yml -a 127.0.0.1:8001
 
-docs-build:          ## both sites, strict; the handbook is published under /engineering/
+docs-build: docs-ui          ## both sites, strict; the handbook is published under /engineering/
 	mkdocs build --strict --site-dir site
 	mkdocs build --strict -f engineering/mkdocs.yml --site-dir ../site/engineering
 
@@ -32,4 +34,8 @@ docs-diagrams:       ## every mermaid diagram parses (needs Node)
 
 docs-test:           ## gate tests: reference checker and legacy URL redirects
 	python -m pytest -q tests
-	node --test tests/assistant.test.cjs
+	npm test --prefix ui
+
+docs-ui:
+	npm ci --prefix ui --ignore-scripts
+	npm run build --prefix ui
