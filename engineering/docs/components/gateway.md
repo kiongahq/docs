@@ -61,7 +61,7 @@ orchestrates every downstream engine. It:
 | --- | --- |
 | HTTP `:8080` (`PORT`) | REST API under `/api/v1`, sign-in under `/auth/`, workspace proxy under `/workspaces/`, the console and public pages; host port `GATEWAY_PORT` bound to `KIONGA_BIND_ADDRESS` in Compose |
 | Health | `GET /api/v1/health` (health), `GET /api/v1/ready` (readiness) |
-| API description | `GET /api/openapi.json`, rendered at `/api-docs.html` |
+| API description | `GET /api/openapi.json`, rendered with Swagger UI at `/api-docs` |
 | Metrics | Optional listener on `METRICS_PORT` |
 | Workspace identity listener `:8087` | Cluster-internal; accepts only verified workspace identities; started when `KIONGA_WORKSPACE_NAMESPACE` or `KIONGA_WORKSPACE_API_TOKEN` is set |
 | Outbound | PostgreSQL, Kafka REST, Prefect, serving manager, agent runtime, storage proxy, feature gateway, Langfuse, OpenFaaS, the OIDC issuer, the Kubernetes API (workspaces, opt-in Job executor) |
@@ -90,7 +90,7 @@ for the startup checks. See the
 | Path | Contents |
 | --- | --- |
 | `platform/go/cmd/gateway/main.go` | Wiring: config, repository, listeners, sign-in, middleware order |
-| `platform/go/cmd/gateway/web/` | Embedded console and public pages (see below) |
+| `platform/frontend/` | React console, public pages, and editorial workspace |
 | `platform/go/internal/httpapi` | Routes, handlers, middleware, OpenAPI, SSE |
 | `platform/go/internal/auth`, `platform/go/internal/policy` | Identity, RBAC, IAM evaluator |
 | `platform/go/internal/store` | Repositories, migrations, outbox worker |
@@ -98,22 +98,20 @@ for the startup checks. See the
 
 The [Go packages](go-packages.md) page describes every package.
 
-#### The embedded console
+#### The compiled console
 
-`platform/go/cmd/gateway/web/` holds the landing page (`index.html`, `landing.css`,
-`landing.js`), the console (`console.html`, `styles.css`, and scripts under `js/`),
-the login, workspace, blog, editorial and API-docs pages, and vendored libraries under
-`vendor/`. It is embedded into the binary with `go:embed` and has no build step. It
-renders role-aware views for the workload lifecycle, functions, workspaces, access
-administration, settings and tokens, storage, the catalog and platform connections,
-and drives them from the same API the SDK uses.
+`platform/frontend/` contains the React and Next.js console, landing page, login,
+workspace links, blog, and editorial workspace. `platform/Dockerfile.gateway`
+builds the frontend export and packages it with the gateway. The frontend route
+handler in `platform/go/internal/httpapi/frontend.go` serves those assets while
+authentication, authorization, workspace routing, and API behavior remain in Go.
 
-The pipeline view uses pinned open-source Dagre for node placement
-([decision 0001](../decisions/0001-dag-layout-library.md)). The validated API graph
-stays authoritative, and a compact fallback keeps step state and logs readable if the
-layout asset is unavailable. `pipeline-graph.js` exposes a small, independently tested
-analyzer and renderer, surfaces authoring errors, and emits keyboard-focusable SVG
-nodes with accessible job, target and status labels.
+The shared `platform/frontend/components/ui/GraphCanvas.tsx` component uses
+React Flow for graph interaction. Pipeline execution views derive positions and
+edges from recorded dependencies in
+`platform/frontend/features/operations/ExecutionGraph.tsx`. Node selection opens
+inspection and logs through the existing API; the gateway remains authoritative
+for graph validation and execution.
 
 ### Tests
 
