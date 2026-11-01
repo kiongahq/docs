@@ -61,9 +61,13 @@ No API key belongs in this static site. Conversation history stays in memory and
 resets on a full reload. Requests time out after 30 seconds; service errors fall
 back to documentation search. The site does not include or provision this service.
 
-The theme override lives in `overrides/main.html`; presentation and interaction
-live in `docs/stylesheets/kionga.css` and `docs/javascripts/assistant.js`.
-The engineering handbook shares the stylesheet; keep both copies identical.
+The documentation interface is implemented in React under `ui/src/`. Run
+`make docs-ui` to build the navigation and assistant bundle before serving the
+site directly with MkDocs. `make docs-build`, `make docs-serve` and
+`make docs-serve-engineering` build the interface automatically. Public settings
+are written into the generated site by `scripts/site_hooks.py`. Presentation
+lives in `docs/stylesheets/kionga.css`; the engineering handbook shares that
+stylesheet and the self-hosted font assets. Keep both copies identical.
 
 ## Versions and changelog
 
