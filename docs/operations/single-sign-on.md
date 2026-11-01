@@ -34,7 +34,7 @@ example when the directory is down.
 ## Try single sign-on locally {#try-it-locally}
 
 `make -C deploy local-up` starts every sign-in method. Open
-<http://localhost:8080/login.html>:
+<http://localhost:8080/login>:
 
 | Option | Try it |
 | --- | --- |
@@ -69,7 +69,7 @@ example when the directory is down.
     make -C deploy sso-reload
     ```
 
-**Verify:** the provider's button appears on <http://localhost:8080/login.html>.
+**Verify:** the provider's button appears on <http://localhost:8080/login>.
 
 Dex renders `deploy/sso/dex.yaml` (a template) with the connectors
 whose client ids are set, and writes the login-page list from the same rendered
