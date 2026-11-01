@@ -32,7 +32,9 @@ jobs:
       - run: pip install -r requirements-docs.txt
       - uses: actions/setup-node@v4
         with: {node-version: 22}
-      - run: node --test tests/assistant.test.cjs
+      - run: npm ci --prefix ui --ignore-scripts
+      - run: npm run build --prefix ui
+      - run: npm test --prefix ui
       - run: mkdocs build --strict --site-dir _site
       - run: mkdocs build --strict -f engineering/mkdocs.yml --site-dir ../_site/engineering
       - uses: actions/upload-pages-artifact@v3
