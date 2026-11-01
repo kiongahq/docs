@@ -27,12 +27,12 @@ manifest and `CHANGELOG.md` together. SDK releases also update the Python packag
 version; deployment releases update the Helm chart version. Contract schema
 versions and the chart's application-version hint remain separate concerns.
 
-The release PR requires the same independent code-owner approval, current checks
-and resolved reviews as every other PR. Include upgrade steps, migration risks,
+The release pull request requires the same independent code-owner approval, current checks
+and resolved reviews as every other pull request. Include upgrade steps, migration risks,
 compatibility constraints and rollback instructions in its notes. Do not approve
 your own release or bypass branch protection.
 
-After the release PR merges, Release Please creates its protected tag and GitHub
+After the release pull request merges, Release Please creates its protected tag and GitHub
 release. Publication runs on the published release event, checks that the tag
 matches the reviewed version and belongs to the default branch, then publishes
 artifacts. No package is published from a pull request or an arbitrary tag push.
@@ -70,11 +70,11 @@ published SDK version must be withdrawn from normal dependency resolution.
 Set `RELEASE_PLEASE_TOKEN` in each participating repository, or as an organization
 secret limited to those repositories. Use an expiring fine-grained token with
 Contents, Issues and Pull requests write access. An administrator must approve
-organization access when required. This credential creates release PRs and tags;
-it has no branch-rule bypass and must not approve its own PRs.
+organization access when required. This credential creates release pull requests and tags;
+it has no branch-rule bypass and must not approve its own pull requests.
 
 The workflow deliberately fails with a configuration error when the credential
-is absent. The default workflow token cannot create PRs under organization policy
+is absent. The default workflow token cannot create pull requests under organization policy
 and its release events do not start downstream publishing workflows. Do not copy
 an administrator's broad CLI token into Actions to work around this boundary.
 
@@ -94,7 +94,7 @@ existing project if it has already been created:
 The `pypi` environment permits release tags only. The publishing job alone receives
 OIDC permission; it downloads the tested package artifact without checking out or
 executing project source. Configure the pending publisher before merging the
-first SDK release PR. No PyPI password or API token is required.
+first SDK release pull request. No PyPI password or API token is required.
 
 See [PyPI trusted publishing](https://docs.pypi.org/trusted-publishers/adding-a-publisher/)
 and [GitHub workflow triggering](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow)
@@ -104,7 +104,7 @@ for the provider requirements.
 
 The product changelog aggregates published releases from the public component
 repositories. Pages refreshes the release snapshot during trusted builds and
-every six hours. PR builds and offline builds use the committed snapshot.
+every six hours. pull request builds and offline builds use the committed snapshot.
 A failed API refresh stops publication and preserves the previous snapshot.
 Draft releases are excluded and release text is escaped before rendering.
 
