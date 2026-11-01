@@ -78,7 +78,7 @@ The port in the console URL differs when the default port was busy. `make -C dep
 ## Step 3: Sign in
 
 Open <http://localhost:8080> for the landing page, or go straight to the console
-at <http://localhost:8080/console.html>. Sign in with the local account `admin` and
+at <http://localhost:8080/console>. Sign in with the local account `admin` and
 password `mlaiops-local`, or with one of the single sign-on test accounts described in
 [Single sign-on](../operations/single-sign-on.md#try-it-locally).
 
@@ -112,9 +112,9 @@ GATEWAY=http://localhost:18080 ./deploy/scripts/demo-smoke.sh
 | Service | URL | Sign-in (local defaults) |
 | --- | --- | --- |
 | Landing page | <http://localhost:8080> | None |
-| Console and API | <http://localhost:8080/console.html> | `admin` / `mlaiops-local`, or single sign-on |
-| Jupyter workbench | <http://localhost:8080/workspace.html?tool=workbench> | Your console session |
-| Browser IDE | <http://localhost:8080/workspace.html?tool=ide> | Your console session. Start it first with `make -C deploy ide-up`. |
+| Console and API | <http://localhost:8080/console> | `admin` / `mlaiops-local`, or single sign-on |
+| Jupyter workbench | <http://localhost:8080/workspace?tool=workbench> | Your console session |
+| Browser IDE | <http://localhost:8080/workspace?tool=ide> | Your console session. Start it first with `make -C deploy ide-up`. |
 | Dex (single sign-on) | <http://localhost:5556/dex> | Test directory password `kionga-sso-dev` |
 | MLflow | <http://localhost:15000> | None |
 | Prefect | <http://localhost:4200> | None |

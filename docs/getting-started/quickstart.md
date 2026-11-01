@@ -13,7 +13,7 @@ Python SDK and the REST API. All three call the same API, so you can mix them.
 ## Before you begin
 
 - Install and start Kionga: follow [Install Kionga](installation.md). The
-  console must open at <http://localhost:8080/console.html>.
+  console must open at <http://localhost:8080/console>.
 - To use the SDK tabs, open the **Jupyter workbench** from the console sidebar,
   create a notebook, and run the snippets in order. The SDK is installed there and
   already connected to your Kionga, so you do not need an API key.
@@ -43,7 +43,7 @@ Python SDK and the REST API. All three call the same API, so you can mix them.
 
 ## Step 1: Sign in
 
-Open <http://localhost:8080/console.html> and sign in with the local account
+Open <http://localhost:8080/console> and sign in with the local account
 `admin` and password `mlaiops-local`.
 
 The console opens on **Overview**.
