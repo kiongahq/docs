@@ -1,0 +1,123 @@
+---
+title: Release process
+description: Version, review, publish and document Kionga component releases.
+---
+
+# Release process
+
+Each public component owns its version, changelog and release artifacts. The
+shared automation repository is versioned as well. The private demonstration
+repository is not a distributable package and is excluded from publication.
+
+## Versions and release notes
+
+Use numeric semantic versions and `vX.Y.Z` Git tags. Current automation publishes
+normal releases only; preview tags are not package publication triggers. A `0.x`
+release remains a development release and does not imply production readiness.
+
+Use conventional commits: `feat` for features, `fix` for corrections, `perf` for
+performance changes and `!` or `BREAKING CHANGE` for incompatible changes. Before
+1.0, incompatible changes increment the minor version and compatible changes
+increment the patch version. After 1.0, incompatible changes increment the major
+version and features increment the minor version. Review the proposed version;
+automation cannot assess API compatibility on its own.
+
+Release Please prepares a pull request updating `version.txt`, the release
+manifest and `CHANGELOG.md` together. SDK releases also update the Python package
+version; deployment releases update the Helm chart version. Contract schema
+versions and the chart's application-version hint remain separate concerns.
+
+The release PR requires the same independent code-owner approval, current checks
+and resolved reviews as every other PR. Include upgrade steps, migration risks,
+compatibility constraints and rollback instructions in its notes. Do not approve
+your own release or bypass branch protection.
+
+After the release PR merges, Release Please creates its protected tag and GitHub
+release. Publication runs on the published release event, checks that the tag
+matches the reviewed version and belongs to the default branch, then publishes
+artifacts. No package is published from a pull request or an arbitrary tag push.
+
+## Artifacts
+
+- Containers: development builds publish `edge`, short SHA and full SHA references.
+  Release builds publish exact version tags, provenance and software bills of
+  materials. They attach digest records to GitHub releases. They refuse to
+  overwrite an existing release version. Deploy by digest.
+- SDK: build and test a wheel and source distribution once. Publish those same
+  files to PyPI through trusted publishing, then attach them and checksums to the
+  GitHub release. The distribution remains `mlaiops-sdk`; imports remain
+  `mlaiops_sdk`.
+- Deployment: lint and package the Helm chart, then attach the archive and
+  checksums to its release. Deployments supply explicit component image digests;
+  the chart version is not a cross-component compatibility guarantee.
+- Contracts: test and attach a versioned source archive with checksums.
+
+Dependency updates remain reviewed pull requests. When adopting a new SDK or
+runtime release, update the consumer's image build arguments and matching test
+requirements together, run integration tests, and release the consumer. Do not
+silently float internal dependencies to the newest component version.
+
+A published GitHub release can precede completed package uploads. Wait for the
+publishing jobs to succeed. Rerun failed jobs after a transient failure; do not
+rerun successful publication jobs or overwrite existing assets. Correct a bad
+artifact with a new patch version. Use PyPI's yank mechanism when an already
+published SDK version must be withdrawn from normal dependency resolution.
+
+## Configure publishing
+
+### Release automation credentials
+
+Set `RELEASE_PLEASE_TOKEN` in each participating repository, or as an organization
+secret limited to those repositories. Use an expiring fine-grained token with
+Contents, Issues and Pull requests write access. An administrator must approve
+organization access when required. This credential creates release PRs and tags;
+it has no branch-rule bypass and must not approve its own PRs.
+
+The workflow deliberately fails with a configuration error when the credential
+is absent. The default workflow token cannot create PRs under organization policy
+and its release events do not start downstream publishing workflows. Do not copy
+an administrator's broad CLI token into Actions to work around this boundary.
+
+### PyPI trusted publisher
+
+Create a pending trusted publisher in the owning PyPI account, or add one to the
+existing project if it has already been created:
+
+| Field | Value |
+| --- | --- |
+| Project | `mlaiops-sdk` |
+| GitHub owner | `kiongahq` |
+| Repository | `sdk-python` |
+| Workflow filename | `publish.yml` |
+| GitHub environment | `pypi` |
+
+The `pypi` environment permits release tags only. The publishing job alone receives
+OIDC permission; it downloads the tested package artifact without checking out or
+executing project source. Configure the pending publisher before merging the
+first SDK release PR. No PyPI password or API token is required.
+
+See [PyPI trusted publishing](https://docs.pypi.org/trusted-publishers/adding-a-publisher/)
+and [GitHub workflow triggering](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow)
+for the provider requirements.
+
+## Documentation changelog
+
+The product changelog aggregates published releases from the public component
+repositories. Pages refreshes the release snapshot during trusted builds and
+every six hours. PR builds and offline builds use the committed snapshot.
+A failed API refresh stops publication and preserves the previous snapshot.
+Draft releases are excluded and release text is escaped before rendering.
+
+Run `make docs-releases` in the documentation repository to refresh the local
+snapshot. Review and commit it when updating the offline catalog. Editing release
+notes does not itself rebuild the docs; use the manual Pages workflow or wait for
+the scheduled refresh. The catalog links to all releases, with the five most
+recent entries per repository displayed locally.
+
+## Rollout order
+
+Merge the shared automation change first, followed by each component change and
+the documentation update. Consumer workflows pin the exact reviewed shared
+commit. Configure credentials before merging release automation, and register
+the PyPI publisher before the first SDK release. Run all existing required checks
+and obtain independent review; the rollout does not waive those controls.

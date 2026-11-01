@@ -7,6 +7,10 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  schedule:
+    - cron: '23 */6 * * *'
+  release:
+    types: [published]
 
 permissions:
   contents: read
@@ -35,6 +39,11 @@ jobs:
       - run: npm ci --prefix ui --ignore-scripts
       - run: npm run build --prefix ui
       - run: npm test --prefix ui
+      - name: Refresh the published component changelog
+        if: github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/sync_releases.py
       - run: mkdocs build --strict --site-dir _site
       - run: mkdocs build --strict -f engineering/mkdocs.yml --site-dir ../_site/engineering
       - name: Archive the Pages site

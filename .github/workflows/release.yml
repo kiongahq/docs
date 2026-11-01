@@ -1,35 +1,38 @@
-name: Release documentation
-
+name: Release
 on:
+  pull_request:
   push:
-    branches: [main]
+    branches: [main, master]
   workflow_dispatch:
-
 permissions:
-  contents: write
-  issues: write
-  pull-requests: write
-
+  contents: read
 concurrency:
-  group: docs-release
+  group: release-${{ github.ref }}
   cancel-in-progress: false
-
 jobs:
-  release:
+  release-policy:
     runs-on: ubuntu-latest
     steps:
-      - uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
-          # A dedicated token creates release PRs and triggers their required CI.
-          # The default token can publish approved releases but cannot create PRs.
-          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
-          skip-github-pull-request: ${{ secrets.RELEASE_PLEASE_TOKEN == '' }}
+          persist-credentials: false
+      - uses: kiongahq/.github/release/validate@717e2cc3be707aff75c717662c6b3fea58ab56d8
+  release:
+    if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    needs: release-policy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require release automation credentials
+        env:
+          RELEASE_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+        run: |
+          if [ -z "$RELEASE_TOKEN" ]; then
+            echo "::error::Configure RELEASE_PLEASE_TOKEN with scoped contents, issues, and pull-request write permissions before enabling releases."
+            exit 1
+          fi
+      - uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          target-branch: ${{ github.event.repository.default_branch }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
-      - name: Report release PR configuration
-        env:
-          RELEASE_PR_ENABLED: ${{ secrets.RELEASE_PLEASE_TOKEN != '' }}
-        run: |
-          if [ "$RELEASE_PR_ENABLED" != "true" ]; then
-            echo "::notice::Configure RELEASE_PLEASE_TOKEN to generate release pull requests. Publishing approved releases remains enabled."
-          fi

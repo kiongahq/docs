@@ -190,6 +190,7 @@ nav:
       - Integrations:
           - External object storage: operations/external-storage.md
           - Log export: operations/log-export.md
+      - Updates and rollback: operations/updates.md
       - Production readiness: operations/production-operations.md
       - Troubleshooting: operations/troubleshooting.md
   - Reference:

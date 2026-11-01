@@ -1,27 +1,26 @@
 ---
 title: Changelog
-description: Release notes for the Kionga documentation, with new guides, improvements and fixes.
+description: Published Kionga component releases, changes and package downloads.
 icon: material/history
-hide:
-  - toc
 ---
-
-<div class="kg-page-intro" markdown>
-
-<p class="kg-eyebrow">What's new</p>
 
 # Changelog
 
-New guides, better explanations and improvements to your documentation experience.
-Each entry links to the changes included in that documentation release.
+Kionga components release independently. Each entry below links to its published
+release, changes and available downloads. A component version does not imply
+that every other component has the same version.
 
-[All releases :octicons-arrow-up-right-16:](https://github.com/kiongahq/docs/releases){ .md-button }
+Check the release's publishing workflow before installing. Release notes can
+appear before package uploads finish. Preview releases and development images
+are intended for evaluation; they are not production readiness claims.
 
-</div>
+[Update and rollback guidance](operations/updates.md){ .md-button }
 
-!!! info "Documentation versions"
+<!-- component-releases -->
 
-    These releases track the documentation site. For software versions, see the
-    [component repositories](https://github.com/kiongahq).
+## Documentation changes awaiting publication
+
+The documentation source also records release notes under review. Only entries
+in the published release catalog above are published release announcements.
 
 <!-- release-notes -->
