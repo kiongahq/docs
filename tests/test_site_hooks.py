@@ -67,13 +67,23 @@ def test_changelog_injection_preserves_page_intro(monkeypatch, tmp_path):
     assert site_hooks.on_page_markdown("# Other page", None, None, None) == "# Other page"
 
 
-def test_both_sites_use_the_shared_template_directory():
+def test_both_sites_use_the_react_interface_without_template_overrides():
     root = Path(__file__).resolve().parents[1]
     for name in ("mkdocs.yml", "engineering/mkdocs.yml"):
-        config = root / name
-        custom_dir = re.search(r"^  custom_dir: (.+)$", config.read_text(), re.MULTILINE)
-        assert custom_dir
-        assert (config.parent / custom_dir.group(1)).resolve() == root / "overrides"
+        config = (root / name).read_text()
+        assert "custom_dir:" not in config
+        assert "javascripts/interface.js" in config
+    assert not (root / "overrides").exists()
+
+
+def test_interface_configuration_contains_only_public_settings(tmp_path):
+    config = SimpleNamespace(site_dir=tmp_path, site_name="Kionga", extra={"docs_version": "Development", "assistant_enabled": True, "assistant_endpoint": "https://assistant.test/chat"})
+    site_hooks.on_post_build(config)
+    settings = json.loads((tmp_path / "javascripts/ui-config.json").read_text())
+    assert settings["version"] == "Development"
+    assert settings["assistant_enabled"] is True
+    assert settings["assistant_endpoint"] == "https://assistant.test/chat"
+    assert set(settings) == {"site_name", "version", "assistant_enabled", "assistant_endpoint", "product_url"}
 
 
 def test_explanatory_headings_are_not_release_entries():

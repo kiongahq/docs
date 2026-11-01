@@ -1,6 +1,7 @@
 """Publish the repository's release metadata inside the static documentation."""
 
 import re
+import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -41,3 +42,17 @@ def on_page_markdown(markdown, page, config, files):
     if MARKER not in markdown:
         return markdown
     return markdown.replace(MARKER, release_notes((ROOT / "CHANGELOG.md").read_text()))
+
+
+def on_post_build(config):
+    """Expose non-secret configuration to the React documentation interface."""
+    root = Path(config.site_dir) / "javascripts"
+    root.mkdir(parents=True, exist_ok=True)
+    settings = {
+        "site_name": config.site_name,
+        "version": config.extra.get("docs_version", ""),
+        "assistant_enabled": config.extra.get("assistant_enabled", False),
+        "assistant_endpoint": config.extra.get("assistant_endpoint", ""),
+        "product_url": "https://kiongahq.github.io/docs/",
+    }
+    (root / "ui-config.json").write_text(json.dumps(settings))
