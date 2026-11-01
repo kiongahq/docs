@@ -104,7 +104,7 @@ The [Go packages](go-packages.md) page describes every package.
 workspace links, blog, and editorial workspace. `platform/Dockerfile.gateway`
 builds the frontend export and packages it with the gateway. The frontend route
 handler in `platform/go/internal/httpapi/frontend.go` serves those assets while
-authentication, authorization, workspace proxying, and API behavior remain in Go.
+authentication, authorization, workspace routing, and API behavior remain in Go.
 
 The shared `platform/frontend/components/ui/GraphCanvas.tsx` component uses
 React Flow for graph interaction. Pipeline execution views derive positions and

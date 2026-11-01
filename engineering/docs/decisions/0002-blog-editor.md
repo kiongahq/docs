@@ -11,7 +11,7 @@ date: 2026-10-09
 The React editorial workspace replaces the browser-script editor described below.
 Its entry point is `platform/frontend/components/pages/EditorialPage.tsx`, and
 `platform/frontend/components/studio/PostEditor.tsx` implements editing. The
-block-content contract, server-side sanitization, and separate editorial identity
+block-content contract, server-side content filtering, and separate editorial identity
 remain authoritative. Browser packaging details in this record are historical.
 
 ## Context and problem statement
