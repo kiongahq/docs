@@ -49,7 +49,17 @@ The SDK requires Python 3.11 or later. Its core dependencies are `httpx` and
     pip install "mlaiops-sdk[agents] @ https://github.com/kiongahq/sdk-python/archive/refs/tags/v0.2.0.tar.gz"
     ```
 
-The package is not published on PyPI.
+=== "From PyPI"
+
+    After the first PyPI release is published, install the distribution with:
+
+    ```bash
+    python -m pip install "mlaiops-sdk[agents]"
+    ```
+
+    Check the [component changelog](../changelog.md) for available releases and
+    pin the selected version in your dependency file. Until PyPI publication is
+    configured and a release completes, use the GitHub installation above.
 
 | Extra | Adds | Needed for |
 | --- | --- | --- |
