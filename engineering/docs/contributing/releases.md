@@ -27,10 +27,12 @@ manifest and `CHANGELOG.md` together. SDK releases also update the Python packag
 version; deployment releases update the Helm chart version. Contract schema
 versions and the chart's application-version hint remain separate concerns.
 
-The release pull request requires the same independent code-owner approval, current checks
-and resolved reviews as every other pull request. Include upgrade steps, migration risks,
-compatibility constraints and rollback instructions in its notes. Do not approve
-your own release or bypass branch protection.
+The release pull request requires the same maintainer review, current checks
+and resolved conversations as every other pull request. Include upgrade steps, migration risks,
+compatibility constraints and rollback instructions in its notes. The sole
+maintainer reviews the diff and merges after checks pass, without a separate
+approving review. Restore independent code-owner approval when another trusted
+maintainer joins. Never bypass branch protection.
 
 After the release pull request merges, Release Please creates its protected tag and GitHub
 release. Publication runs on the published release event, checks that the tag
@@ -120,4 +122,4 @@ Merge the shared automation change first, followed by each component change and
 the documentation update. Consumer workflows pin the exact reviewed shared
 commit. Configure credentials before merging release automation, and register
 the PyPI publisher before the first SDK release. Run all existing required checks
-and obtain independent review; the rollout does not waive those controls.
+and follow the configured review policy; the rollout does not waive those controls.
