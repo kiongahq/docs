@@ -45,9 +45,9 @@ artifacts. No package is published from a pull request or an arbitrary tag push.
   Release builds publish exact version tags, provenance and software bills of
   materials. They attach digest records to GitHub releases. They refuse to
   overwrite an existing release version. Deploy by digest.
-- SDK: build and test a wheel and source distribution once. Publish those same
-  files to PyPI through trusted publishing, then attach them and checksums to the
-  GitHub release. The distribution remains `mlaiops-sdk`; imports remain
+- SDK: build and test a wheel and source distribution once. Attach them and
+  checksums to the GitHub release. Optional PyPI publication uses those same
+  verified files and does not block GitHub release assets. The distribution remains `mlaiops-sdk`; imports remain
   `mlaiops_sdk`.
 - Deployment: lint and package the Helm chart, then attach the archive and
   checksums to its release. Deployments supply explicit component image digests;
@@ -82,6 +82,11 @@ an administrator's broad CLI token into Actions to work around this boundary.
 
 ### PyPI trusted publisher
 
+PyPI publication is on hold until a Kionga email is available, tracked in
+[SDK issue #29](https://github.com/kiongahq/sdk-python/issues/29). The repository
+variable `PYPI_PUBLISH_ENABLED` is `false`; an absent variable also disables PyPI.
+SDK packages continue to publish as GitHub release assets during the hold.
+
 Create a pending trusted publisher in the owning PyPI account, or add one to the
 existing project if it has already been created:
 
@@ -95,8 +100,9 @@ existing project if it has already been created:
 
 The `pypi` environment permits release tags only. The publishing job alone receives
 OIDC permission; it downloads the tested package artifact without checking out or
-executing project source. Configure the pending publisher before merging the
-first SDK release pull request. No PyPI password or API token is required.
+executing project source. After completing account setup and publisher validation,
+set `PYPI_PUBLISH_ENABLED` to `true` for subsequent SDK releases. No PyPI password
+or API token is required. This setup is not required for GitHub-only releases.
 
 See [PyPI trusted publishing](https://docs.pypi.org/trusted-publishers/adding-a-publisher/)
 and [GitHub workflow triggering](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow)
@@ -120,6 +126,6 @@ recent entries per repository displayed locally.
 
 Merge the shared automation change first, followed by each component change and
 the documentation update. Consumer workflows pin the exact reviewed shared
-commit. Configure credentials before merging release automation, and register
-the PyPI publisher before the first SDK release. Run all existing required checks
+commit. Configure the release credential before enabling automation. Register
+the PyPI publisher only when resuming PyPI publication. Run all existing required checks
 and follow the configured review policy; the rollout does not waive those controls.

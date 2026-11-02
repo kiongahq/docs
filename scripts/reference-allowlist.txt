@@ -30,6 +30,9 @@ env RESOURCE_GROUP
 # GitHub Actions secret consumed by release.yml, not a runtime environment variable.
 env RELEASE_PLEASE_TOKEN
 
+# GitHub Actions configuration variable used by the SDK publishing workflow.
+env PYPI_PUBLISH_ENABLED
+
 # Named as removed in the engineering-blog migration note.
 route /api/v1/admin/blogs
 
