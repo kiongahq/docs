@@ -17,7 +17,7 @@ artifacts. A Git tag alone does not confirm that packages are available.
 | Artifact | Location | Version reference |
 | --- | --- | --- |
 | Service and workspace images | GitHub Container Registry under `kiongahq` | Exact `X.Y.Z` tag; pin the image digest for deployment |
-| Python SDK | PyPI as `mlaiops-sdk`, after publisher setup; GitHub Releases | Exact package version |
+| Python SDK | GitHub Releases; PyPI publication is [on hold](https://github.com/kiongahq/sdk-python/issues/29) | Exact package version |
 | Kubernetes chart | Deployment repository's GitHub Releases | Chart archive and checksums |
 | Contract schemas | Contracts repository's GitHub Releases | Versioned source archive and checksums |
 | Documentation | This site and the documentation repository's releases | Documentation version, independent of software versions |

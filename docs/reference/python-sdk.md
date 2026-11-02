@@ -51,6 +51,9 @@ The SDK requires Python 3.11 or later. Its core dependencies are `httpx` and
 
 === "From PyPI"
 
+    PyPI publication is [on hold](https://github.com/kiongahq/sdk-python/issues/29)
+    until a Kionga email is available. Use the GitHub installation above for now.
+
     After the first PyPI release is published, install the distribution with:
 
     ```bash
