@@ -58,7 +58,7 @@ pull requests. Set `RELEASE_PLEASE_TOKEN` to a GitHub App token or a
 fine-grained personal access token with contents, issues, and pull request write
 permissions for this repository. This dedicated token lets Release Please create
 release pull requests and trigger their required checks. It has no branch-rule
-bypass and cannot replace the maintainer’s review of a release.
+bypass; a maintainer must review each release.
 
 Without this secret, the workflow fails with an explicit configuration error.
 Configure it before enabling release automation. Keep the organization restriction
