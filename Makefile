@@ -39,3 +39,7 @@ docs-test:           ## gate tests: reference checker and legacy URL redirects
 docs-ui:
 	npm ci --prefix ui --ignore-scripts
 	npm run build --prefix ui
+
+.PHONY: docs-releases
+docs-releases:       ## refresh the public component changelog (requires network access)
+	python scripts/sync_releases.py

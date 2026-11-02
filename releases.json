@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-11-01T23:23:45.805042+00:00",
+  "repositories": {
+    "platform": [],
+    "contracts": [],
+    "sdk-python": [
+      {
+        "tag": "v0.2.0",
+        "name": "v0.2.0",
+        "published_at": "2026-10-09T19:08:43+00:00",
+        "prerelease": false,
+        "body": "**Full Changelog**: https://github.com/kiongahq/sdk-python/commits/v0.2.0",
+        "assets": [
+          "mlaiops_sdk-0.2.0-py3-none-any.whl",
+          "mlaiops_sdk-0.2.0.tar.gz"
+        ]
+      }
+    ],
+    "agent-runtime": [],
+    "pipeline-runner": [],
+    "serving": [],
+    "trace-proxy": [],
+    "workspace": [],
+    "deploy": [],
+    "docs": [
+      {
+        "tag": "v1.1.0",
+        "name": "v1.1.0",
+        "published_at": "2026-10-23T12:34:38+00:00",
+        "prerelease": false,
+        "body": "## [1.1.0](https://github.com/kiongahq/docs/compare/v1.0.0...v1.1.0) (2026-10-23)\n\n\n### New features\n\n* **docs:** automate releases and add icon-led navigation and changelog ([6de8c8e](https://github.com/kiongahq/docs/commit/6de8c8efc5fc056ba38c5236d691dbe69ed9a2c6))\n* **docs:** refresh navigation and add documentation assistant ([eccf86a](https://github.com/kiongahq/docs/commit/eccf86a3b5d1842212adc39c8552356aacd4829e))\n\n\n### Fixes\n\n* **docs:** keep release timeline and icon metadata lint clean ([8699191](https://github.com/kiongahq/docs/commit/86991912de89e92ebcb5d519cc0131846c22a3dc))\n* **docs:** remove sidebar edge marker and raw icon text ([33f0771](https://github.com/kiongahq/docs/commit/33f0771a7ad68ef62e6241b04e3a85d18dee4fbc))",
+        "assets": []
+      }
+    ],
+    ".github": []
+  }
+}

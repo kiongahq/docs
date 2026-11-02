@@ -58,14 +58,16 @@ pull requests. Set `RELEASE_PLEASE_TOKEN` to a GitHub App token or a
 fine-grained personal access token with contents, issues, and pull request write
 permissions for this repository. This dedicated token lets Release Please create
 release pull requests and trigger their required checks. It has no branch-rule
-bypass and cannot replace code-owner approval.
+bypass; a maintainer must review each release.
 
-Without this secret, the workflow skips release pull request creation and reports
-the missing configuration. It can still publish releases from approved and merged
-release pull requests. Keep the organization restriction enabled; never merge a
-release pull request with missing checks or reviews.
+Without this secret, the workflow fails with an explicit configuration error.
+Configure it before enabling release automation. Keep the organization restriction
+enabled; never merge a release pull request with missing checks or reviews.
 
 The public changelog page reads the root changelog during the MkDocs build. Edit
 release notes in the release pull request; do not copy them into a second page.
 Run `make docs-test docs-build` before merging changes to release metadata or the
 site hook. `docs-test` also needs Node.js 22 for the assistant tests.
+
+The [release process](engineering/docs/contributing/releases.md) covers component
+versions, package publication, PyPI setup and the aggregated product changelog.

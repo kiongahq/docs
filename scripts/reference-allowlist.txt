@@ -27,6 +27,9 @@ env PACKAGE_NAME
 # Shell variable the reader sets in the Azure CLI walkthrough.
 env RESOURCE_GROUP
 
+# GitHub Actions secret consumed by release.yml, not a runtime environment variable.
+env RELEASE_PLEASE_TOKEN
+
 # Named as removed in the engineering-blog migration note.
 route /api/v1/admin/blogs
 

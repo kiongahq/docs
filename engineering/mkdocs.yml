@@ -155,6 +155,7 @@ nav:
       - "0010 Repository per component": decisions/0010-repository-per-component.md
       - Template: decisions/template.md
   - Contributing:
+      - Release process: contributing/releases.md
       - contributing/index.md
       - Documentation standard: contributing/documentation.md
   - Status and plans:

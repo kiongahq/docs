@@ -80,3 +80,5 @@ body, .md-typeset { font-family: var(--kg-body); }
 @media (max-width: 45em) { .kg-wayfinding-inner { padding-inline: .7rem; } .kg-wayfinding-links { gap: 1rem; } .kg-version { display: none; } .kg-assistant-launch { right: .8rem; bottom: .8rem; } }
 @media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }
 @media print { .kg-wayfinding, .kg-assistant-launch, .kg-assistant { display: none; } }
+
+.kg-release-notes { white-space: pre-wrap; overflow-wrap: anywhere; font-family: inherit; }

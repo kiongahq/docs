@@ -1,17 +1,19 @@
 {
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
-  "bootstrap-sha": "9a89155eadef070d0c106b526471c5d4bffa912e",
   "packages": {
     ".": {
       "release-type": "simple",
       "package-name": "kionga-docs",
       "include-component-in-tag": false,
+      "include-v-in-tag": true,
       "version-file": "version.txt",
       "changelog-path": "CHANGELOG.md",
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true,
       "changelog-sections": [
         {
           "type": "feat",
-          "section": "New features",
+          "section": "Features",
           "hidden": false
         },
         {
@@ -20,18 +22,28 @@
           "hidden": false
         },
         {
-          "type": "docs",
-          "section": "Documentation",
-          "hidden": false
-        },
-        {
           "type": "perf",
           "section": "Performance",
           "hidden": false
         },
         {
+          "type": "revert",
+          "section": "Reverts",
+          "hidden": false
+        },
+        {
+          "type": "docs",
+          "section": "Documentation",
+          "hidden": false
+        },
+        {
           "type": "refactor",
           "section": "Improvements",
+          "hidden": false
+        },
+        {
+          "type": "build",
+          "section": "Build and dependencies",
           "hidden": false
         },
         {
@@ -42,9 +54,10 @@
         {
           "type": "chore",
           "section": "Maintenance",
-          "hidden": true
+          "hidden": false
         }
       ]
     }
-  }
+  },
+  "bootstrap-sha": "2549c001e27baefef6de312f82cd49cf894ae52b"
 }

@@ -14,7 +14,7 @@ images, and [deploy](https://github.com/kiongahq/deploy) runs them together.
 | --- | --- | --- |
 | [platform](https://github.com/kiongahq/platform) | Control plane: gateway API, console, auth and IAM policies, PostgreSQL store, scheduler, pipeline validation and execution, logs, editorial, operator, feature gateway, storage proxy, integration worker, log exporter, CLI | `ghcr.io/kiongahq/{gateway,operator,feature-gateway,storage-proxy,integration-worker,metrics-collector,log-exporter,cli}` |
 | [contracts](https://github.com/kiongahq/contracts) | Versioned schemas shared across components (`kionga.dev/v1 Pipeline`) | Git tags; a submodule of `platform` |
-| [`sdk-python`](https://github.com/kiongahq/sdk-python) | Python SDK: client, models, pipelines, agents, LLM factory, tools, tracing | Wheel and `sdist` on GitHub releases |
+| [`sdk-python`](https://github.com/kiongahq/sdk-python) | Python SDK: client, models, pipelines, agents, LLM factory, tools, tracing | Wheel and `sdist` on GitHub releases; PyPI after publisher setup |
 | [agent-runtime](https://github.com/kiongahq/agent-runtime) | Agent serving runtime, example agents, feature materializer, real-time processor | `ghcr.io/kiongahq/agent-runtime` |
 | [pipeline-runner](https://github.com/kiongahq/pipeline-runner) | Prefect runner that executes pipeline DAGs as containers | `ghcr.io/kiongahq/pipeline-runner` |
 | [serving](https://github.com/kiongahq/serving) | Model serving manager | `ghcr.io/kiongahq/serving-manager` |
@@ -45,8 +45,9 @@ flowchart LR
   the Jupyter workbench, pinned to a release tag (`SDK_VERSION`).
 - **Runtime calls** go through the platform gateway's HTTP API with a service token;
   components never import each other's code.
-- **Images** are published per repository (`latest`, `sha-<short>`, and semantic version on
-  `v*` tags). `deploy/vm/compose.yaml` and the Helm chart run them pinned by digest.
+- **Images** are published per repository: `edge` and SHA references for development,
+  exact versions for published releases. Existing `latest` aliases stop updating.
+  `deploy/vm/compose.yaml` and the Helm chart run them pinned by digest.
 
 ## Working across repositories
 
