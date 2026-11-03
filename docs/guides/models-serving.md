@@ -50,7 +50,8 @@ A training pipeline usually registers its model. To register one yourself:
 
 `serving_image` is optional. Set it when the model needs libraries that the
 default serving image does not have; see
-[Avoid training-serving skew](#avoid-training-serving-skew).
+[Avoid training-serving skew](#avoid-training-serving-skew). The image must match
+`SERVE_IMAGE_ALLOWED_PREFIXES`, and in production it must be pinned by digest.
 
 A new version starts in the `candidate` stage with a quality gate:
 
@@ -193,16 +194,21 @@ version:
 - Include the `mlflow` command-line tool and support for your artifact store,
   because Kionga runs `mlflow models serve` inside the image.
 
-Serving containers run with the platform's model-store credentials, so treat the
-images you allow as part of your trust boundary. Dropped capabilities,
-`no-new-privileges` and a process limit reduce what a container can do, but they
-do not make an untrusted image safe.
+A model server holds no platform credentials. A short-lived fetch container,
+which runs the operator's image rather than yours, downloads the artifact into a
+volume. The server starts with an empty environment and mounts that volume
+read-only. Still treat the images you allow as part of your trust boundary: the
+server runs on the platform network, and dropped capabilities,
+`no-new-privileges` and a process limit do not make an untrusted image safe.
+Administrators list trusted images in `SERVE_IMAGE_ALLOWED_PREFIXES`; see
+[Serving manager](../reference/configuration.md#serving-manager).
 
 ## Troubleshooting
 
 | Symptom | What to check |
 | --- | --- |
 | `model evaluation gates have not passed` | The gate is `failed` or `needs_evaluation`. Register an evaluated version with passing metrics. |
+| Deploy returns `422` naming the image | The `serving_image` is outside `SERVE_IMAGE_ALLOWED_PREFIXES`, or it has no `@sha256:` digest where one is required. |
 | Deploy returns `502 serving_failed` | The serving manager could not start the container; the message gives its reason. See [Troubleshooting](../operations/troubleshooting.md). |
 | `409 not_serving` on predict | Deploy the model first, and wait for the **● live** tag. |
 

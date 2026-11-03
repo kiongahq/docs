@@ -85,7 +85,8 @@ fresh Agno object with explicit `session_id` and `user_id`.
     AGENT_RUNTIME_EXTRAS=runtime,agno
     MLAIOPS_GRAPH_MODULE=agents.framework_examples:build_agno
     AGNO_MODEL=your-provider-model-id
-    # Set OPENAI_API_KEY here too; never put it in an image or a contract.
+    # Set your provider key as LLM_UPSTREAM_API_KEY too; never put it in an image
+    # or a contract. See "Project keys" in the agents guide.
     ```
 
 3. Rebuild and recreate the runtime:

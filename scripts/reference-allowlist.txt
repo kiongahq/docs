@@ -38,3 +38,19 @@ route /api/v1/admin/blogs
 
 # Secret files the operator creates in the git-ignored deploy/config/secrets/ folder.
 path deploy/config/secrets/*
+
+# TEMPORARY: settings added by open pull requests. Remove each block when its
+# pull request merges, because the checker then finds the setting in the code.
+# kiongahq/serving#37
+env SERVE_IMAGE_ALLOWED_PREFIXES
+env SERVE_IMAGE_REQUIRE_DIGEST
+env SERVE_FETCH_IMAGE
+env SERVE_READY_TIMEOUT_SECONDS
+# kiongahq/trace-proxy#40 and kiongahq/deploy#53
+env TRACE_PROXY_KEYS
+env TRACE_PROXY_KEYS_FILE
+env TRACE_PROXY_ALLOW_UNAUTHENTICATED
+env TRACE_PROXY_PROJECT_KEY
+env LLM_UPSTREAM_API_KEY_FILE
+env LLM_UPSTREAM_AUTH_HEADER
+env LLM_UPSTREAM_AUTH_SCHEME

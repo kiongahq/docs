@@ -181,3 +181,27 @@ def test_troubleshooting_tries_non_destructive_steps_first():
     assert len(steps) >= 3, steps
     assert "local.md#back-up-local-data" in text[danger:]
     assert "down -v" not in text
+
+
+CONFIGURATION = DOCS / "reference" / "configuration.md"
+
+
+@pytest.mark.parametrize("name", [
+    "SERVE_IMAGE_ALLOWED_PREFIXES", "SERVE_IMAGE_REQUIRE_DIGEST", "SERVE_FETCH_IMAGE", "SERVE_READY_TIMEOUT_SECONDS",
+    "TRACE_PROXY_KEYS", "TRACE_PROXY_KEYS_FILE", "TRACE_PROXY_ALLOW_UNAUTHENTICATED", "LLM_UPSTREAM_API_KEY",
+    "LLM_UPSTREAM_API_KEY_FILE", "LLM_UPSTREAM_AUTH_HEADER", "LLM_UPSTREAM_AUTH_SCHEME",
+])
+def test_configuration_reference_lists_security_settings(name):
+    assert f"`{name}`" in CONFIGURATION.read_text()
+
+
+def test_guides_keep_the_provider_key_in_the_trace_proxy():
+    # Behind the trace proxy, OPENAI_API_KEY holds a Kionga project key.
+    agents = (DOCS / "guides" / "agents.md").read_text()
+    assert "OPENAI_API_KEY=sk-" not in agents and "OPENAI_API_KEY=sk-" not in CONFIGURATION.read_text()
+    assert "LLM_UPSTREAM_API_KEY=sk-" in agents
+    assert "{#project-keys}" in agents
+
+
+def test_models_guide_does_not_claim_servers_hold_credentials():
+    assert "run with the platform's model-store credentials" not in (DOCS / "guides" / "models-serving.md").read_text()

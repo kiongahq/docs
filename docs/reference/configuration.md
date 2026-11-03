@@ -145,7 +145,7 @@ Each secret variable can instead be read from a file named by `<NAME>_FILE`
 `KAFKA_REST_TOKEN`, `KFP_TOKEN`, `MLFLOW_TOKEN`, `OPENFAAS_PASSWORD`,
 `LANGFUSE_SECRET_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`,
 `LLM_UPSTREAM_API_KEY`, `KIONGA_JUPYTER_TOKEN`, `KIONGA_IDE_PASSWORD`,
-`TRACE_SINK_TOKEN`, `MLAIOPS_LOCAL_PASSWORD`.
+`TRACE_SINK_TOKEN`, `MLAIOPS_LOCAL_PASSWORD`, `TRACE_PROXY_KEYS`.
 
 ### Production validation
 
@@ -181,8 +181,10 @@ Used by the agent runtime and trace proxy.
 | `MLAIOPS_LLM_BACKEND` | `mock` | `openai` \| `anthropic` \| `openai-compatible` \| `mock` |
 | `MLAIOPS_LLM_MODEL` | *(empty)* | Model name for the chosen backend |
 | `MLAIOPS_LLM_BASE_URL` | `http://trace-proxy:8081/v1` | Base URL for the `openai` and `openai-compatible` backends; Compose points it at the trace proxy for capture |
-| `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` | *(empty)* | Provider keys (env-only; never logged or traced) |
+| `OPENAI_API_KEY` | *(empty)* | The key the `openai` and `openai-compatible` backends send. Behind the trace proxy this is your Kionga project key, not a provider key; see [Project keys](../guides/agents.md#project-keys) |
+| `ANTHROPIC_API_KEY` | *(empty)* | Provider key for the `anthropic` backend, which calls Anthropic directly (env-only; never logged or traced) |
 | `LLM_UPSTREAM_URL` | `https://api.openai.com` | Where the trace proxy forwards calls |
+| `LLM_UPSTREAM_API_KEY` | *(empty)* | Provider key the trace proxy sends upstream |
 | `MLAIOPS_COST_PER_1K_INPUT` / `MLAIOPS_COST_PER_1K_OUTPUT` | `0` | USD per 1k tokens for cost accounting |
 
 The `anthropic` backend calls Anthropic directly with `ANTHROPIC_API_KEY`; it does
@@ -194,10 +196,11 @@ Langfuse tracing still records them when its keys are set.
     # deploy/.env
     MLAIOPS_LLM_BACKEND=openai
     MLAIOPS_LLM_MODEL=gpt-4o
-    OPENAI_API_KEY=sk-...
+    LLM_UPSTREAM_API_KEY=sk-...
     ```
 
-    Calls go to the trace proxy, which forwards them to `LLM_UPSTREAM_URL`. For
+    Calls go to the trace proxy, which forwards them to `LLM_UPSTREAM_URL` with
+    the provider key. Agents hold only a project key. For
     Anthropic, set `MLAIOPS_LLM_BACKEND=anthropic`, `MLAIOPS_LLM_MODEL`, and
     `ANTHROPIC_API_KEY` instead.
 
@@ -217,11 +220,22 @@ Langfuse tracing still records them when its keys are set.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `SERVE_IMAGE` | `mlaiops-mlflow` | Fallback for models registered without a framework-specific `serving_image` |
+| `MLAIOPS_INTERNAL_TOKEN` | *(required)* | The manager refuses to start without it, in every environment. With `KIONGA_ENVIRONMENT=production` it needs at least 24 characters and must contain neither `local` nor `change-me` |
+| `SERVE_IMAGE` | `mlaiops-mlflow` | Fallback for models registered without a framework-specific `serving_image`. Always allowed |
+| `SERVE_IMAGE_ALLOWED_PREFIXES` | *(empty: only `SERVE_IMAGE`)* | Image prefixes a model's `serving_image` may use. Anything else returns `422` before any engine call |
+| `SERVE_IMAGE_REQUIRE_DIGEST` | `true` in production, otherwise `false` | Require a `serving_image` to carry an `@sha256:` digest. Production refuses `false` |
+| `SERVE_FETCH_IMAGE` | `SERVE_IMAGE` | Trusted image with MLflow and boto3 that downloads model artifacts. A request's `serving_image` never runs this step |
+| `SERVE_READY_TIMEOUT_SECONDS` | `80` | One budget for the download and model load. Keep it below the gateway's 90-second call |
 | `SERVE_PIDS_LIMIT` | `256` | Serving-container process/thread limit (manager caps it at `4096`) |
 | `PLATFORM_NETWORK` | `mlaiops_default` | Docker network to attach serving containers to |
 | `DOCKER_API_VERSION` | *(unset = negotiate)* | Pin the Docker Engine API version if needed |
-| `MLFLOW_TRACKING_URI` / `MLFLOW_S3_ENDPOINT_URL` / `AWS_*` | compose defaults | Model source |
+| `MLFLOW_TRACKING_URI` / `MLFLOW_S3_ENDPOINT_URL` / `AWS_*` | compose defaults | Model source. These reach only the short-lived fetch container, never the model server |
+
+Each deploy downloads the artifact into a per-deployment volume with a short-lived
+fetch container, then starts the model server with an empty environment and that
+volume mounted read-only. A deploy returns only when the server is healthy; a
+failed deploy removes its containers and volume. Model servers deployed before
+this behavior keep their credentials until you redeploy them.
 
 ## Storage proxy
 
@@ -241,6 +255,11 @@ Langfuse tracing still records them when its keys are set.
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `LLM_UPSTREAM_URL` | `https://api.openai.com` | Forward target |
+| `TRACE_PROXY_KEYS` / `TRACE_PROXY_KEYS_FILE` | *(required)* | JSON array of accepted project keys, stored as SHA-256 hashes; see [Project keys](../guides/agents.md#project-keys). Without keys the proxy refuses to start |
+| `TRACE_PROXY_ALLOW_UNAUTHENTICATED` | `false` | Development only: accept unauthenticated callers and pass their credentials through. Refused with `KIONGA_ENVIRONMENT=production` and together with `LLM_UPSTREAM_API_KEY` |
+| `LLM_UPSTREAM_API_KEY` / `LLM_UPSTREAM_API_KEY_FILE` | *(empty)* | Provider key sent upstream. Empty sends no credential, for a self-hosted server that needs none. The caller's credentials are always removed |
+| `LLM_UPSTREAM_AUTH_HEADER` | `Authorization` | Header for that key: `x-api-key` for Anthropic, `api-key` for Azure OpenAI |
+| `LLM_UPSTREAM_AUTH_SCHEME` | `Bearer` for `Authorization`, otherwise none | Prefix for that key |
 | `TRACE_SINK_FORMAT` | `kafka-rest` | Trace sink format |
 | `TRACE_SINK_URL` | `http://kafka-rest:8082/topics/mlaiops.llm.traces` | Where traces are published |
 | `TRACE_SINK_TOKEN` | *(empty)* | Optional sink auth |
