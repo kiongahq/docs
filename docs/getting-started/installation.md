@@ -138,7 +138,7 @@ GATEWAY=http://localhost:18080 ./deploy/scripts/demo-smoke.sh
 | `8080` (`GATEWAY_PORT`) | Console and API | `admin` / `mlaiops-local`; internal service token `kionga-local-service-token` |
 | `5432` (`POSTGRES_PORT`) | PostgreSQL | `mlaiops` / `mlaiops-local` |
 | `6379` (`REDIS_PORT`) | Redis | None |
-| `9092` (`KAFKA_PORT`) | Kafka broker | None (unencrypted listener) |
+| `9092` (`KAFKA_PORT`) | Kafka broker | None, and no encryption |
 | `8082` (`KAFKA_REST_PORT`) | Kafka REST proxy | None |
 | `9000` / `9001` (`OBJECTSTORE_PORT` / `OBJECTSTORE_CONSOLE_PORT`) | RustFS S3 API and console | `mlaiops` / `mlaiops-local-secret` |
 | `15000` (`MLFLOW_PORT`) | MLflow | None |
