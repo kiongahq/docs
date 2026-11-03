@@ -64,6 +64,13 @@ gateway refuses to start unless:
   the console host but on the same registrable domain, Kubernetes workspace
   discovery is configured, and `KIONGA_TRUSTED_WORKSPACE_PROXY` is not `true`.
 
+### What the agent runtime requires in production
+
+With `KIONGA_ENVIRONMENT=production`, the agent runtime requires the gateway's
+bearer token on `/invoke` and `/stream`, and refuses to start unless
+`MLAIOPS_INTERNAL_TOKEN` is set to at least 16 characters. Give every agent
+runtime the same `MLAIOPS_INTERNAL_TOKEN` as the gateway.
+
 ## Security boundaries
 
 - **Secrets in memory.** After loading, secret values live in process memory

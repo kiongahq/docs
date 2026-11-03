@@ -109,47 +109,33 @@ Agno model.
 
 ## Run a NOOA agent
 
-The example factory `agents.framework_examples:build_nooa` creates a fresh object
-and calls its async `answer(message)` method. For richer typed arguments, map the
-request yourself with `CallableAdapter`.
+The example factory `agents.framework_examples:build_nooa` wraps an object whose
+async `answer(message)` method NOOA runs. NOOA executes Python code that the
+model writes, so the factory fails closed.
 
-!!! warning "Isolate generated code"
-    NOOA can run Python code that the model writes. Run it only in a dedicated
-    container sandbox or VM that you provision, with restricted network egress,
-    resource and time limits, minimal secrets, and no Docker socket or sensitive
-    host or workspace mounts. Never run it in the gateway or in a shared notebook
-    with broad credentials. Kionga's standard pod security settings are not a
-    sandbox for generated code.
+!!! warning "Code execution is turned off"
+    `build_nooa` refuses to start in every environment, because Kionga does not
+    yet provide a sandbox for model-written code. No setting turns it on:
+    `KIONGA_ALLOW_CODE_EXECUTION` is no longer read. Kionga's standard pod
+    security settings, a notebook or the gateway are not a sandbox for generated
+    code.
 
-1. Provision the isolated environment described above.
-2. Build a separate image. NOOA needs Python 3.12 or 3.13, so it is not in the
-   default Python 3.11 runtime or the Jupyter image. From the folder that holds
-   your Kionga checkouts:
+To experiment with NOOA outside Kionga's runtime, use a dedicated container
+sandbox or VM that you provision, with restricted network egress, resource and
+time limits, minimal secrets, and no Docker socket or sensitive host or
+workspace mounts. The NOOA image still builds with the `nooa` SDK extra on
+Python 3.12 or 3.13:
 
-    ```bash
-    docker build \
-      --build-arg PYTHON_VERSION=3.12 \
-      --build-arg SDK_SOURCE=local --build-context sdk=sdk-python \
-      --build-arg SDK_EXTRAS=runtime,nooa \
-      -t your-registry/nooa-agent:dev agent-runtime
-    ```
+```bash
+docker build \
+  --build-arg PYTHON_VERSION=3.12 \
+  --build-arg SDK_SOURCE=local --build-context sdk=sdk-python \
+  --build-arg SDK_EXTRAS=runtime,nooa \
+  -t your-registry/nooa-agent:dev agent-runtime
+```
 
-    `SDK_SOURCE=local` installs the SDK from your `sdk-python` checkout. Leave out
-    both SDK source options to install the released SDK set by `SDK_VERSION`.
-
-3. Configure the runtime with `NOOA_MODEL`, your provider's credentials,
-   `MLAIOPS_GRAPH_MODULE=agents.framework_examples:build_nooa`, and
-   `KIONGA_ALLOW_CODE_EXECUTION=1`. The example refuses to start without that
-   flag. The flag records that you provisioned a sandbox; it does not create or
-   check one.
-4. Pin tested dependency versions and the image digest, then
-   [deploy the agent](agents.md#deploy-an-agent).
-
-NOOA support is opt-in and experimental. The adapter does not export NOOA's trace
-tree or keep its Python objects between turns.
-
-**Verify:** the agent reaches `ready`, and **Chat** returns the result of
-`answer`.
+NOOA support is experimental. The adapter does not export NOOA's trace tree or
+keep its Python objects between turns.
 
 ## Deploy agents from several frameworks
 
