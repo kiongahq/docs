@@ -221,8 +221,10 @@ docker builder prune --force
 make -C deploy local-up
 ```
 
-Do not run `docker volume prune` or `docker compose down -v` unless you intend
-to delete databases, artifacts and workspace files.
+Do not run `docker volume prune` or `docker compose down -v` to free space: both
+delete databases, artifacts and workspace files. To start over on purpose,
+[back up local data](local.md#back-up-local-data) first and follow
+[Reset the stack](local.md#reset-the-stack).
 
 ### Services are killed for memory or the stack is slow
 
@@ -244,15 +246,49 @@ after 15 minutes, after a successful sign-in, or when the gateway restarts.
 
 ### The stack is broken after an update
 
-**Fix.** Run `make -C deploy local-up` again first; it rebuilds changed images
-and resumes the stack. If that does not help and you can lose all local data,
-reset the stack:
+**Cause.** After `make -C deploy workspace-pull`, images are usually stale or a
+service did not start in the right order. Your data is rarely the problem.
 
-```bash
-docker compose -f deploy/compose.yaml down -v   # deletes all local data
-make -C deploy local-up
-make -C deploy smoke
-```
+**Fix.** Work through these steps in order. None of them deletes data.
+
+1. See which services are unhealthy or exited, and why:
+
+    ```bash
+    make -C deploy local-status
+    make -C deploy local-logs
+    ```
+
+2. Rebuild the images whose sources changed and resume the stack:
+
+    ```bash
+    make -C deploy local-build-up
+    ```
+
+3. Rebuild every image from scratch, then start:
+
+    ```bash
+    make -C deploy local-rebuild
+    ```
+
+4. Run the gateway's database migrations again. The gateway applies them when
+   it starts, so recreate it and read its log:
+
+    ```bash
+    bash deploy/scripts/container.sh compose -f deploy/compose.yaml up -d --force-recreate gateway
+    bash deploy/scripts/container.sh compose -f deploy/compose.yaml logs --tail 50 gateway
+    ```
+
+5. Check the whole platform: `make -C deploy smoke`.
+
+If a failure remains, note the failing service and its log before you change
+anything else.
+
+!!! danger "Reset only as a last resort"
+    A reset permanently deletes every project, model, notebook and artifact.
+    Before it, [back up local data](local.md#back-up-local-data) and check the
+    backup. Then follow [Reset the stack](local.md#reset-the-stack), which also
+    explains how to restore. The single-server deployment never uses a reset for
+    troubleshooting; see [Single server](public-vm.md).
 
 ## Single server
 

@@ -125,3 +125,59 @@ def test_restore_is_documented_and_checked():
     text = section(LOCAL, "## Restore a backup")
     assert "psql" in text and "postgres.sql" in text
     assert "/api/v1/projects" in text  # compare the project count
+
+
+ALL_PAGES = sorted([*DOCS.rglob("*.md"), *(REPO / "engineering" / "docs").rglob("*.md")])
+
+
+def danger_blocks(text):
+    """(start, end) offsets of every `!!! danger` admonition body."""
+    blocks = []
+    for match in re.finditer(r"^( *)!!! danger.*\n", text, re.M):
+        indent = len(match.group(1)) + 4
+        end = match.end()
+        for line in text[match.end():].splitlines(keepends=True):
+            if line.strip() and len(line) - len(line.lstrip()) < indent:
+                break
+            end += len(line)
+        blocks.append((match.start(), end))
+    return blocks
+
+
+def reset_commands(text):
+    """Offsets of `down -v` inside fenced code (commands, not prose)."""
+    offsets, fence = [], False
+    position = 0
+    for line in text.splitlines(keepends=True):
+        if line.lstrip().startswith("```"):
+            fence = not fence
+        elif fence and re.search(r"\bdown\b.*\s-v\b", line):
+            offsets.append(position)
+        position += len(line)
+    return offsets
+
+
+@pytest.mark.parametrize("page", ALL_PAGES, ids=lambda p: str(p.relative_to(REPO)))
+def test_every_reset_command_is_guarded_by_a_backup(page):
+    text = page.read_text()
+    blocks = danger_blocks(text)
+    for offset in reset_commands(text):
+        block = next(((s, e) for s, e in blocks if s <= offset < e), None)
+        assert block, f"{page.name}: a `down -v` command is outside a danger admonition"
+        before = text[block[0]:offset]
+        assert "#back-up-local-data" in before, f"{page.name}: `down -v` is not preceded by a backup step"
+
+
+def test_reset_commands_exist_only_where_expected():
+    pages = {page.relative_to(DOCS).as_posix() for page in ALL_PAGES if page.is_relative_to(DOCS) and reset_commands(page.read_text())}
+    assert pages == {"operations/local.md"}
+
+
+def test_troubleshooting_tries_non_destructive_steps_first():
+    text = section(DOCS / "operations" / "troubleshooting.md", "### The stack is broken after an update")
+    danger = text.index("!!! danger")
+    steps = [cmd for cmd in ("local-status", "local-logs", "local-build-up", "local-rebuild", "--force-recreate gateway", "smoke")
+             if 0 <= text.find(cmd) < danger]
+    assert len(steps) >= 3, steps
+    assert "local.md#back-up-local-data" in text[danger:]
+    assert "down -v" not in text

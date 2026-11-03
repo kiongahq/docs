@@ -481,16 +481,24 @@ curl -fsS -b kionga.cookies "$GATEWAY/api/v1/projects" | python3 -c 'import json
 
 ## Reset the stack
 
-To delete all local state and start clean:
+A reset deletes every volume in the stack. Try the recovery steps in
+[The stack is broken after an update](troubleshooting.md#the-stack-is-broken-after-an-update)
+first: most problems after an update need a rebuild, not a reset.
 
-```bash
-bash deploy/scripts/container.sh compose -f deploy/compose.yaml down -v   # -v deletes the named volumes
-make -C deploy local-up
-```
+!!! danger "A reset permanently deletes all local data"
+    `down -v` deletes the platform database, artifacts, models, notebooks, flow
+    history and workbench settings. Nothing can be recovered afterwards. Never
+    add `-v` to a routine restart.
 
-!!! warning
-    `down -v` permanently deletes platform databases, artifacts, models,
-    notebooks and IDE workspace data. Never add `-v` to a routine restart.
+    1. [Back up local data](#back-up-local-data) and check the backup.
+    2. Delete the stack and its volumes:
+
+        ```bash
+        bash deploy/scripts/container.sh compose -f deploy/compose.yaml down -v   # deletes every named volume
+        ```
+
+    3. Start clean with `make -C deploy local-up`, or bring your data back with
+       [Restore a backup](#restore-a-backup), which starts the stack itself.
 
 ## Next steps
 
