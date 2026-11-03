@@ -41,6 +41,12 @@ Python SDK and the REST API. All three call the same API, so you can mix them.
     projects. This tutorial uses the console session instead. See
     [Personal API keys](../reference/rbac.md#personal-api-keys).
 
+!!! warning "Local credentials"
+    The local stack uses development credentials such as `admin` /
+    `mlaiops-local` and listens only on `127.0.0.1`. Keep it that way unless you
+    change the credentials. See
+    [Local credentials and network access](installation.md#local-credentials-and-network-access).
+
 ## Step 1: Sign in
 
 Open <http://localhost:8080/console> and sign in with the local account

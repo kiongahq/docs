@@ -124,11 +124,50 @@ GATEWAY=http://localhost:18080 ./deploy/scripts/demo-smoke.sh
 [Service endpoints](../reference/service-endpoints.md) lists every service, and
 [Services and ports](../reference/services.md) lists every port.
 
-## Change ports and network access
+## Local credentials and network access {#local-credentials-and-network-access}
 
-Every published port binds to `127.0.0.1`, so only your machine can reach the
-stack. To open it to other machines on a trusted network, set
-`KIONGA_BIND_ADDRESS`; see [Network exposure](../operations/local.md#network-exposure).
+!!! warning "Development credentials"
+    The local stack starts with the well-known credentials below so that it works
+    without setup. Anyone who can reach these ports can use them. Every port binds
+    to `127.0.0.1` by default, so only your machine can connect. Keep that
+    default unless you change these credentials, and never put the local stack on
+    a network you do not trust.
+
+| Port (variable) | Service | Default credential |
+| --- | --- | --- |
+| `8080` (`GATEWAY_PORT`) | Console and API | `admin` / `mlaiops-local`; internal service token `kionga-local-service-token` |
+| `5432` (`POSTGRES_PORT`) | PostgreSQL | `mlaiops` / `mlaiops-local` |
+| `6379` (`REDIS_PORT`) | Redis | None |
+| `9092` (`KAFKA_PORT`) | Kafka broker | None (plaintext listener) |
+| `8082` (`KAFKA_REST_PORT`) | Kafka REST proxy | None |
+| `9000` / `9001` (`OBJECTSTORE_PORT` / `OBJECTSTORE_CONSOLE_PORT`) | RustFS S3 API and console | `mlaiops` / `mlaiops-local-secret` |
+| `15000` (`MLFLOW_PORT`) | MLflow | None |
+| `4200` (`PREFECT_PORT`) | Prefect | None |
+| `3000` (`LANGFUSE_PORT`) | Langfuse | `admin@local.dev` / `mlaiops-local-admin`; project keys `pk-lf-local-dev` / `sk-lf-local-dev` |
+| `5556` (`DEX_PORT`) | Dex single sign-on | Test directory password `kionga-sso-dev` |
+| `8083` (`FEATURE_GATEWAY_PORT`) | Feature gateway | Internal service token |
+| `8084` (`STORAGE_PROXY_PORT`) | Storage proxy | Internal service token |
+| `8085` (`SERVING_MANAGER_PORT`) | Serving manager | Internal service token |
+| `8081` (`TRACE_PROXY_PORT`) | Trace proxy | None |
+| `19000` (`AGENT_RUNTIME_PORT`) | Agent runtime | None |
+| `8888` (`JUPYTER_PORT`), always `127.0.0.1` | Jupyter workbench | Token `mlaiops-local` |
+
+To check that a data service is not reachable from your network, run this from
+another machine on the same network, with your machine's address in place of
+`192.168.1.20`:
+
+```bash
+nc -vz -w 3 192.168.1.20 5432
+```
+
+If startup moved PostgreSQL to another port (for example `15432`), use that port.
+With the default binding the connection is refused or times out. A `succeeded`
+or `open` result means the port is published on that interface; see
+[Network exposure](../operations/local.md#network-exposure).
+
+To open the stack to other machines on a trusted network, set
+`KIONGA_BIND_ADDRESS`, as described in
+[Network exposure](../operations/local.md#network-exposure).
 
 To choose a port yourself, set its variable when you start the stack:
 

@@ -337,6 +337,10 @@ make -C deploy local-up
     only the console. Use it only on a network you trust, and change the
     credentials first if anyone else shares that network.
 
+To confirm what other machines can reach, run `nc -vz -w 3 <this machine's address> 5432`
+from another machine on the network. It is refused with the default binding and
+succeeds after you widen it.
+
 Some ports stay on `127.0.0.1` regardless: Jupyter (`JUPYTER_PORT`), the log
 exporter and the `log-export-es` and `log-export-os` test clusters. The browser
 IDE publishes no port; open Jupyter and the IDE through the console.

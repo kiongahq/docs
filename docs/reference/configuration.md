@@ -72,7 +72,7 @@ public overlay (`compose.public.yaml`) only Caddy publishes ports (80 and 443).
 | `SERVING_MANAGER_URL` | `http://serving-manager:8085` | Model serving control |
 | `LANGFUSE_URL` / `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` | local defaults | Prompt library proxy |
 | `MLAIOPS_LOCAL_ROLE` | `admin` | Role of the local login account (`MLAIOPS_LOCAL_USERNAME`); every API request still needs a credential |
-| `MLAIOPS_ALLOWED_ORIGIN` | `*` | CORS origin (pinned to your domain in public) |
+| `MLAIOPS_ALLOWED_ORIGIN` | *(unset)* | Console origin. Unset, the gateway answers cross-origin requests with `Access-Control-Allow-Origin: *` and never allows credentials, so browsers do not send the session cookie to it from other sites; a caller that already holds an API key can still call it from any origin. Production requires your HTTPS console origin, which also restricts workspace framing |
 | `MLAIOPS_INTERNAL_TOKEN` | `kionga-local-service-token` in Compose | Shared bearer token granting the `service` role; set your own outside local development |
 
 ## RBAC
@@ -276,6 +276,15 @@ not use this overlay for a production deployment. Use the [public VM](../operati
 | `MLAIOPS_LOCAL_PASSWORD` | Break-glass local administrator password (required) |
 | `MLAIOPS_INTERNAL_TOKEN` | Protects internal service APIs |
 | `LANGFUSE_NEXTAUTH_SECRET` / `LANGFUSE_SALT` | Langfuse hardening |
+| `POSTGRES_PASSWORD`, `OBJECTSTORE_ACCESS_KEY` / `OBJECTSTORE_SECRET_KEY` | Database password and object store keys (hex, for example `openssl rand -hex 24`) |
+| `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` / `LANGFUSE_INIT_USER_PASSWORD` | Langfuse project keys and administrator password; Langfuse is published at `/langfuse` |
+| `JUPYTER_TOKEN`, `IDE_PASSWORD`, `KIONGA_WORKSPACE_JOB_TOKEN`, `KIONGA_WORKSPACE_API_TOKEN`, `KIONGA_DESIGNER_RUNNER_TOKEN` | Workspace and runner credentials |
+| `LANGFLOW_SUPERUSER_PASSWORD` / `LANGFLOW_SECRET_KEY` | Langflow credentials |
+| `DEX_LDAP_BIND_PASSWORD` | Required only with `KIONGA_SSO_LDAP=true` |
+
+The overlay refuses to start when any of these is unset or equal to a local
+default: a preflight check runs before Caddy, Dex, the gateway, Langfuse,
+PostgreSQL, the object store and Jupyter start.
 
 ## Jupyter workbench
 
