@@ -75,3 +75,53 @@ def test_local_role_does_not_claim_anonymous_access():
     assert "every API request still needs a credential" in row
     origin = next(line for line in text.splitlines() if line.startswith("| `MLAIOPS_ALLOWED_ORIGIN`"))
     assert "never allows credentials" in origin
+
+
+LOCAL = DOCS / "operations" / "local.md"
+EXCLUDED_VOLUMES = {"postgres-data", "sso-providers"}  # dumped with pg_dumpall / regenerated
+
+
+def backup_section():
+    return section(LOCAL, "## Back up local data")
+
+
+def volume_loops(text):
+    return [set(loop.split()) for loop in re.findall(r"for volume in ([a-z0-9 -]+); do", text)]
+
+
+def test_backup_never_archives_a_running_postgres_directory():
+    text = backup_section()
+    assert "pg_dumpall" in text
+    assert not re.search(r"postgres-data:/data", text), "the PostgreSQL data directory is archived"
+
+
+def test_backup_archives_files_only_after_the_stack_stops():
+    text = backup_section()
+    assert text.index("make -C deploy local-down") < text.index("tar czf")
+
+
+def test_backup_and_restore_cover_the_same_volumes():
+    table = set(re.findall(r"^\| `([a-z0-9-]+)`", backup_section(), re.M))
+    table |= {"workspace-codex", "workspace-claude"} if "`workspace-codex`, `workspace-claude`" in backup_section() else set()
+    loops = volume_loops(backup_section()) + volume_loops(section(LOCAL, "## Restore a backup"))
+    assert len(loops) == 2, "expected one archive loop and one restore loop"
+    assert loops[0] == loops[1] == table - EXCLUDED_VOLUMES
+
+
+def test_every_compose_volume_is_backed_up_or_excluded():
+    volumes = set(deploy_compose()["volumes"])
+    table = set(re.findall(r"`([a-z0-9-]+)`", backup_section()))
+    assert volumes <= table, f"volumes without backup guidance: {sorted(volumes - table)}"
+
+
+def test_installation_names_the_same_durable_volumes():
+    text = section(INSTALL, "## Stop and restart")
+    listed = set(re.findall(r"`([a-z0-9]+-[a-z0-9-]+)`", text)) - {"local-down", "local-up", "local-status", "local-logs", "local-rebuild", "workspace-pull"}
+    (loop,) = volume_loops(backup_section())[:1]
+    assert listed == loop | {"postgres-data"}
+
+
+def test_restore_is_documented_and_checked():
+    text = section(LOCAL, "## Restore a backup")
+    assert "psql" in text and "postgres.sql" in text
+    assert "/api/v1/projects" in text  # compare the project count

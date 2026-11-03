@@ -189,9 +189,12 @@ make -C deploy local-rebuild  # rebuild every image, then start
 make -C deploy workspace-pull # fast-forward clean repository checkouts
 ```
 
-Your projects, models, object storage, online features, pipeline history, and
-notebooks live in named container volumes (`postgres-data`, `objectstore-data`,
-`redis-data`, `prefect-data`, `jupyter-data`), so they survive restarts.
+Your projects, models, object storage, online features, pipeline history,
+notebooks and workbench settings live in named container volumes
+(`postgres-data`, `objectstore-data`, `jupyter-data`, `prefect-data`,
+`redis-data`, `workspace-codex`, `workspace-claude` and, with Langflow,
+`langflow-data`), so they survive restarts. To back them up, see
+[Back up local data](../operations/local.md#back-up-local-data).
 
 Services use `restart: unless-stopped`. Restart behavior after a host or VM
 reboot also depends on the engine and its startup settings. Start the engine,
