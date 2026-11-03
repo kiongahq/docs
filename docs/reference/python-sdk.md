@@ -82,6 +82,7 @@ The SDK requires Python 3.11 or later. Its core dependencies are `httpx` and
 | --- | --- | --- |
 | `MLAIOPS_URL` | `http://localhost:8080` | Kionga base URL. Used when you do not pass `base_url`. |
 | `MLAIOPS_TOKEN` | *(unset)* | Personal API key, sent as `Authorization: Bearer <key>`. Used when you do not pass `token`. |
+| `MLAIOPS_ALLOW_INSECURE_HTTP` | *(unset)* | Set to `1` to send the key over plain HTTP to a host the SDK would otherwise refuse. See [Plain HTTP](#plain-http). |
 
 - **Inside a Kionga workspace** (Jupyter workbench or browser IDE), `MLAIOPS_URL`
   is preset to a workspace helper that signs your calls as the workspace owner.
@@ -133,6 +134,17 @@ MLAIOpsClient(
 | `actor` | Sent as the `X-MLAIOps-Actor` header. Kionga uses it for attribution only when the request has no authenticated identity. |
 | `timeout` | Request timeout in seconds. `invoke_agent` has its own timeout. |
 | `transport` | A custom `httpx` transport, for example for tests. |
+| `allow_insecure_http` | `True` sends the key over plain HTTP to any host and logs a warning. `False` refuses even when `MLAIOPS_ALLOW_INSECURE_HTTP` is set. Defaults to that variable. |
+
+### Plain HTTP {#plain-http}
+
+The client raises `InsecureTransportError` when it has a key and the URL is plain
+`http://` to another machine, because anyone on the network path could read the
+key. `record_trace` skips the trace and logs a warning instead. Plain HTTP stays
+allowed for loopback (`localhost`, `127.0.0.0/8`, `::1`) and for container and
+cluster service names: a single-label host such as `gateway`, or a name ending in
+`.svc` or `.svc.cluster.local`. Private addresses such as `192.168.1.20` are
+refused. Use `https://` for them, or opt out on a network you trust.
 
 The client is a context manager; `close()` releases its connections. Every method
 raises `httpx.HTTPStatusError` when Kionga returns an error status. The error
@@ -453,15 +465,23 @@ async with get_langgraph_checkpointer() as saver:
     app = graph.compile(checkpointer=saver)
 ```
 
-`AgentMemoryClient(agent_name, session_id="", *, dsn=None, feature_gateway_url=None, embedder=None)`
-gives an agent long-term memory and feature lookups:
+`AgentMemoryClient(agent_name, session_id="", *, user_id=None, tenant_id="", dsn=None, feature_gateway_url=None, embedder=None)`
+gives an agent long-term memory and feature lookups. Memory is isolated by tenant,
+agent and user. Pass the authenticated user, never a value from model output or a
+request body:
 
 | Method | Description |
 | --- | --- |
-| `remember(text, *, metadata=None)` | Stores a fact for this agent in PostgreSQL with pgvector. Creates the `agent_memories` table on first use. |
-| `recall(query, *, top_k=3)` | Returns the most similar memories as dictionaries with `text`, `metadata` and `score` |
+| `remember(text, *, metadata=None, scope="user")` | Stores a fact for this user and session in PostgreSQL with pgvector. Creates or upgrades the `agent_memories` table on first use. `scope="agent"` stores a fact with no owner. |
+| `recall(query, *, top_k=3, scope="user")` | Returns the most similar memories as dictionaries with `text`, `metadata` and `score`. `user` reads this user's memories, `session` narrows to this session, and `agent` reads every memory of this agent and tenant. |
+| `forget(*, user_id=None, session_id=None)` | Deletes one user's memories of this agent and tenant, optionally for one session, and returns the row count. A client bound to a user can delete only that user's rows. For a full erasure, run it once per agent. |
 | `get_entity_features(entity_id, feature_view, *, timeout=5.0)` | Fetches online features for one entity from the feature gateway |
 | `close()` | Closes the database connection. The client is also a context manager. |
+
+`remember` and `recall` raise `MissingConfiguration` without a user, unless you
+explicitly choose `scope="agent"`. `forget` always needs a user. Rows stored before
+user scoping have no owner: they stay in the table, and only `scope="agent"` reads
+them. Feature lookups need no user.
 
 Memory uses `MLAIOPS_MEMORY_DSN`, then `DATABASE_URL`, and feature lookups use
 `MLAIOPS_FEATURE_GATEWAY_URL`; a missing value raises `MissingConfiguration`. The

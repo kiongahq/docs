@@ -205,3 +205,9 @@ def test_guides_keep_the_provider_key_in_the_trace_proxy():
 
 def test_models_guide_does_not_claim_servers_hold_credentials():
     assert "run with the platform's model-store credentials" not in (DOCS / "guides" / "models-serving.md").read_text()
+
+
+def test_sdk_reference_describes_memory_scoping_and_plain_http():
+    text = (DOCS / "reference" / "python-sdk.md").read_text()
+    assert 'user_id=None, tenant_id=""' in text and "`forget(" in text and 'scope="user"' in text
+    assert "`MLAIOPS_ALLOW_INSECURE_HTTP`" in text and "InsecureTransportError" in text

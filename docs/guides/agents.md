@@ -329,8 +329,9 @@ Short-term checkpoints and long-term memory are separate:
 - **Checkpoints** keep one conversation's state across turns. They use the
   PostgreSQL URL in `MLAIOPS_CHECKPOINT_DSN`, or `DATABASE_URL` when that is not
   set.
-- **Long-term memory** uses `AgentMemoryClient`, with `remember` and `recall`
-  over a pgvector table in the same PostgreSQL, plus `get_entity_features` for
+- **Long-term memory** uses `AgentMemoryClient`, with `remember`, `recall` and
+  `forget` over a pgvector table in the same PostgreSQL, isolated per user (pass
+  the authenticated `user_id`), plus `get_entity_features` for
   [online features](features.md). Its default embedding function is deterministic, so
   memory tests run offline.
 
