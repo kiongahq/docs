@@ -97,15 +97,21 @@ addresses:
 | Langfuse | `local-langfuse` | `http://langfuse:3000/api/public/health` | `none` |
 | Prefect | `local-prefect` | `http://prefect-server:4200/api` | `none` |
 | Redis / Feast | `local-features` | `http://feature-gateway:8083/healthz` | `none` |
-| Kubernetes | `kind-cluster` | Your cluster API health URL | `env:VARIABLE` naming a variable that holds a bearer token |
+| Kubernetes | `kind-cluster` | Your cluster API health URL | `env:KIONGA_PLATFORM_SECRET_<NAME>` naming a variable that holds a bearer token |
 
 - For Prefect, enter the API base address; Kionga checks `/api/health` under it.
   For OpenFaaS, enter the gateway address; Kionga checks `/system/functions` with
   basic authentication (`OPENFAAS_USER`, default `admin`, and
   `OPENFAAS_PASSWORD`). For every other type, enter a health endpoint.
-- The credential reference is `none` or `env:VARIABLE`, naming an environment
-  variable set on the gateway. Kionga sends its value as a bearer token. Never
-  paste a secret into the form; Kionga stores only the reference.
+- The credential reference is `none` or `env:VARIABLE`, naming a gateway variable
+  that starts with `KIONGA_PLATFORM_SECRET_` or is listed in
+  `KIONGA_PLATFORM_SECRET_REFS`. An OpenFaaS connection can also use
+  `OPENFAAS_PASSWORD`, an MLflow connection `MLFLOW_TOKEN`, and a KFP connection
+  `KFP_TOKEN`. Other names return a 422, and a saved connection that uses one fails
+  its test with `not permitted`; see
+  [Migrate a stored reference](../operations/production-operations.md#migrate-a-stored-reference).
+  Kionga sends the value as a bearer token. Never paste a secret into the form;
+  Kionga stores only the reference.
 - Only a `2xx` response counts as healthy. Redirects, missing routes and
   authentication failures are reported as failures, with the reason.
 - You can make a Prefect or OpenFaaS connection the engine for new operations

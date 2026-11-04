@@ -244,34 +244,41 @@ Set these on the gateway. Empty uses the default. On a single server, use the
 | Variable | `agent_teams.tuning` key | `agentTeams` value | Purpose |
 | --- | --- | --- | --- |
 | `KIONGA_AGENT_TURN_TIMEOUT_SECONDS` | `turn_timeout_seconds` | `turnTimeoutSeconds` | How long the gateway waits for one model call. Keep it below `TRACE_PROXY_WRITE_TIMEOUT_SECONDS`. |
-| `KIONGA_TEAM_COMPACT_THRESHOLD_TOKENS` | `compact_threshold_tokens` | `compactThresholdTokens` | Input size that triggers transcript compaction. Default 120,000. A worker over this size with only its 10 protected recent turns left fails with `context_exhausted`. |
+| `KIONGA_TEAM_COMPACT_THRESHOLD_TOKENS` | `compact_threshold_tokens` | `compactThresholdTokens` | Input size that raises the compaction level. Default 120,000. Crossing it never fails a worker. |
 | `KIONGA_TEAM_WORKER_POOL` | `worker_pool` | `workerPool` | Workers one gateway runs at a time. |
 | `KIONGA_TEAM_SANDBOX_RETENTION_SECONDS` | `sandbox_retention_seconds` | `sandboxRetentionSeconds` | How long sandboxes stay after a run ends. Default 24 hours. |
 | `KIONGA_TEAM_SCHEDULER` | `scheduler` | `scheduler` | `off` stops the team scheduler on this gateway. |
 
 ## Secret references
 
-Knowledge bases and agent API connections name their credential as `env:NAME`. Kionga
-resolves a name only if it is permitted for that resource.
+A registered record names its credential as `env:NAME`. Kionga resolves a name only from that
+record's scope, and one scope cannot read another's variables.
 
-| Resource | Prefix | Other permitted names | Allowlist variable |
+| Record | Prefix | Names kept | Allowlist variable |
 | --- | --- | --- | --- |
 | Knowledge base | `KIONGA_KB_SECRET_*` | `KIONGA_QDRANT_KEY`, `KIONGA_KNOWLEDGE_DSN` | `KIONGA_KB_SECRET_REFS` |
 | Agent API connection | `KIONGA_CONNECTION_SECRET_*` | `KIONGA_AGENT_API_TOKEN` | `KIONGA_CONNECTION_SECRET_REFS` |
+| Feature store | `KIONGA_FEATURE_SECRET_*` | `FEAST_TOKEN` | `KIONGA_FEATURE_SECRET_REFS` |
+| Storage connection | `KIONGA_STORAGE_SECRET_*` | `LAKE_CREDENTIALS` | `KIONGA_STORAGE_SECRET_REFS` |
+| Platform connection | `KIONGA_PLATFORM_SECRET_*` | By type: `OPENFAAS_PASSWORD` (OpenFaaS), `MLFLOW_TOKEN` (MLflow), `KFP_TOKEN` (KFP) | `KIONGA_PLATFORM_SECRET_REFS` |
 
 The allowlists are comma-separated names. The gateway's own secrets are refused even when you
-allowlist them, and neither resource can read the other's variables.
+allowlist them; the by-type names above are the only exception, and only on a connection of that
+type. Creating a record with a name outside its scope returns a 422 before any network call.
 
 Supply the values for your deployment:
 
 | Deployment | How |
 | --- | --- |
-| Single server | Put one file per name in `secrets_directory`, and list the names in `secret_references.files` in `deployment.json`. Use `secret_references.knowledge_allowlist` and `connection_allowlist` for the allowlists. The installer refuses names that are not permitted. |
-| Kubernetes | Create the Secret `secretReferences.secretName` with one key per name, and list the names in `secretReferences.names`. Use `knowledgeAllowlist` and `connectionAllowlist` for the allowlists. |
+| Single server | Put one file per name in `secrets_directory`, and list the names in `secret_references.files` in `deployment.json`. The allowlists are `knowledge_allowlist`, `connection_allowlist`, `feature_allowlist`, `storage_allowlist` and `platform_allowlist` in the same block. The installer refuses names that are not permitted. |
+| Kubernetes | Create the Secret `secretReferences.secretName` with one key per name, and list the names in `secretReferences.names`. The allowlists are `knowledgeAllowlist`, `connectionAllowlist`, `featureAllowlist`, `storageAllowlist` and `platformAllowlist`. |
 | Local | Put `NAME=value` lines in `deploy/config/secrets/gateway.env`, which Git ignores. Set the allowlists in `deploy/.env`. |
 
-To change a stored reference that uses another name, see
-[Migrate a stored reference](../guides/langflow.md#migrate-a-stored-reference).
+`<NAME>_FILE` loads any permitted reference from a file, and setting both `<NAME>` and
+`<NAME>_FILE` stops the gateway. A gateway secret never loads through an allowlist.
+
+To fix a stored record that uses another name, see
+[Migrate a stored reference](../operations/production-operations.md#migrate-a-stored-reference).
 
 ## Serving manager
 

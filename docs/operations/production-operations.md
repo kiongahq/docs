@@ -194,3 +194,38 @@ On Kubernetes, `deploy/scripts/verify-production.py` automates the read-only
 control-plane checks, and `--test-workspace-handoff` adds a workspace session
 check; see [Verify](managed-kubernetes.md#verify). Record the result, then run
 the stateful, disruptive and recovery cases in staging.
+
+## Migrate a stored reference
+
+Registered records name their credential as `env:NAME`, and each record type has its own
+[scope](../reference/configuration.md#secret-references). This stops a registered endpoint from
+receiving a gateway secret such as `DATABASE_URL`.
+
+A saved record whose variable is outside its scope stops authenticating when you deploy this
+change. Kionga does not change the record, and sends the credential nowhere.
+
+| Record | What you see |
+| --- | --- |
+| Knowledge base | 503 `backend_unavailable` on add and search |
+| Agent API connection | 503 `credential_unavailable` on invoke |
+| Platform connection | The test fails with `not permitted`. An active Prefect connection falls back to no base address, and an active OpenFaaS connection reports not configured. |
+| Feature store | Health is `configured` with `not permitted`, and `secret_present` is false |
+| Storage connection | 503 `connection_unavailable`, and `secret_present` is false |
+
+To find affected records before anyone hits them, search the gateway's startup logs for
+`secret reference refused`. Each line gives the record's kind, ID and variable name, never its value.
+
+Then fix each record:
+
+1. **An ordinary variable**: add its name to the scope's allowlist
+   and restart the gateway. The record keeps working unchanged.
+2. **A gateway secret**, such as `env:DATABASE_URL`: you cannot allowlist it. The endpoint that record
+   names has received that secret, so consider rotating it. Issue a dedicated credential if you can,
+   set it as `KIONGA_<SCOPE>_SECRET_<NAME>`, and register the record again. You can update a storage
+   connection with `PUT`. The other record types have no update route, so create a new record and
+   move its users to it.
+
+!!! warning "A reference is not bound to its endpoint"
+    An administrator who can register an endpoint can still read any variable in that scope by
+    pointing a new record at their own server. Give each secret only to people you would trust
+    with its value.

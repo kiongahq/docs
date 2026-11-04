@@ -107,7 +107,8 @@ restarting the gateway.
 3. Enter the **Service address**: the Prefect API base address, or the OpenFaaS
    gateway address.
 4. Enter the **Credential reference**: `none`, or `env:VARIABLE` naming a
-   variable set on the gateway. Prefect uses it as a bearer token; OpenFaaS uses
+   [permitted variable](../reference/configuration.md#secret-references) set on
+   the gateway. Prefect uses it as a bearer token; OpenFaaS uses
    it as the gateway password, with the user from `OPENFAAS_USER` (default
    `admin`). Never paste a secret into this field.
 5. Click **Save and test**. A check passes only on a successful HTTP response;

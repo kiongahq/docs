@@ -56,7 +56,7 @@ To show GPU utilization, deploy a DCGM exporter scraped by Prometheus with `name
 
 An administrator can register a Qdrant or pgvector backend for a project in **Langflow > Register knowledge base** or through `POST /api/v1/admin/knowledge-bases`. Set the credential on the **gateway** first. Kionga stores only an `env:VARIABLE` reference and keeps the endpoint and credential out of the project-facing catalog and flow JSON. Use a separate Qdrant API key or PostgreSQL role with the minimum access needed for each deployment.
 
-Use a variable named `KIONGA_KB_SECRET_<NAME>`, or the existing `KIONGA_QDRANT_KEY` or `KIONGA_KNOWLEDGE_DSN`. Kionga refuses any other name with a 422 unless an operator allowlists it. To supply the value, see [Secret references](../reference/configuration.md#secret-references). The Langflow editor and agent runtime do not need the backend credentials.
+Use a variable named `KIONGA_KB_SECRET_<NAME>`, or the existing `KIONGA_QDRANT_KEY` or `KIONGA_KNOWLEDGE_DSN`. Kionga refuses any other name with a 422 unless an operator allowlists it. To supply the value, see [Secret references](../reference/configuration.md#secret-references). To fix a saved record that uses another name, see [Migrate a stored reference](../operations/production-operations.md#migrate-a-stored-reference). The Langflow editor and agent runtime do not need the backend credentials.
 
 For Qdrant, set `KIONGA_QDRANT_KEY` on the gateway and register:
 
@@ -104,30 +104,6 @@ An administrator can open **Langflow > Register agent API** and assign a fixed H
 The canvas lists the connection ID and description, never its URL or secret reference. **Kionga API Invoke** accepts a JSON body and calls only the registered URL. The gateway checks project membership on every call, sends the configured bearer token, blocks redirects, and limits request and response size. Configure narrowly scoped upstream credentials: anyone granted this project and Langflow access can call the approved operation.
 
 For an OpenAI-compatible language model, register its full chat-completions URL (for example, `https://api.example.com/v1/chat/completions`) as the operation. In **Kionga Chat API**, refresh the approved connections, select that connection ID, and enter the provider's model ID. This also works with a self-hosted OpenAI-compatible inference server reachable from the gateway. Kionga sends the system and user messages through the approved connection and returns the first text completion. The registered endpoint controls which provider is called; changing the model ID does not change the destination.
-
-## Migrate a stored reference
-
-Knowledge bases and agent API connections resolve a credential reference only if the variable is
-[permitted for that resource](../reference/configuration.md#secret-references). This stops a
-registered endpoint from receiving a gateway secret such as `DATABASE_URL`.
-
-A saved record that uses another variable name stops working when you upgrade. Calls that use it
-return a 503, and Kionga sends no request. Registering a new record with that name returns a 422.
-
-You have two ways to fix a record:
-
-- **Keep the record.** Add the variable's name to `KIONGA_KB_SECRET_REFS` or
-  `KIONGA_CONNECTION_SECRET_REFS`, then restart the gateway. This does not work for the gateway's
-  own secrets, which are always refused. If a record used one of those, replace the record and
-  rotate that secret, because the endpoint it names has received it.
-- **Move to the prefix.** Supply the value as `KIONGA_KB_SECRET_<NAME>` or
-  `KIONGA_CONNECTION_SECRET_<NAME>`. Records have no edit route, so register a new record with the
-  new reference, then select its ID in your flows and graphs.
-
-!!! warning "A reference is not bound to its endpoint"
-    An administrator who can register an endpoint can still read any permitted variable of that
-    resource by pointing a new record at their own server. Give each secret to the people you would
-    trust with its value.
 
 ## Local Compose
 

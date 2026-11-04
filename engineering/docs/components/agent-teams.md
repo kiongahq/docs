@@ -58,7 +58,7 @@ to check.
 - **Runtime.** The manager verifies the runtime at startup and before each create, and fails closed
   with no fallback. An engine's runtime list is not proof, because Podman lists `runsc` when it is
   not installed, so verification uses a probe's kernel report.
-- **Secret references.** `secret_refs.go` limits `env:` lookups by resource. `vm/up.py` and the chart refuse names
+- **Secret references.** `runtimeconfig/secret_refs.go` limits `env:` lookups to five scopes. `vm/up.py` and the chart refuse names
   the gateway owns at deploy time, and the gateway refuses them again at resolve time.
 - **Single server.** `vm/up.py` adds two overlays only when `deployment.json` enables them. Unknown
   settings are refused, so the runtime and the unsafe flag cannot be expressed, and a probe container

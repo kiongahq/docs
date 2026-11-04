@@ -19,14 +19,17 @@ interoperability API, Ceph RGW, RustFS, Wasabi or Cloudflare R2.
   root or account-wide keys.
 - An environment variable on the gateway that holds the key pair as
   `ACCESS_KEY_ID:SECRET_ACCESS_KEY`. Kionga stores only a reference to the
-  variable (`env:VARIABLE`), never the key itself.
-    - **Local stack:** add the variable to the `gateway` service's
-      `environment` in `deploy/compose.yaml`, then run
-      `make -C deploy local-up`. Values in `deploy/.env` reach the gateway only
-      when `deploy/compose.yaml` passes them through.
-    - **Kubernetes:** add the variable to the gateway with the chart's
-      `components.gateway.extraEnv`, read from a Secret with
-      `valueFrom.secretKeyRef`.
+  variable (`env:VARIABLE`), never the key itself. The variable must be
+  `LAKE_CREDENTIALS`, start with `KIONGA_STORAGE_SECRET_`, or be listed in
+  `KIONGA_STORAGE_SECRET_REFS`. See
+  [Secret references](../reference/configuration.md#secret-references).
+    - **Single server:** put the value in a file named after the variable in
+      `secrets_directory`, and list the name in `secret_references.files` in
+      `deployment.json`.
+    - **Kubernetes:** add the key to the Secret `secretReferences.secretName`, and
+      list the name in the chart's `secretReferences.names`.
+    - **Local stack:** add `NAME=value` to `deploy/config/secrets/gateway.env`, then
+      run `make -C deploy local-up`.
 
 ## Register a bucket
 
@@ -60,7 +63,7 @@ interoperability API, Ceph RGW, RustFS, Wasabi or Cloudflare R2.
     | `bucket` | A valid S3 bucket name. Buckets with dots need `path_style` over HTTPS, because wildcard certificates do not cover them |
     | `path_style` | `true` for RustFS, Ceph and dotted bucket names; `false` for virtual-hosted Amazon S3 |
     | `ca_bundle` | PEM CA certificates, added to the system roots, for a private CA. Private keys are rejected |
-    | `secret_ref` | `env:VARIABLE`, naming the gateway variable that holds `ACCESS_KEY_ID:SECRET_ACCESS_KEY` |
+    | `secret_ref` | `env:VARIABLE`, naming a permitted gateway variable that holds `ACCESS_KEY_ID:SECRET_ACCESS_KEY` |
     | `allowed_projects` | IDs of the projects that may use the connection. Each project must exist |
 
     A new connection starts as `configured`.
@@ -154,3 +157,9 @@ different classes, run one installation per group.
   `valueFrom.secretKeyRef`, never as a plain value or from a ConfigMap.
 - [Feature store integrations](../guides/feature-stores.md)
 - [Deploy on Kubernetes](managed-kubernetes.md)
+
+## Existing connections
+
+A saved connection whose variable is outside this scope stops authenticating, with a 503
+`connection_unavailable`, and `secret_present` is false. You can correct it with `PUT`. See
+[Migrate a stored reference](production-operations.md#migrate-a-stored-reference).

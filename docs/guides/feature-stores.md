@@ -26,8 +26,9 @@ can drive in that store:
 - A running Feast feature server that the Kionga gateway can reach over HTTP or
   HTTPS.
 - If Feast needs a bearer token, an operator sets it as an environment variable
-  on the gateway, for example `FEAST_TOKEN`. You never paste the secret into
-  Kionga.
+  on the gateway, for example `FEAST_TOKEN`. See
+  [Secret references](../reference/configuration.md#secret-references). You never
+  paste the secret into Kionga.
 
 ## Connect a Feast feature server
 
@@ -41,7 +42,8 @@ can drive in that store:
        `http://feast-feature-server:6566`.
     4. Optional: enter **Feature services** as a comma-separated list. Feast's HTTP
        server cannot list them itself.
-    5. Optional: enter a **Credential reference** such as `env:FEAST_TOKEN`.
+    5. Optional: enter a **Credential reference** such as `env:FEAST_TOKEN` or
+       `env:KIONGA_FEATURE_SECRET_<NAME>`.
     6. Enter the **Allowed projects** as comma-separated project IDs. Leave it
        empty to share the store with every project.
     7. Click **Save and test**.
@@ -68,9 +70,12 @@ Kionga validates the connection before saving it:
 - `config` accepts only the provider's keys (`url` and `feature_services` for
   Feast). Keys that look like secrets, and URLs with embedded credentials, are
   rejected.
-- `secret_ref` is empty or `env:VARIABLE`. Kionga reads the value only to run a
-  check, and never stores, logs or returns it. Responses report only whether the
-  secret is present.
+- `secret_ref` is empty or `env:VARIABLE`, where the variable is `FEAST_TOKEN`,
+  starts with `KIONGA_FEATURE_SECRET_`, or is listed in
+  `KIONGA_FEATURE_SECRET_REFS`. Other names return a 422. See
+  [Secret references](../reference/configuration.md#secret-references). Kionga reads
+  the value only to run a check, and never stores, logs or returns it. Responses
+  report only whether the secret is present.
 - Every project in `allowed_projects` must exist.
 
 **Verify:** the health message reads `Healthy: Feast feature server is serving
@@ -149,3 +154,7 @@ the ID `internal`, cannot be edited or removed; its addresses come from
 - [Process real-time events](realtime.md) with online features.
 - For how adapters work and how to add one, see the
   [engineering handbook](https://kiongahq.github.io/docs/engineering/components/go-packages/).
+
+A saved feature store whose variable is outside this scope stops authenticating. Its health
+reads `configured` with `not permitted`. See
+[Migrate a stored reference](../operations/production-operations.md#migrate-a-stored-reference).

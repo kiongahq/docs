@@ -30,7 +30,7 @@ Route: `/api/v1/agent-definitions`. IDs start with `agd-`.
     {"kind": "dataset", "ref": "ds-..."}
   ],
   "workspace": "none",
-  "limits": {"max_turns": 100, "max_tokens": 200000, "max_seconds": 3600}
+  "limits": {"max_turns": 100, "max_tokens": 1000000, "max_seconds": 3600}
 }
 ```
 
@@ -41,8 +41,8 @@ Route: `/api/v1/agent-definitions`. IDs start with `agd-`.
 | `instructions` | At most 32000 characters. |
 | `workspace` | `none` or `sandbox`. `sandbox` and `git` grants require `sandbox`. |
 | `limits.max_turns` | 1 to 500. |
-| `limits.max_tokens` | 1 to 5,000,000. |
-| `limits.max_seconds` | 60 to 14400. |
+| `limits.max_tokens` | 1 to 5,000,000. Default 1,000,000. Counts provider usage, including context re-sent each turn. |
+| `limits.max_seconds` | 60 to 14400. Counts active time, not waiting on a retry or an approval. |
 
 Every save increments `revision`. Kionga keeps the last 20 revisions.
 
@@ -60,7 +60,7 @@ Route: `/api/v1/agent-teams`. IDs start with `agt-`.
   "coordinator": {"instructions": "...", "model": "llm"},
   "members": ["agd-..."],
   "brief": "Shared rules appended to every agent's system prompt.",
-  "limits": {"max_workers_total": 20, "max_concurrent_workers": 5, "max_tokens": 2000000, "max_seconds": 14400}
+  "limits": {"max_workers_total": 20, "max_concurrent_workers": 5, "max_tokens": 5000000, "max_seconds": 14400}
 }
 ```
 
@@ -70,7 +70,7 @@ Route: `/api/v1/agent-teams`. IDs start with `agt-`.
 | `brief` | At most 16000 characters. |
 | `limits.max_workers_total` | 1 to 50. |
 | `limits.max_concurrent_workers` | 1 to 16. |
-| `limits.max_tokens` | 1 to 20,000,000. |
+| `limits.max_tokens` | 1 to 20,000,000. Default 5,000,000. Counts provider usage, including context re-sent each turn. |
 | `limits.max_seconds` | 60 to 86400. |
 
 ## Team run
@@ -143,10 +143,21 @@ The server defines these tools. A graph or a model cannot add to them.
 | `worker_diff {worker}` | Coordinator | Read-only view of a worker's changes. |
 | `finish {report}` | All | A worker hands back to the coordinator. The coordinator ends the run, which is refused while workers are live. |
 
+## Resource tools
+
+Each grant adds one tool, named with its kind and reference, such as `knowledge_kb_123`.
+
+| Grant | Input | Behavior | Approval |
+| --- | --- | --- | --- |
+| `tool` | `{input}` | Invokes the registered tool's function after approval. Returns `tool_no_function` when no deployed function or runtime backs it. | Yes |
+| `connection` | A JSON body | Calls the registered API connection after approval. | Yes |
+| `knowledge` | `{query, limit?}` | Takes text. Kionga embeds it at the knowledge base's dimensions and searches. An all-zero vector returns an empty result without searching. | No |
+| `dataset` | `{prefix?, key?}` | Lists objects, or reads one by key. | No |
+
 ## Sandbox tools
 
-Available when `workspace` is `sandbox`. Kionga creates one sandbox per worker on first
-use.
+Available when `workspace` is `sandbox` and the agent has a `sandbox` or `git` grant. Kionga creates
+one sandbox per worker on first use.
 
 | Tool | Behavior | Approval |
 | --- | --- | --- |
@@ -187,7 +198,9 @@ most 2000 characters.
 
 | Code | Meaning | What to do |
 | --- | --- | --- |
-| `context_exhausted` | Input is over the compaction threshold with only the 10 protected recent turns left. | Raise `KIONGA_TEAM_COMPACT_THRESHOLD_TOKENS`, or narrow the task. |
+| `context_exhausted` | The provider rejected the request as invalid at the last compaction stage. Usually length, but read the provider's message in the worker's last error. | Narrow the task, or resume for one more attempt. |
+| `tool_no_function` | A registered tool ran after approval, but no deployed function or runtime backs it. | Deploy the tool's function, then have the worker try again. |
+| `git_failed` | A git operation failed or a push was refused. The reason reaches the model and the event log. | Read the reason in the event log. |
 | `sandbox_unavailable` | The runtime or image allowlist is not ready. | See [Sandboxes and gVisor](../operations/sandboxes.md). |
 | `side_effects_not_approved` | The run does not allow side effects. | Start a new run that allows them. |
 | `outcome_unknown` | A side effect was interrupted and was not repeated. | Check the external system. |

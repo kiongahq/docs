@@ -63,6 +63,9 @@ env KIONGA_TEAM_*
 env KIONGA_AGENT_TURN_TIMEOUT_SECONDS
 env KIONGA_KB_SECRET_*
 env KIONGA_CONNECTION_SECRET_*
+env KIONGA_FEATURE_SECRET_*
+env KIONGA_STORAGE_SECRET_*
+env KIONGA_PLATFORM_SECRET_*
 path deploy/config/secrets/gateway.env
 make make -C deploy sandbox-runtime-install
 make make -C deploy sandbox-runtime-verify

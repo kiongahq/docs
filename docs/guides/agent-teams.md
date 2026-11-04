@@ -39,9 +39,13 @@ starts it by name.
 4. Set **Instructions**, the agent's system prompt.
 5. Set **Model**. `llm` uses the runtime's configured model.
 6. Pick **Tools** from your project's resources. See [Tools](#choose-tools).
-7. Set **Workspace** to **Sandbox** if the agent runs code or uses git. Otherwise
-   leave it at **None**.
-8. Adjust the limits on turns, tokens and time if needed, then save.
+7. Set **Workspace** to **Sandbox** if the agent runs code or uses git, and grant it
+   **Sandbox** or a **Git repository** under **Tools**. The workspace alone exposes no
+   sandbox tools. Otherwise leave it at **None**.
+8. Adjust the limits on turns, tokens and time if needed, then save. The default token
+   budget is 1,000,000 per worker and 5,000,000 per team. Budgets count what the provider
+   reports, including context re-sent on every turn, so they run out faster than the length
+   of a conversation suggests.
 
 Every save creates a new revision, and Kionga keeps the last 20. Editing an agent
 never changes a run that has already started.
@@ -56,10 +60,10 @@ An agent can use only what its definition grants. A git or API connection creden
 | --- | --- | --- |
 | Sandbox | Commands and file tools in its own sandbox | No |
 | Git repository | Clone, diff and push for one repository, with a credential from an API connection | Push only |
-| Tool | One registered tool | Yes |
+| Tool | One registered tool, which runs its function after approval | Yes |
 | API connection | One API connection | Yes |
-| Knowledge base | One knowledge base | No |
-| Dataset | One dataset | No |
+| Knowledge base | Text search in one knowledge base | No |
+| Dataset | List and read objects in one dataset | No |
 
 ## 2. Create the team
 
@@ -121,9 +125,24 @@ report. A banner appears when sandboxes are unavailable or the runtime is unsafe
   which covers the result for each item, the evidence, what was not verified, and
   follow-ups.
 - A message to a completed worker resumes it with its transcript.
+- A model turn with no tool call counts as finishing: the worker hands back what it said.
 - If a worker exceeds its own limits, it fails and the coordinator is told. If the
   team exceeds its limits, the run fails with `budget_exceeded` and live workers are
-  cancelled.
+  cancelled. A worker stopped by a budget does not come back, by message or by resume.
+- A worker's time limit counts active time, so waiting on a retry or an approval does not
+  spend it.
+
+### Long conversations
+
+When a worker's input crosses the compaction threshold, Kionga elides older tool results in
+stages: first results older than 10 turns, then results older than 3. Crossing the threshold
+never fails a worker, and the stored transcript does not change. Tool calls, task messages and
+large tool arguments are not elided.
+
+If the provider still rejects the request as invalid at the last stage, the worker fails with
+`context_exhausted`. You can resume it, and each resume makes one more attempt. That code can
+also appear when the cause was not length, so read the provider's message in the worker's last
+error.
 
 ### Send a message
 
@@ -160,6 +179,7 @@ Runs are durable. Kionga handles most interruptions without you:
 | The gateway restarted | Another gateway picks up the worker when its 60 second lease expires. |
 | The provider rate limited a call | The worker waits in `waiting_retry`, honoring the provider's delay. This does not use a turn. |
 | The provider is unavailable | The worker retries in the same way. After 30 minutes of consecutive failure, it fails with a resumable error. |
+| A worker failed with `context_exhausted` | Nothing until you resume. Each resume makes one more attempt. |
 | A tool call was interrupted | A read-only tool runs again. A tool with side effects is never repeated, and the model receives `outcome_unknown`. |
 
 When a worker has failed and you have fixed the cause, select **Resume** in the run
