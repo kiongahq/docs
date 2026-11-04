@@ -14,11 +14,11 @@ To learn what this protects, see
 
 | Deployment | Sandboxes |
 | --- | --- |
+| Single server | Off until you enable them in `deployment.json`. gVisor is required, and the installer starts nothing without it. |
+| Kubernetes | Off until you set `sandbox.enabled`, and gVisor is required |
 | Local, without gVisor (the default on macOS and Windows) | Reported as unavailable |
 | Local, on Linux with gVisor | Available once you set the image allowlist |
-| Compose public overlay | gVisor is required, and `public-up.sh` stops without it |
-| Single server | Not available, because this package has no workload plane |
-| Kubernetes | Off until you set `sandbox.enabled`, and gVisor is required |
+| Compose public overlay (legacy) | gVisor is required, and `public-up.sh` stops without it |
 
 ## Install gVisor on a Linux host
 
@@ -47,8 +47,68 @@ The target starts a container with no network under `runsc` and reads its kernel
 Success prints `A container ran under gVisor.` Do not rely on the engine's list of runtimes:
 Podman lists `runsc` even when it is not installed.
 
+The probe image is pinned by digest. If the host has no network, the pull stops after 120
+seconds with a message. Load the image from another machine with `docker save` and
+`docker load`, then run the check again.
+
 The sandbox manager makes the same kind of check. At startup and before each create, it
 confirms the runtime and that a probe reports gVisor's kernel.
+
+## Enable sandboxes on a single server
+
+The single-server installer adds agent teams and sandboxes when your deployment file enables
+them. With the settings off, it runs only the gateway and Caddy.
+
+1. Install gVisor on the server, then verify it, as described in
+   [Install gVisor on a Linux host](#install-gvisor-on-a-linux-host).
+2. Add these secret files to `secrets_directory`, with the same ownership and mode as
+   the other secret files. See [Deploy on a single server](public-vm.md).
+
+    | File | Value |
+    | --- | --- |
+    | `KIONGA_DESIGNER_RUNNER_TOKEN` | At least 32 characters. Generate it with `openssl rand -hex 24`. |
+    | `TRACE_PROXY_PROJECT_KEY` | At least 32 characters. Generate it with `openssl rand -hex 24`. |
+    | `TRACE_PROXY_KEYS` | JSON list holding the SHA-256 hash of that project key. |
+    | `LLM_UPSTREAM_API_KEY` | Your model provider's API key. |
+    | `KIONGA_SANDBOX_TOKEN` | At least 32 characters. Generate it with `openssl rand -hex 24`. |
+
+3. Add this block to `/etc/kionga/deployment.json`, with digests from your release:
+
+    ```json
+    "agent_teams": {
+      "enabled": true,
+      "agent_runtime_image": "ghcr.io/kiongahq/agent-runtime@sha256:<digest>",
+      "trace_proxy_image": "ghcr.io/kiongahq/trace-proxy@sha256:<digest>",
+      "llm_upstream_url": "https://api.openai.com",
+      "llm_model": "<model>",
+      "sandbox": {
+        "enabled": true,
+        "manager_image": "ghcr.io/kiongahq/sandbox-manager@sha256:<digest>",
+        "images": ["ghcr.io/kiongahq/sandbox@sha256:<digest>"],
+        "git_hosts": ["github.com"]
+      }
+    }
+    ```
+
+    To run teams without code sandboxes, leave `sandbox.enabled` false.
+
+4. Run the installer again:
+
+    ```bash
+    make -C deploy public-up DEPLOYMENT=/etc/kionga/deployment.json
+    ```
+
+The installer checks these settings before it starts anything. It rejects images that are not
+pinned by digest, short tokens, development values, and any setting it does not recognize. Before
+it pulls images, it starts a probe container, and it stops unless that container runs under gVisor.
+
+The runtime, production mode and the empty unsafe flag are fixed values in the installer's
+Compose files, so no setting can change them. Caddy stays the only public listener. The runner,
+trace proxy and sandbox manager share internal networks with the gateway and publish no ports.
+Only the trace proxy has a route out, to your model provider.
+
+On this path, model calls are not sent to a trace store, because the package has no Kafka or
+Langfuse. The sandbox manager's engine access is equivalent to root on the server.
 
 ## Set the image allowlist
 
@@ -73,9 +133,10 @@ KIONGA_SANDBOX_IMAGES=sha256:<image-id>
 To let agents use git, also set `KIONGA_SANDBOX_GIT_HOSTS`, for example to `github.com`.
 Git uses HTTPS only. With an empty list, git tools are refused.
 
-## Compose public overlay
+## Compose public overlay (legacy)
 
-Set these values in `.env`:
+The [single-server installer](#enable-sandboxes-on-a-single-server) is the supported path. If
+you still use the legacy overlay, set these values in `.env`:
 
 | Variable | Rule |
 | --- | --- |
@@ -127,6 +188,9 @@ only the one named RuntimeClass. The chart has no setting for the unsafe runtime
 Look for the banner in the run view, then read the manager's state.
 
 ```bash
+# Single server
+docker compose -p kionga-public logs sandbox-manager
+
 # Local stack
 make -C deploy local-logs | grep sandbox-manager
 
@@ -145,7 +209,8 @@ means creates return 503.
 | Creates return 503 and the runtime is verified | `KIONGA_SANDBOX_IMAGES` is empty | Set the allowlist. |
 | The manager exits at startup | The token is missing or short, or an image is not pinned | Read the log. Run `make -C deploy local-up` to generate the local token. |
 | Git tools refuse a host | The host is not in `KIONGA_SANDBOX_GIT_HOSTS` | Add it. Only HTTPS is supported. |
-| `public-up.sh` stops at the probe | The VM has no working gVisor | Install gVisor on the VM. |
+| The installer or `public-up.sh` stops at the probe | The server has no working gVisor | Install gVisor on the server. |
+| The probe says the pull took too long or failed | The server cannot reach the registry | Restore network access, or load the image with `docker load`. |
 
 Workers that hit `sandbox_unavailable` report it to the coordinator. After you fix the cause,
 resume the run from the run view.
@@ -169,9 +234,16 @@ banner, and the manager refuses the flag when `KIONGA_ENVIRONMENT` is `productio
 
 ## Limits
 
-Sandboxes have no egress allowlists. A sandbox has no network at all, and you cannot grant it
-selected hosts. There are also no per-tenant node pools, so all sandboxes in a deployment share
-hosts or nodes.
+- **No egress allowlists for sandboxes.** A sandbox has no network at all, and you cannot grant it
+  selected hosts.
+- **No per-tenant node pools.** All sandboxes in a deployment share hosts or nodes.
+- **Git helper egress is not limited to your git hosts.** While it runs, a git helper can reach any
+  public IP address on port 443. Only the sandbox manager enforces `KIONGA_SANDBOX_GIT_HOSTS`, by
+  refusing to start an operation for another host. The network does not enforce that list. Helpers
+  run only your approved image and a fixed script, live for one operation, and hold one credential.
+  Scope each git credential to the repositories the team needs. On Kubernetes, private ranges, the
+  metadata range and your API server addresses are also denied. On a single server or the local
+  stack, helpers use the engine's bridge network, so private addresses are reachable too.
 
 ## Check the result
 

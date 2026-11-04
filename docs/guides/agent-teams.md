@@ -17,9 +17,11 @@ For exact fields, tools and events, see the
 
 - You need the `agents` service and access to the project. Viewers can read agents,
   teams and runs but cannot change or start them.
-- Teams call the designer runner for model calls. The local stack (`make local-up`)
-  starts it. Without provider keys, the stack uses the `mock` chat model; see
-  [Run with the mock model](#run-with-the-mock-model).
+- Teams call the designer runner for model calls. On a single server, enable it in
+  your deployment file; see
+  [Enable sandboxes on a single server](../operations/sandboxes.md#enable-sandboxes-on-a-single-server).
+  The local stack (`make local-up`) starts it, and without provider keys it uses the
+  `mock` chat model; see [Run with the mock model](#run-with-the-mock-model).
 - Agents that run code need a sandbox runtime. If yours has none, sandbox tools
   report `sandbox_unavailable` and other agents keep working. See
   [Sandboxes and gVisor](../operations/sandboxes.md).
@@ -187,7 +189,8 @@ gets its own sandbox the first time it needs one.
   Commands time out after 120 seconds unless a call asks for longer, up to 1800.
 - **Approved images only.** The image must be on your digest-pinned allowlist.
 - **Separated git credentials.** A short-lived helper container does the clone or
-  push, and the credential never enters the sandbox. Pushes go only to a
+  push, and the credential never enters the sandbox. The helper has its own network
+  access; see the [known limit](../operations/sandboxes.md#limits). Pushes go only to a
   `kionga/<run-id>/<name>` branch, never to the default branch, and never force or
   delete.
 

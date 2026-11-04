@@ -27,7 +27,7 @@ flowchart LR
 | Routes and scheduler | `go/internal/httpapi/agent_teams*.go` in `platform` | API, leases, tool dispatch, approvals. |
 | Turn endpoint | `agent_runtime/designer.py` in `agent-runtime` | One model call per request. Stores nothing. |
 | Sandbox manager | `go/cmd/sandbox-manager`, `go/internal/sandbox` in `platform` | Holds container engine or sandbox namespace access. Stateless: labeled objects are the source of truth. |
-| Wiring | `compose.yaml`, `compose.public.yaml`, `helm/kionga` in `deploy` | Networks, tokens, RBAC, NetworkPolicy. |
+| Wiring | `vm/compose.teams.yaml`, `vm/compose.sandbox.yaml`, `compose.yaml`, `compose.public.yaml`, `helm/kionga` in `deploy` | Networks, tokens, RBAC, NetworkPolicy. |
 
 The loop is deterministic Go in the gateway. LLM egress stays in the runner, through the trace
 proxy. No model output runs outside a sandbox.
@@ -58,7 +58,10 @@ to check.
 - **Runtime.** The manager verifies the runtime at startup and before each create, and fails closed
   with no fallback. An engine's runtime list is not proof, because Podman lists `runsc` when it is
   not installed, so verification uses a probe's kernel report.
-- **Engine access.** On Compose, the manager mounts the engine socket, which is root-equivalent on
+- **Single server.** `vm/up.py` adds two overlays only when `deployment.json` enables them. Unknown
+  settings are refused, so the runtime and the unsafe flag cannot be expressed, and a probe container
+  must run under gVisor before anything starts.
+- **Engine access.** On Compose and the single server, the manager mounts the engine socket, which is root-equivalent on
   the host. It publishes no port, and sits on an internal network shared only with the gateway, behind
   a bearer token. On Kubernetes, its write access stops at the sandbox namespace, and its only cluster
   grant is `get` on the one named RuntimeClass.

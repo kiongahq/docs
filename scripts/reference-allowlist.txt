@@ -61,6 +61,10 @@ env KIONGA_SANDBOX_*
 make make -C deploy sandbox-runtime-install
 make make -C deploy sandbox-runtime-verify
 path platform/deploy/sandbox/Dockerfile
+path deploy/vm/compose.teams.yaml
+path deploy/vm/compose.sandbox.yaml
+path vm/compose.teams.yaml
+path vm/compose.sandbox.yaml
 path go/internal/agentteam
 path go/internal/httpapi/agent_teams*.go
 path go/cmd/sandbox-manager

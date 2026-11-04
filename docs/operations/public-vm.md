@@ -12,8 +12,12 @@ TLS edge. Your identity provider, PostgreSQL and ML engines run elsewhere.
 
 Use this deployment for a pilot or as a control plane in front of
 infrastructure you already operate. It has no workload plane: it cannot
-provision notebooks, IDE workspaces or agents, and it has no gateway failover. For those,
-see [Deploy on Kubernetes](managed-kubernetes.md).
+provision notebooks, IDE workspaces or deployed agents, and it has no gateway failover. For
+those, see [Deploy on Kubernetes](managed-kubernetes.md).
+
+Agent teams are an optional addition to this deployment. They add the designer runner, the
+trace proxy and, if you enable them, code sandboxes under gVisor. See
+[Enable sandboxes on a single server](sandboxes.md#enable-sandboxes-on-a-single-server).
 
 ## Before you begin
 
@@ -97,6 +101,7 @@ previously stored personal credentials unreadable.
     | `caddy_image` | `caddy@sha256:<digest>` |
     | `config_file` | Path of the application configuration, for example `/etc/kionga/config.json` |
     | `secrets_directory` | Directory that holds the four secret files, for example `/run/kionga/secrets` |
+    | `agent_teams` | Optional, and off in the example. See [Sandboxes and gVisor](sandboxes.md#enable-sandboxes-on-a-single-server). |
 
     The installer rejects image references that are not pinned by a SHA-256
     digest.
