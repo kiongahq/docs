@@ -5,7 +5,7 @@ description: Reference for agent teams, covering agent definitions, teams, runs,
 
 # Agent teams reference
 
-For a walkthrough, see [Build and run an agent team](../guides/agent-teams.md). All
+For step-by-step instructions, see [Build and run an agent team](../guides/agent-teams.md). All
 resources are scoped to a project.
 
 ## Agent definition

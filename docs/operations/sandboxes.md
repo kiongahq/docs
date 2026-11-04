@@ -29,7 +29,7 @@ sudo make -C deploy sandbox-runtime-install
 ```
 
 The target downloads gVisor's release archive, checks it against a SHA-512 pinned for
-your architecture, installs `runsc`, its containerd shim and the `gvisor-bin/` directory
+your architecture, installs `runsc`, its `containerd` shim and the `gvisor-bin/` directory
 to `/usr/local/bin`, registers the runtime with Docker, and reloads Docker.
 
 To use Podman, or to install another way, follow the

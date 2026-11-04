@@ -183,7 +183,7 @@ gets its own sandbox the first time it needs one.
   socket and no host mounts.
 - **Reduced privileges.** It runs as a non-root user with a read-only root filesystem,
   no capabilities, `no-new-privileges` and default `seccomp`.
-- **Limits.** By default, a sandbox has 512 processes, 2 GiB of memory and 2 CPUs.
+- **Limits.** By default, a sandbox has 512 processes, 2 GiB of memory and 2 CPU cores.
   Commands time out after 120 seconds unless a call asks for longer, up to 1800.
 - **Approved images only.** The image must be on your digest-pinned allowlist.
 - **Separated git credentials.** A short-lived helper container does the clone or

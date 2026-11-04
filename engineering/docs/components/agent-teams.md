@@ -4,8 +4,8 @@ description: "How agent teams are built: the deterministic loop in the gateway, 
 
 # Agent teams
 
-Agent teams let a coordinator start parallel workers that use tools and sandboxed code
-workspaces. For product behavior, see the
+Agent teams let a coordinator start parallel workers that use tools and code workspaces
+in sandboxes. For product behavior, see the
 [guide](https://kiongahq.github.io/docs/guides/agent-teams/) and
 [reference](https://kiongahq.github.io/docs/reference/agent-teams/).
 
