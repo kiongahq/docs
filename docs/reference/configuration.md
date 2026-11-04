@@ -252,7 +252,7 @@ Set these on the gateway. Empty uses the default. On a single server, use the
 ## Secret references
 
 A registered record names its credential as `env:NAME`. Kionga resolves a name only from that
-record's scope, and one scope cannot read another's variables.
+record's scope. No scope can read the variables of another.
 
 | Record | Prefix | Names kept | Allowlist variable |
 | --- | --- | --- | --- |
