@@ -58,6 +58,8 @@ to check.
 - **Runtime.** The manager verifies the runtime at startup and before each create, and fails closed
   with no fallback. An engine's runtime list is not proof, because Podman lists `runsc` when it is
   not installed, so verification uses a probe's kernel report.
+- **Secret references.** `secret_refs.go` limits `env:` lookups by resource. `vm/up.py` and the chart refuse names
+  the gateway owns at deploy time, and the gateway refuses them again at resolve time.
 - **Single server.** `vm/up.py` adds two overlays only when `deployment.json` enables them. Unknown
   settings are refused, so the runtime and the unsafe flag cannot be expressed, and a probe container
   must run under gVisor before anything starts.
@@ -79,10 +81,17 @@ The chart ships `<prefix>default-deny` with an empty pod selector, and the manag
 NetworkPolicy, so it fails closed if the policy is missing and cannot change it. Sandbox pods match no
 allow rule, so the API server, cluster services and metadata are unreachable from them.
 
-Only pods labeled `kionga.dev/sandbox-role=git-helper` get egress: DNS and TCP 443 to public addresses,
-excluding private ranges, `169.254.0.0/16` and `sandbox.kubernetesApiCidrs`. Sandbox code cannot gain that
+Only pods labeled `kionga.dev/sandbox-role=git-helper` get egress: TCP 443 to public addresses, with no DNS
+because the manager pins checked addresses through `hostAliases`, excluding private ranges, `169.254.0.0/16` and `sandbox.kubernetesApiCidrs`. Sandbox code cannot gain that
 label. Only the manager's Role can create pods, it has no `update` or `patch`, and sandbox pods have no
 service account token and no route to the API server.
+
+## Manager networking on Compose
+
+An internal network has no external DNS: on Podman 6.1, an external name returned NXDOMAIN while
+service names resolved. Docker was not tested. The manager resolves allowed git hosts itself, so it also joins
+`sandbox-egress`, a network no other service shares. On the single server, that network is added only when
+`git_hosts` is set. This gives the socket holder a route out, which is a cost of resolving hosts there.
 
 ## Known limits
 

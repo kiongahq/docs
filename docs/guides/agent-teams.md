@@ -48,12 +48,14 @@ never changes a run that has already started.
 
 ### Choose tools
 
-An agent can use only what its definition grants.
+An agent can use only what its definition grants. A git or API connection credential must use a
+`KIONGA_CONNECTION_SECRET_*` variable or an allowlisted name; see
+[Secret references](../reference/configuration.md#secret-references).
 
 | Grant | What the agent gets | Needs approval |
 | --- | --- | --- |
 | Sandbox | Commands and file tools in its own sandbox | No |
-| Git repository | Clone, diff and push for one repository | Push only |
+| Git repository | Clone, diff and push for one repository, with a credential from an API connection | Push only |
 | Tool | One registered tool | Yes |
 | API connection | One API connection | Yes |
 | Knowledge base | One knowledge base | No |

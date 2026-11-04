@@ -236,6 +236,43 @@ See [Sandboxes and gVisor](../operations/sandboxes.md).
 | `KIONGA_SANDBOX_NAME_PREFIX` | `kionga-sandbox-` | Prefix for the objects the manager creates. |
 | `KIONGA_SANDBOX_STORAGE_CLASS` | Set by the chart | Storage class for workspace volumes on Kubernetes. |
 
+## Agent teams
+
+Set these on the gateway. Empty uses the default. On a single server, use the
+`deployment.json` key shown. On Kubernetes, use the `agentTeams` chart value.
+
+| Variable | `agent_teams.tuning` key | `agentTeams` value | Purpose |
+| --- | --- | --- | --- |
+| `KIONGA_AGENT_TURN_TIMEOUT_SECONDS` | `turn_timeout_seconds` | `turnTimeoutSeconds` | How long the gateway waits for one model call. |
+| `KIONGA_TEAM_COMPACT_THRESHOLD_TOKENS` | `compact_threshold_tokens` | `compactThresholdTokens` | Input size that triggers transcript compaction. Default 120,000. A worker over this size with only its 10 protected recent turns left fails with `context_exhausted`. |
+| `KIONGA_TEAM_WORKER_POOL` | `worker_pool` | `workerPool` | Workers one gateway runs at a time. |
+| `KIONGA_TEAM_SANDBOX_RETENTION_SECONDS` | `sandbox_retention_seconds` | `sandboxRetentionSeconds` | How long sandboxes stay after a run ends. Default 24 hours. |
+| `KIONGA_TEAM_SCHEDULER` | `scheduler` | `scheduler` | `off` stops the team scheduler on this gateway. |
+
+## Secret references
+
+Knowledge bases and agent API connections name their credential as `env:NAME`. Kionga
+resolves a name only if it is permitted for that resource.
+
+| Resource | Prefix | Other permitted names | Allowlist variable |
+| --- | --- | --- | --- |
+| Knowledge base | `KIONGA_KB_SECRET_*` | `KIONGA_QDRANT_KEY`, `KIONGA_KNOWLEDGE_DSN` | `KIONGA_KB_SECRET_REFS` |
+| Agent API connection | `KIONGA_CONNECTION_SECRET_*` | `KIONGA_AGENT_API_TOKEN` | `KIONGA_CONNECTION_SECRET_REFS` |
+
+The allowlists are comma-separated names. The gateway's own secrets are refused even when you
+allowlist them, and neither resource can read the other's variables.
+
+Supply the values for your deployment:
+
+| Deployment | How |
+| --- | --- |
+| Single server | Put one file per name in `secrets_directory`, and list the names in `secret_references.files` in `deployment.json`. Use `secret_references.knowledge_allowlist` and `connection_allowlist` for the allowlists. The installer refuses names that are not permitted. |
+| Kubernetes | Create the Secret `secretReferences.secretName` with one key per name, and list the names in `secretReferences.names`. Use `knowledgeAllowlist` and `connectionAllowlist` for the allowlists. |
+| Local | Put `NAME=value` lines in `deploy/config/secrets/gateway.env`, which Git ignores. Set the allowlists in `deploy/.env`. |
+
+To change a stored reference that uses another name, see
+[Migrate a stored reference](../guides/langflow.md#migrate-a-stored-reference).
+
 ## Serving manager
 
 | Variable | Default | Purpose |

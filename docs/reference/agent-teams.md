@@ -187,6 +187,7 @@ most 2000 characters.
 
 | Code | Meaning | What to do |
 | --- | --- | --- |
+| `context_exhausted` | Input is over the compaction threshold with only the 10 protected recent turns left. | Raise `KIONGA_TEAM_COMPACT_THRESHOLD_TOKENS`, or narrow the task. |
 | `sandbox_unavailable` | The runtime or image allowlist is not ready. | See [Sandboxes and gVisor](../operations/sandboxes.md). |
 | `side_effects_not_approved` | The run does not allow side effects. | Start a new run that allows them. |
 | `outcome_unknown` | A side effect was interrupted and was not repeated. | Check the external system. |
@@ -194,6 +195,12 @@ most 2000 characters.
 | `owner_access_lost` | The person who started the run lost access. | Restore access and start a new run. |
 | `rate_limited` | The provider limited the call. Retried without using a turn. | Usually nothing. |
 | `provider_unavailable` | The provider failed. Retried for up to 30 minutes. | After a failure, fix the provider and resume. |
+
+## Settings
+
+For gateway tuning variables and how to supply connection credentials, see
+[Agent teams settings](configuration.md#agent-teams) and
+[Secret references](configuration.md#secret-references).
 
 ## Message framing
 

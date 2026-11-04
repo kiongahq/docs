@@ -43,8 +43,8 @@ To use Podman, or to install another way, follow the
 make -C deploy sandbox-runtime-verify
 ```
 
-The target starts a container with no network under `runsc` and reads its kernel log.
-Success prints `A container ran under gVisor.` Do not rely on the engine's list of runtimes:
+The target starts a container with no network under `runsc` and reads its kernel release,
+which contains `gvisor`. Success prints `A container ran under gVisor.` Do not rely on the engine's list of runtimes:
 Podman lists `runsc` even when it is not installed.
 
 The probe image is pinned by digest. If the host has no network, the pull stops after 120
@@ -105,7 +105,13 @@ it pulls images, it starts a probe container, and it stops unless that container
 The runtime, production mode and the empty unsafe flag are fixed values in the installer's
 Compose files, so no setting can change them. Caddy stays the only public listener. The runner,
 trace proxy and sandbox manager share internal networks with the gateway and publish no ports.
-Only the trace proxy has a route out, to your model provider.
+The trace proxy has a route out, to your model provider. If you set `git_hosts`, the sandbox
+manager also joins a network of its own, because it resolves those hosts itself and internal
+networks have no external DNS.
+
+To tune teams, add a `tuning` block to `agent_teams`. See the
+[configuration reference](../reference/configuration.md#agent-teams). These settings cannot go
+in `config.json`, which refuses names that contain `TOKEN` or `SECRET`.
 
 On this path, model calls are not sent to a trace store, because the package has no Kafka or
 Langfuse. The sandbox manager's engine access is equivalent to root on the server.
@@ -132,6 +138,10 @@ KIONGA_SANDBOX_IMAGES=sha256:<image-id>
 
 To let agents use git, also set `KIONGA_SANDBOX_GIT_HOSTS`, for example to `github.com`.
 Git uses HTTPS only. With an empty list, git tools are refused.
+
+The credential for a git grant comes from an API connection, so its reference must be
+`env:KIONGA_CONNECTION_SECRET_<NAME>` or an allowlisted name. See
+[Secret references](../reference/configuration.md#secret-references).
 
 ## Compose public overlay (legacy)
 
@@ -176,8 +186,9 @@ The manager still refuses to create sandboxes without gVisor.
    `sandbox.internalCidrs`.
 
 The chart runs sandboxes in their own namespace, `kionga-sandboxes` by default, with a
-default-deny NetworkPolicy. Git helper pods can reach only DNS and HTTPS on public addresses.
-The private ranges and the `169.254.0.0/16` metadata range are always excluded. These rules
+default-deny NetworkPolicy. Git helper pods can reach only HTTPS on public addresses. They need
+no DNS, because the manager resolves each host and pins its addresses. The manager pod can reach
+DNS only when `gitHosts` is set. The private ranges and the `169.254.0.0/16` metadata range are always excluded. These rules
 depend on a network plugin that enforces NetworkPolicy, so confirm that yours does.
 
 The manager's write access stops at the sandbox namespace. Outside it, the manager can read
@@ -205,7 +216,8 @@ means creates return 503.
 | Symptom | Cause | What to do |
 | --- | --- | --- |
 | `runtime_verified` is false | gVisor is missing or not registered | Install it, run `make -C deploy sandbox-runtime-verify`, then restart `sandbox-manager`. |
-| Verify says the kernel log does not mention gVisor | The name `runsc` points to another runtime | Fix the engine's runtime configuration. |
+| Verify says the kernel release does not mention gVisor | The name `runsc` points to another runtime | Fix the engine's runtime configuration. |
+| Verify says the Podman client cannot choose a runtime | The Podman client on macOS and Windows has no runtime flag | Run the check on the Linux host. |
 | Creates return 503 and the runtime is verified | `KIONGA_SANDBOX_IMAGES` is empty | Set the allowlist. |
 | The manager exits at startup | The token is missing or short, or an image is not pinned | Read the log. Run `make -C deploy local-up` to generate the local token. |
 | Git tools refuse a host | The host is not in `KIONGA_SANDBOX_GIT_HOSTS` | Add it. Only HTTPS is supported. |
