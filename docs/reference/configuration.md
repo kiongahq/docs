@@ -243,7 +243,7 @@ Set these on the gateway. Empty uses the default. On a single server, use the
 
 | Variable | `agent_teams.tuning` key | `agentTeams` value | Purpose |
 | --- | --- | --- | --- |
-| `KIONGA_AGENT_TURN_TIMEOUT_SECONDS` | `turn_timeout_seconds` | `turnTimeoutSeconds` | How long the gateway waits for one model call. |
+| `KIONGA_AGENT_TURN_TIMEOUT_SECONDS` | `turn_timeout_seconds` | `turnTimeoutSeconds` | How long the gateway waits for one model call. Keep it below `TRACE_PROXY_WRITE_TIMEOUT_SECONDS`. |
 | `KIONGA_TEAM_COMPACT_THRESHOLD_TOKENS` | `compact_threshold_tokens` | `compactThresholdTokens` | Input size that triggers transcript compaction. Default 120,000. A worker over this size with only its 10 protected recent turns left fails with `context_exhausted`. |
 | `KIONGA_TEAM_WORKER_POOL` | `worker_pool` | `workerPool` | Workers one gateway runs at a time. |
 | `KIONGA_TEAM_SANDBOX_RETENTION_SECONDS` | `sandbox_retention_seconds` | `sandboxRetentionSeconds` | How long sandboxes stay after a run ends. Default 24 hours. |
@@ -314,6 +314,7 @@ this behavior keep their credentials until you redeploy them.
 | `LLM_UPSTREAM_URL` | `https://api.openai.com` | Forward target |
 | `TRACE_PROXY_KEYS` / `TRACE_PROXY_KEYS_FILE` | *(required)* | JSON array of accepted project keys, stored as SHA-256 hashes; see [Project keys](../guides/agents.md#project-keys). Without keys the proxy refuses to start |
 | `TRACE_PROXY_ALLOW_UNAUTHENTICATED` | `false` | Development only: accept unauthenticated callers and pass their credentials through. Refused with `KIONGA_ENVIRONMENT=production` and together with `LLM_UPSTREAM_API_KEY` |
+| `TRACE_PROXY_WRITE_TIMEOUT_SECONDS` | `660` | Total time for one response, stream included, from 1 to 3600. Keep it above your callers' timeouts. On a single server, set `agent_teams.tuning.trace_proxy_write_timeout_seconds`. On Kubernetes, set `config.TRACE_PROXY_WRITE_TIMEOUT_SECONDS`. |
 | `LLM_UPSTREAM_API_KEY` / `LLM_UPSTREAM_API_KEY_FILE` | *(empty)* | Provider key sent upstream. Empty sends no credential, for a self-hosted server that needs none. The caller's credentials are always removed |
 | `LLM_UPSTREAM_AUTH_HEADER` | `Authorization` | Header for that key: `x-api-key` for Anthropic, `api-key` for Azure OpenAI |
 | `LLM_UPSTREAM_AUTH_SCHEME` | `Bearer` for `Authorization`, otherwise none | Prefix for that key |
