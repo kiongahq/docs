@@ -85,7 +85,7 @@ flowchart LR
 | Events | Kafka REST proxy v2 (JSON envelopes) over HTTP | `kafka-rest:8082`; topics listed in [components: data plane](../components/data-plane.md#kafka-and-kafka-rest) |
 | LLM egress | OpenAI-compatible HTTP reverse proxy | Trace proxy `:8081` |
 | Model inference | MLflow scoring protocol, `POST /invocations` | One `mlflow models serve` container per deployed model |
-| Container control | Docker Engine API over the Unix socket | Serving manager and pipeline runner only |
+| Container control | Docker Engine API over the Unix socket | Serving manager, pipeline runner and sandbox manager only |
 | Kubernetes control | Kubernetes API through client-go and controller-runtime | Operator, integration worker, gateway (workspace discovery and the opt-in Job executor) |
 | Metrics | Prometheus text exposition | Metrics collector `:9090`; the gateway when `METRICS_PORT` is set |
 

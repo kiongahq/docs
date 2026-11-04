@@ -89,7 +89,8 @@ runtime the same `MLAIOPS_INTERNAL_TOKEN` as the gateway.
   restricted pods do not isolate workloads from cluster administrators or
   contain hostile code. Add tenant-aware network policies, admission
   controls, image policies and resource limits. Agent frameworks that run
-  generated code need a separately reviewed sandbox and egress policy.
+  generated code need a separately reviewed sandbox and egress policy. Agent teams
+  have their own [sandboxes](sandboxes.md), which have no network.
 
 ### Notebook and IDE isolation
 

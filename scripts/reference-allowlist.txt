@@ -56,3 +56,18 @@ env LLM_UPSTREAM_AUTH_HEADER
 env LLM_UPSTREAM_AUTH_SCHEME
 # kiongahq/sdk-python#48
 env MLAIOPS_ALLOW_INSECURE_HTTP
+# kiongahq/platform (agent teams and sandbox manager) and kiongahq/deploy#56
+env KIONGA_SANDBOX_*
+make make -C deploy sandbox-runtime-install
+make make -C deploy sandbox-runtime-verify
+path platform/deploy/sandbox/Dockerfile
+path go/internal/agentteam
+path go/internal/httpapi/agent_teams*.go
+path go/cmd/sandbox-manager
+path go/internal/sandbox
+route /api/v1/agent-definitions*
+route /api/v1/agent-teams*
+route /api/v1/team-runs*
+route * /api/v1/agent-definitions*
+route * /api/v1/agent-teams*
+route * /api/v1/team-runs*

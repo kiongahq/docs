@@ -5,7 +5,7 @@ description: Every service in the Kionga local stack and Kubernetes package, wit
 
 # Services and ports
 
-The local stack is defined in `deploy/compose.yaml`. It runs 21 services by
+The local stack is defined in `deploy/compose.yaml`. It runs 22 services by
 default, adds optional services through Compose profiles, and starts one model
 server container for each deployed model. To connect to these services, see
 [Service endpoints](service-endpoints.md).
@@ -20,6 +20,7 @@ container port.
 | Service | Role | Image or build | Host port (variable) |
 | --- | --- | --- | --- |
 | `gateway` | Kionga console and API | Built from `platform` | 8080 (`GATEWAY_PORT`) |
+| `sandbox-manager` | Creates agent team sandboxes under gVisor; reachable only by the gateway | Built from `platform` | None |
 | `dex` | Single sign-on broker (OIDC issuer) | `ghcr.io/dexidp/dex:v2.46.0` | 5556 (`DEX_PORT`) |
 | `glauth` | Test LDAP directory for Dex | `glauth/glauth:v2.5.4` | None |
 | `postgres` | PostgreSQL with pgvector: Kionga records, MLflow, Langfuse, agent checkpoints and memory | `pgvector/pgvector:pg16` | 5432 (`POSTGRES_PORT`) |
