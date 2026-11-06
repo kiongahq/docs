@@ -39,48 +39,11 @@ route /api/v1/admin/blogs
 # Secret files the operator creates in the git-ignored deploy/config/secrets/ folder.
 path deploy/config/secrets/*
 
-# TEMPORARY: settings added by open pull requests. Remove each block when its
-# pull request merges, because the checker then finds the setting in the code.
-# kiongahq/serving#37
-env SERVE_IMAGE_ALLOWED_PREFIXES
-env SERVE_IMAGE_REQUIRE_DIGEST
-env SERVE_FETCH_IMAGE
-env SERVE_READY_TIMEOUT_SECONDS
-# kiongahq/trace-proxy#40 and kiongahq/deploy#53
-env TRACE_PROXY_KEYS
-env TRACE_PROXY_KEYS_FILE
-env TRACE_PROXY_ALLOW_UNAUTHENTICATED
-env TRACE_PROXY_WRITE_TIMEOUT_SECONDS
-env TRACE_PROXY_PROJECT_KEY
-env LLM_UPSTREAM_API_KEY_FILE
-env LLM_UPSTREAM_AUTH_HEADER
-env LLM_UPSTREAM_AUTH_SCHEME
-# kiongahq/sdk-python#48
-env MLAIOPS_ALLOW_INSECURE_HTTP
-# kiongahq/platform#111, #112 (agent teams and sandbox manager) and kiongahq/deploy#56
-env KIONGA_SANDBOX_*
-env KIONGA_TEAM_*
-env KIONGA_AGENT_TURN_TIMEOUT_SECONDS
-env KIONGA_KB_SECRET_*
-env KIONGA_CONNECTION_SECRET_*
-env KIONGA_FEATURE_SECRET_*
-env KIONGA_STORAGE_SECRET_*
-env KIONGA_PLATFORM_SECRET_*
-path deploy/config/secrets/gateway.env
-make make -C deploy sandbox-runtime-install
-make make -C deploy sandbox-runtime-verify
-path platform/deploy/sandbox/Dockerfile
-path deploy/vm/compose.teams.yaml
-path deploy/vm/compose.sandbox.yaml
-path vm/compose.teams.yaml
-path vm/compose.sandbox.yaml
-path go/internal/agentteam
-path go/internal/httpapi/agent_teams*.go
-path go/cmd/sandbox-manager
-path go/internal/sandbox
+# Registered through a shared helper with a path variable, which the checker can't follow.
 route /api/v1/agent-definitions*
-route /api/v1/agent-teams*
-route /api/v1/team-runs*
 route * /api/v1/agent-definitions*
+route /api/v1/agent-teams*
 route * /api/v1/agent-teams*
-route * /api/v1/team-runs*
+
+# An example name in the langflow guide; the prefix is what the code defines.
+env KIONGA_CONNECTION_SECRET_SUPPORT
