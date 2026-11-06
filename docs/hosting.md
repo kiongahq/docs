@@ -25,10 +25,20 @@ the supported production path.
 
 ## If you already run the overlay
 
-The overlay reads `deploy/.env`. The start script refuses to run until
-`MLAIOPS_DOMAIN`, `MLAIOPS_ACME_EMAIL`, `DEX_CLIENT_SECRET`, `DEX_ADMIN_EMAIL`,
-`DEX_ADMIN_PASSWORD_HASH` and `MLAIOPS_INTERNAL_TOKEN` are set, and Compose
-also requires `MLAIOPS_LOCAL_PASSWORD` (the break-glass `admin` password).
+The overlay reads `deploy/.env`. It refuses to start until every setting in
+[Compose public overlay](reference/configuration.md#compose-public-overlay) is
+set and no credential equals a local default such as `mlaiops-local`. The start
+script and a preflight service inside Compose run the same check, so starting
+the overlay with `docker compose` directly fails the same way. Generate each
+credential with `openssl rand -hex 24`; `deploy/.env.example` lists them.
+
+If your overlay already ran with the default PostgreSQL password, the database
+volume keeps that password. Change it before you set `POSTGRES_PASSWORD`:
+
+```bash
+docker compose -f deploy/compose.yaml -f deploy/compose.public.yaml exec postgres \
+  psql -U mlaiops -c "ALTER ROLE mlaiops PASSWORD '<new password>'"
+```
 
 | Task | Command |
 | --- | --- |
@@ -36,9 +46,9 @@ also requires `MLAIOPS_LOCAL_PASSWORD` (the break-glass `admin` password).
 | Follow the gateway logs | `docker compose -f deploy/compose.yaml -f deploy/compose.public.yaml logs -f gateway` |
 | Stop (volumes are kept) | `docker compose -f deploy/compose.yaml -f deploy/compose.public.yaml down` |
 
-Durable state is in the `postgres-data` and `objectstore-data` volumes. Back
-them up before you change anything, as described in
-[Back up local data](operations/local.md#back-up-local-data).
+Back up before you change anything, as described in
+[Back up local data](operations/local.md#back-up-local-data); the overlay uses
+the same volumes as the local stack.
 
 ## Move to a supported deployment
 

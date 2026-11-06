@@ -191,7 +191,7 @@ and needs no key. To use a real provider on Compose:
     # OpenAI, or any OpenAI-compatible server behind LLM_UPSTREAM_URL
     MLAIOPS_LLM_BACKEND=openai             # or openai-compatible
     MLAIOPS_LLM_MODEL=gpt-4o
-    OPENAI_API_KEY=sk-...
+    LLM_UPSTREAM_API_KEY=sk-...                 # the provider key; the trace proxy holds it
     # LLM_UPSTREAM_URL=https://api.openai.com   # where the trace proxy forwards
 
     # or Anthropic
@@ -200,10 +200,11 @@ and needs no key. To use a real provider on Compose:
     # ANTHROPIC_API_KEY=sk-ant-...
     ```
 
-2. Recreate the runtime:
+2. Apply the change. `local-up` recreates the services whose settings changed and
+   generates the local project key:
 
     ```bash
-    docker compose -f deploy/compose.yaml up -d agent-runtime
+    make -C deploy local-up
     ```
 
 With `openai` and `openai-compatible`, every call goes through the trace proxy,
@@ -213,6 +214,39 @@ topic `mlaiops.llm.traces`. With `anthropic`, the runtime calls Anthropic direct
 the trace proxy does not capture the call; Langfuse tracing and measured token
 usage still work. Keys stay in the environment and are never written to traces,
 logs or the store.
+
+### Project keys {#project-keys}
+
+An agent never holds your provider key when its calls go through the trace proxy.
+Two different keys are involved:
+
+| Key | Who holds it | Where it goes |
+| --- | --- | --- |
+| Kionga project key | The agent, as its `OPENAI_API_KEY` | From the agent to the trace proxy |
+| Provider key | The trace proxy, as `LLM_UPSTREAM_API_KEY` | From the trace proxy to the provider |
+
+The proxy checks the project key, removes it, and adds the provider key. A leaked
+project key can be revoked on its own and identifies which project made each call;
+the provider key stays out of agent code, images and memory.
+
+The proxy accepts `Authorization: Bearer <key>`, `x-api-key` or `api-key`. A missing
+or unknown key returns `401` with `invalid_api_key`, and the provider never sees
+the request. The proxy stores only SHA-256 hashes, in `TRACE_PROXY_KEYS`. Trace
+records carry the entry's `project` and `key_id`, never the key or its hash. The
+optional `agent` field overrides the agent name on those records.
+
+`make -C deploy local-up` generates a key for local use. For any other deployment,
+generate one and keep it private:
+
+```bash
+key=$(openssl rand -hex 32)
+hash=$(printf %s "$key" | openssl dgst -sha256 -r | cut -d' ' -f1)
+echo "TRACE_PROXY_PROJECT_KEY=$key"
+echo "TRACE_PROXY_KEYS='[{\"key_id\":\"agents\",\"key_sha256\":\"$hash\",\"project\":\"default\"}]'"
+```
+
+An unknown field in an entry is rejected, so a typo cannot silently drop a setting.
+See [Trace proxy](../reference/configuration.md#trace-proxy) for every setting.
 
 **Verify:** a chat reply no longer starts with `[mock]`.
 
@@ -295,8 +329,9 @@ Short-term checkpoints and long-term memory are separate:
 - **Checkpoints** keep one conversation's state across turns. They use the
   PostgreSQL URL in `MLAIOPS_CHECKPOINT_DSN`, or `DATABASE_URL` when that is not
   set.
-- **Long-term memory** uses `AgentMemoryClient`, with `remember` and `recall`
-  over a pgvector table in the same PostgreSQL, plus `get_entity_features` for
+- **Long-term memory** uses `AgentMemoryClient`, with `remember`, `recall` and
+  `forget` over a pgvector table in the same PostgreSQL, isolated per user (pass
+  the authenticated `user_id`), plus `get_entity_features` for
   [online features](features.md). Its default embedding function is deterministic, so
   memory tests run offline.
 

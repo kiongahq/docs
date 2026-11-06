@@ -337,6 +337,10 @@ make -C deploy local-up
     only the console. Use it only on a network you trust, and change the
     credentials first if anyone else shares that network.
 
+To confirm what other machines can reach, run `nc -vz -w 3 <this machine's address> 5432`
+from another machine on the network. It is refused with the default binding and
+succeeds after you widen it.
+
 Some ports stay on `127.0.0.1` regardless: Jupyter (`JUPYTER_PORT`), the log
 exporter and the `log-export-es` and `log-export-os` test clusters. The browser
 IDE publishes no port; open Jupyter and the IDE through the console.
@@ -396,32 +400,105 @@ annotations. Connectors and scale to zero stay in OpenFaaS's own configuration.
 
 ## Back up local data
 
-Platform state lives in PostgreSQL (control plane, MLflow, Langfuse,
-checkpoints) and the RustFS object store (artifacts). Notebooks and projects
-live in `jupyter-data`. To back up the first two, stop the stack and archive
-their volumes:
+The local stack keeps its state in these named volumes. The Compose project is
+`mlaiops`, so the engine shows each volume as `mlaiops_<name>`.
+
+| Volume | Contents | Backup |
+| --- | --- | --- |
+| `postgres-data` | Control plane, MLflow tracking, Langfuse, agent memory and checkpoints | `pg_dumpall` while PostgreSQL runs |
+| `objectstore-data` | RustFS buckets: artifacts, models, datasets, media | Archive with the stack stopped |
+| `jupyter-data` | Notebooks and project source in `/workspace` | Archive with the stack stopped |
+| `prefect-data` | Prefect server database: flow run history | Archive with the stack stopped |
+| `redis-data` | Online feature values | Archive with the stack stopped |
+| `workspace-codex`, `workspace-claude` | Coding-agent settings and sign-ins in the workbench and IDE | Archive with the stack stopped |
+| `langflow-data` | Langflow flows (optional `langflow` profile) | Archive with the stack stopped, if you use Langflow |
+| `sso-providers` | Excluded: Dex regenerates it from your settings at every start | None |
+
+PostgreSQL is backed up with `pg_dumpall`, which produces a consistent dump of
+every database while the server runs. Never archive the `postgres-data` volume
+of a running server: the copy can be inconsistent and fail to restore. The
+other volumes hold ordinary files, so archive them after the stack stops.
+
+Run these commands from the workspace folder. Record the project count first,
+so you can check the restore:
 
 ```bash
+GATEWAY=http://localhost:8080   # the console URL that local-up printed
+curl -fsS -o /dev/null -c kionga.cookies \
+  --data-urlencode username=admin --data-urlencode password=mlaiops-local \
+  "$GATEWAY/auth/local/login"
+curl -fsS -b kionga.cookies "$GATEWAY/api/v1/projects" | python3 -c 'import json,sys; print(len(json.load(sys.stdin)), "projects")'
+```
+
+Dump PostgreSQL, stop the stack, archive the file volumes and start again:
+
+```bash
+mkdir -p kionga-backup
+bash deploy/scripts/container.sh compose -f deploy/compose.yaml exec -T postgres \
+  pg_dumpall -U mlaiops --clean --if-exists > kionga-backup/postgres.sql
 make -C deploy local-down
-bash deploy/scripts/container.sh run --rm -v mlaiops_postgres-data:/data -v "$PWD":/backup alpine \
-  tar czf /backup/postgres-data.tgz -C /data .
-bash deploy/scripts/container.sh run --rm -v mlaiops_objectstore-data:/data -v "$PWD":/backup alpine \
-  tar czf /backup/objectstore-data.tgz -C /data .
+for volume in objectstore-data jupyter-data prefect-data redis-data workspace-codex workspace-claude langflow-data; do
+  bash deploy/scripts/container.sh run --rm -v "mlaiops_$volume:/data:ro" -v "$PWD/kionga-backup:/backup" alpine \
+    tar czf "/backup/$volume.tgz" -C /data .
+done
 make -C deploy local-up
+```
+
+Check that `kionga-backup/postgres.sql` ends with `PostgreSQL database cluster dump complete`
+and that every archive exists before you rely on the backup. Keep the folder
+somewhere other than this machine.
+
+## Restore a backup
+
+Restore into a stack whose volumes are empty: a new machine, or after a
+[reset](#reset-the-stack). Restore the file volumes and PostgreSQL before the
+rest of the stack starts, so the gateway's migrations run against your data:
+
+```bash
+for volume in objectstore-data jupyter-data prefect-data redis-data workspace-codex workspace-claude langflow-data; do
+  bash deploy/scripts/container.sh run --rm -v "mlaiops_$volume:/data" -v "$PWD/kionga-backup:/backup:ro" alpine \
+    tar xzf "/backup/$volume.tgz" -C /data
+done
+bash deploy/scripts/container.sh compose -f deploy/compose.yaml up -d --wait postgres
+bash deploy/scripts/container.sh compose -f deploy/compose.yaml exec -T postgres \
+  psql -q -U mlaiops -d postgres < kionga-backup/postgres.sql
+make -C deploy local-up
+```
+
+The restore prints two expected errors, `current user cannot be dropped` and
+`role "mlaiops" already exists`, because the restoring user already exists. Any
+other error means the restore is incomplete. Compose may also warn that volumes
+it did not create already exist; it uses them as they are.
+
+Sign in again and compare the project count with the one you recorded:
+
+```bash
+curl -fsS -o /dev/null -c kionga.cookies \
+  --data-urlencode username=admin --data-urlencode password=mlaiops-local \
+  "$GATEWAY/auth/local/login"
+curl -fsS -b kionga.cookies "$GATEWAY/api/v1/projects" | python3 -c 'import json,sys; print(len(json.load(sys.stdin)), "projects")'
 ```
 
 ## Reset the stack
 
-To delete all local state and start clean:
+A reset deletes every volume in the stack. Try the recovery steps in
+[The stack is broken after an update](troubleshooting.md#the-stack-is-broken-after-an-update)
+first: most problems after an update need a rebuild, not a reset.
 
-```bash
-bash deploy/scripts/container.sh compose -f deploy/compose.yaml down -v   # -v deletes the named volumes
-make -C deploy local-up
-```
+!!! danger "A reset permanently deletes all local data"
+    `down -v` deletes the platform database, artifacts, models, notebooks, flow
+    history and workbench settings. Nothing can be recovered afterwards. Never
+    add `-v` to a routine restart.
 
-!!! warning
-    `down -v` permanently deletes platform databases, artifacts, models,
-    notebooks and IDE workspace data. Never add `-v` to a routine restart.
+    1. [Back up local data](#back-up-local-data) and check the backup.
+    2. Delete the stack and its volumes:
+
+        ```bash
+        bash deploy/scripts/container.sh compose -f deploy/compose.yaml down -v   # deletes every named volume
+        ```
+
+    3. Start clean with `make -C deploy local-up`, or bring your data back with
+       [Restore a backup](#restore-a-backup), which starts the stack itself.
 
 ## Next steps
 

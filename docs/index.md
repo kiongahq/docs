@@ -29,6 +29,11 @@ Start with the [installation guide](getting-started/installation.md), then follo
 the [quickstart](getting-started/quickstart.md). Need a specific answer? Use search
 or open **Ask Kionga**.
 
+The local stack is private to your machine: it uses development credentials and
+listens only on `127.0.0.1`. Read
+[Local credentials and network access](getting-started/installation.md#local-credentials-and-network-access)
+before you open it to a network.
+
 </div>
 
 ## Find your starting point
