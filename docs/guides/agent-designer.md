@@ -70,7 +70,8 @@ scanned again for placeholders.
 
 1. An administrator registers an API connection for the project. The connection
    holds an endpoint and an `env:` credential reference; the secret stays on the
-   gateway.
+   gateway. The variable must be
+   [permitted for connections](../reference/configuration.md#secret-references).
 2. Start from **API lookup**, or add an **API call** node and choose the
    connection. The request template is rendered and sent as JSON. For example,
    `{"query": "{input}"}` is sent as is, and text that is not JSON is sent as

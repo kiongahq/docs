@@ -56,7 +56,7 @@ To show GPU utilization, deploy a DCGM exporter scraped by Prometheus with `name
 
 An administrator can register a Qdrant or pgvector backend for a project in **Langflow > Register knowledge base** or through `POST /api/v1/admin/knowledge-bases`. Set the credential on the **gateway** first. Kionga stores only an `env:VARIABLE` reference and keeps the endpoint and credential out of the project-facing catalog and flow JSON. Use a separate Qdrant API key or PostgreSQL role with the minimum access needed for each deployment.
 
-For local Compose, pass the optional credential variables through `deploy/.env`. On Kubernetes, add the gateway variables through the chart's `gateway.extraEnv` entries backed by Kubernetes Secrets. The Langflow editor and agent runtime do not need the backend credentials.
+Use a variable named `KIONGA_KB_SECRET_<NAME>`, or the existing `KIONGA_QDRANT_KEY` or `KIONGA_KNOWLEDGE_DSN`. Kionga refuses any other name with a 422 unless an operator allowlists it. To supply the value, see [Secret references](../reference/configuration.md#secret-references). To fix a saved record that uses another name, see [Migrate a stored reference](../operations/production-operations.md#migrate-a-stored-reference). The Langflow editor and agent runtime do not need the backend credentials.
 
 For Qdrant, set `KIONGA_QDRANT_KEY` on the gateway and register:
 
@@ -89,7 +89,7 @@ The `dimensions` value must match your embedding model. In Langflow, refresh **K
 
 ## Register an external agent API
 
-An administrator can open **Langflow > Register agent API** and assign a fixed HTTPS POST operation to a project. The form accepts a name, description, full operation URL, and a credential reference such as `env:KIONGA_AGENT_API_TOKEN`; use `none` for an unauthenticated service. Set the variable on the gateway before invoking the operation. The API equivalent is `POST /api/v1/admin/agent-api-connections`:
+An administrator can open **Langflow > Register agent API** and assign a fixed HTTPS POST operation to a project. The form accepts a name, description, full operation URL, and a credential reference such as `env:KIONGA_CONNECTION_SECRET_SUPPORT` or `env:KIONGA_AGENT_API_TOKEN`; use `none` for an unauthenticated service. Set the variable on the gateway before invoking the operation. The API equivalent is `POST /api/v1/admin/agent-api-connections`:
 
 ```json
 {

@@ -135,6 +135,7 @@ nav:
       - Data and messaging: components/data-plane.md
       - Execution and serving: components/execution.md
       - AI and observability: components/ai-observability.md
+      - Agent teams: components/agent-teams.md
       - Workspace: components/workspace.md
       - Contracts repository: components/contracts.md
       - Go packages: components/go-packages.md

@@ -32,6 +32,7 @@ with a way to check the result. For exact routes, commands and settings, see the
 ## AI agents
 
 - [Build and deploy an agent](agents.md).
+- [Build and run an agent team](agent-teams.md).
 - [Run agents built with Agno, NOOA or your own framework](agent-frameworks.md).
 
 ## Collaboration

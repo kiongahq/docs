@@ -228,7 +228,7 @@ delete databases, artifacts and workspace files. To start over on purpose,
 
 ### Services are killed for memory or the stack is slow
 
-**Cause.** The stack runs 21 services and one-shot jobs, and the first build
+**Cause.** The stack runs 22 services and one-shot jobs, and the first build
 compiles several images in parallel.
 
 **Fix.** Give Docker at least 8 GB of memory (Docker Desktop: **Settings** >

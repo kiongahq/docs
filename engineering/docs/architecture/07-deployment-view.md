@@ -72,10 +72,12 @@ flowchart TB
   `feature-materializer` are one-shot jobs.
 - **Profiles.** `ide` (code-server), `log-export` (the exporter), `log-export-es` and
   `log-export-os` (local test targets).
-- **Trust boundary.** The serving manager and the pipeline runner run as root with the
-  Docker socket mounted. That is root-equivalent on the host and is acceptable only in
+- **Trust boundary.** The serving manager, the pipeline runner and the sandbox manager run
+  as root with the Docker socket mounted. That is root-equivalent on the host and is acceptable only in
   this single-operator profile. The containers they start never receive the socket,
-  drop all capabilities, set `no-new-privileges`, and have a PID limit.
+  drop all capabilities, set `no-new-privileges`, and have a PID limit. The sandbox manager
+  publishes no port and sits on an internal network; see
+  [Agent teams](../components/agent-teams.md).
 - **Not included.** The operator, integration worker and metrics collector, which
   exist only on Kubernetes. OpenFaaS is external in every deployment.
 

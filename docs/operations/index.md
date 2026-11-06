@@ -18,6 +18,7 @@ before you follow an installation guide.
 | **Sign-in** | Local `admin` account plus Dex (LDAP test directory, demo account, optional OAuth providers) | Your OIDC identity provider | Your OIDC identity provider |
 | **Notebooks and IDE** | Shared Jupyter and optional browser IDE on the same machine | Not available (no workload plane) | Per-user workspaces on isolated subdomains |
 | **Availability** | None; one machine | One gateway; expect downtime during upgrades | Multiple replicas with disruption budgets and autoscaling; your dependencies must also be redundant |
+| **Agent teams** | Included; sandboxes need gVisor | Optional, enabled in `deployment.json`; sandboxes need gVisor | Optional, enabled in the chart; sandboxes need gVisor |
 | **Start here** | [Run locally](local.md) | [Single server](public-vm.md) | [Deploy on Kubernetes](managed-kubernetes.md) |
 
 ## Trust boundaries

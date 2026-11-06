@@ -169,6 +169,7 @@ nav:
       - AI agents:
           - Build agents: guides/agents.md
           - Agent Designer: guides/agent-designer.md
+          - Agent teams: guides/agent-teams.md
           - Agent frameworks: guides/agent-frameworks.md
           - Langflow canvas: guides/langflow.md
       - Collaboration:
@@ -190,6 +191,7 @@ nav:
       - Integrations:
           - External object storage: operations/external-storage.md
           - Log export: operations/log-export.md
+          - Sandboxes and gVisor: operations/sandboxes.md
       - Updates and rollback: operations/updates.md
       - Production readiness: operations/production-operations.md
       - Troubleshooting: operations/troubleshooting.md
@@ -197,6 +199,7 @@ nav:
       - reference/index.md
       - REST API: reference/api.md
       - Agent graph: reference/agent-graph.md
+      - Agent teams: reference/agent-teams.md
       - CLI: reference/cli.md
       - Python SDK: reference/python-sdk.md
       - Configuration: reference/configuration.md
