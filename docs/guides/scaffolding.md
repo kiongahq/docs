@@ -95,7 +95,7 @@ key.
 
     ```bash
     curl -s -b kionga.cookies \
-      "$MLAIOPS_URL/api/v1/projects/<project-id>/scaffold-plan" | python -m json.tool
+      "$KIONGA_URL/api/v1/projects/<project-id>/scaffold-plan" | python -m json.tool
     ```
 
     The plan returns the `command`, `working_dir`, `output_dir`, the chosen
@@ -108,14 +108,14 @@ key.
     curl -s -b kionga.cookies -X POST \
       -H 'Content-Type: application/json' \
       -d '{"options": {"workspace": "workbench"}}' \
-      "$MLAIOPS_URL/api/v1/projects/<project-id>/scaffold-jobs"
+      "$KIONGA_URL/api/v1/projects/<project-id>/scaffold-jobs"
     ```
 
 3. Poll the job until its `status` is `succeeded` or `failed`:
 
     ```bash
     curl -s -b kionga.cookies \
-      "$MLAIOPS_URL/api/v1/projects/<project-id>/scaffold-jobs/<job-id>"
+      "$KIONGA_URL/api/v1/projects/<project-id>/scaffold-jobs/<job-id>"
     ```
 
 A job moves through `queued`, `running`, and then `succeeded` or `failed`. It

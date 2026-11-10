@@ -57,8 +57,8 @@ What to know:
 - The session cookie is `Secure` when the callback URL is HTTPS. Production refuses a
   plain-HTTP `OIDC_REDIRECT_URL`.
 - Local accounts use `/auth/local/login` instead. The gateway checks a `bcrypt` hash
-  (or the bootstrap administrator from `MLAIOPS_LOCAL_USERNAME` and
-  `MLAIOPS_LOCAL_PASSWORD`), throttles per account after five failures, and issues an
+  (or the bootstrap administrator from `KIONGA_LOCAL_USERNAME` and
+  `KIONGA_LOCAL_PASSWORD`), throttles per account after five failures, and issues an
   in-memory session cookie `kionga_local_session` for eight hours.
 - `/auth/logout` ends both kinds of session and revokes the subject's workspace
   sessions.
@@ -84,7 +84,7 @@ sequenceDiagram
     G->>G: RBAC, then IAM gate for pipelines run and each override
     G->>G: Preflight: project access, parameters, images, quotas, concurrency
     G->>P: One transaction: run (queued) + audit event + outbox rows
-    G->>F: Create flow run (training-pipeline or pipeline-definition,<br/>deployment mlaiops, run_id, project_id)
+    G->>F: Create flow run (training-pipeline or pipeline-definition,<br/>deployment kionga, run_id, project_id)
     F-->>G: Flow run ID
     G->>P: Link run to engine ID
     G-->>U: 202 Accepted (run)
@@ -115,7 +115,7 @@ Variations:
   OpenFaaS, every job is marked failed with the reason.
 - **Kubernetes Jobs.** With the opt-in Kubernetes executor, container definitions run
   as one hardened Job per node attempt instead of through Prefect.
-- **Kubernetes lifecycle path.** The outbox also carries `mlaiops.pipeline.commands`.
+- **Kubernetes lifecycle path.** The outbox also carries `kionga.pipeline.commands`.
   On Kubernetes the integration worker turns it into a `KiongaPipelineRun`, and the
   operator submits that run to KFP.
 
@@ -139,7 +139,7 @@ sequenceDiagram
     U->>G: POST /api/v1/models/{id}/promote {stage}
     G->>P: Model + audit + outbox (model.promoted)
     G-->>U: 200 OK (model)
-    G->>K: Publish mlaiops.model.commands
+    G->>K: Publish kionga.model.commands
     K->>W: Poll batch (auto-commit off)
     W->>O: Create or update KiongaModelPromotion
     O->>O: MLflow stage transition, then create KServe InferenceService
@@ -184,13 +184,13 @@ sequenceDiagram
     alt Runtime not healthy
         G-->>U: 503 agent_not_ready
     else Healthy
-        G->>A: POST /invoke with X-MLAIOps-Agent-ID,<br/>X-MLAIOps-Agent-Name, X-MLAIOps-Graph-Module
+        G->>A: POST /invoke with X-Kionga-Agent-ID,<br/>X-Kionga-Agent-Name, X-Kionga-Graph-Module
         A->>DB: Load the session checkpoint
         A->>T: Chat completion (OpenAI-compatible)
         T->>L: Forward to LLM_UPSTREAM_URL
         L-->>T: Completion with usage
         T-->>A: Completion
-        T--)K: Trace event to mlaiops.llm.traces (asynchronous)
+        T--)K: Trace event to kionga.llm.traces (asynchronous)
         A--)LF: LangChain callback trace (when keys are set)
         A->>DB: Save the checkpoint
         A-->>G: Reply, tokens, cost, duration
@@ -204,9 +204,9 @@ What to know:
 
 - The runtime endpoint is `AGENT_RUNTIME_URL` in Compose (one shared runtime). On
   Kubernetes it is the per-agent Service named from the immutable agent ID in
-  `MLAIOPS_AGENT_NAMESPACE`.
+  `KIONGA_AGENT_NAMESPACE`.
 - Token counts come from the model's usage metadata, never from an estimate. Cost is
-  computed from `MLAIOPS_COST_PER_1K_INPUT` and `MLAIOPS_COST_PER_1K_OUTPUT`.
+  computed from `KIONGA_COST_PER_1K_INPUT` and `KIONGA_COST_PER_1K_OUTPUT`.
 - The trace proxy's event carries the agent, version, session ID, HTTP status and
   duration, not the prompt or the provider key. It is sent from a `goroutine` after the
   response, and a failed send is dropped.

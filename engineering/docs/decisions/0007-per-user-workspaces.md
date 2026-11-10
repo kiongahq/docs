@@ -35,7 +35,7 @@ Chosen option: **One `KiongaWorkspace` per access grant on Kubernetes, a shared
 workbench in Compose**, because isolation is enforced where several users exist and
 the single-user stack stays simple.
 
-A change to a user's access writes a command to `mlaiops.workspace.commands` through
+A change to a user's access writes a command to `kionga.workspace.commands` through
 the outbox. The integration worker creates or updates the `KiongaWorkspace` (and
 deletes it when access is deleted). The `WorkspaceReconciler` in
 `platform/go/internal/operator/workspace_controller.go` turns it into one Deployment
@@ -88,7 +88,7 @@ storage admission; `TestProductionWorkspaceDomains` covers the domain rules;
 ## More information
 
 Written after the fact. Evidence: `platform` commit `f82e768` (2026-07-20) added the
-workspace reconciler; the CRD is `deploy/config/crd/mlaiops.io_kiongaworkspaces.yaml`;
+workspace reconciler; the CRD is `deploy/config/crd/kionga.dev_kiongaworkspaces.yaml`;
 the dispatcher mapping is in `platform/go/internal/integrations/dispatcher.go`. The
 per-user Docker container option is not recorded in the history; it is listed because
 the Compose stack's Docker socket boundary

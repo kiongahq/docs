@@ -23,19 +23,19 @@ whose name is derived from the immutable control-plane agent ID.
 
 ### What it does per turn
 
-1. Loads the agent's graph (`MLAIOPS_GRAPH_MODULE`, or the per-request identity).
+1. Loads the agent's graph (`KIONGA_GRAPH_MODULE`, or the per-request identity).
 2. Loads the **PostgreSQL checkpoint** for the session (state persists across turns,
    keyed per agent).
 3. Runs the LangGraph graph: reasoning, tool calls, feature/memory retrieval.
 4. Calls the LLM. The `openai` and `openai-compatible` backends go **through the
-   trace proxy** (`MLAIOPS_LLM_BASE_URL`); `anthropic` calls Anthropic directly;
+   trace proxy** (`KIONGA_LLM_BASE_URL`); `anthropic` calls Anthropic directly;
    `mock` (the default) makes no network call.
 5. Reports the session (turns, current node, tokens, cost) back to the gateway via
    `POST /api/v1/traces`.
 
 Endpoints: `POST /invoke` (one turn) and `POST /stream` (SSE streaming). Token
 counts come from LangChain usage metadata: **measured, never estimated**. Cost is
-computed from `MLAIOPS_COST_PER_1K_INPUT/OUTPUT`.
+computed from `KIONGA_COST_PER_1K_INPUT/OUTPUT`.
 
 New agent applications should start from the versioned `production-agent` project
 template. Its generated source is runnable before customization and separates the
@@ -54,7 +54,7 @@ exceeds the minimum and leaves the replica field to that HPA after creation. A
 working resource-metrics API is therefore required (the Kind bootstrap installs
 metrics-server). Readiness reflects available pods and both runtime containers have
 health probes. The gateway selects the ID-derived Service in
-`MLAIOPS_AGENT_NAMESPACE`, enriches list responses with bounded live readiness, and
+`KIONGA_AGENT_NAMESPACE`, enriches list responses with bounded live readiness, and
 returns `503 agent_not_ready` before invocation if `/healthz` fails. Compose sets
 `AGENT_RUNTIME_URL` to retain the shared runtime and does not emulate Kubernetes
 autoscaling.
@@ -64,7 +64,7 @@ autoscaling.
 ## trace-proxy
 
 The **LLM egress** for OpenAI-protocol backends. Compose points
-`MLAIOPS_LLM_BASE_URL` here, so `openai` and `openai-compatible` agent calls are
+`KIONGA_LLM_BASE_URL` here, so `openai` and `openai-compatible` agent calls are
 forwarded to the configured provider and published to Kafka without changes to
 agent code. Trace records carry agent, version, session ID, status code, duration and timestamp only: no prompt, response or `Authorization` header. The client's `Authorization` header is forwarded upstream unchanged. The `anthropic` backend
 does not use it.
@@ -79,7 +79,7 @@ does not use it.
 | --- | --- |
 | `LLM_UPSTREAM_URL` | OpenAI-compatible provider to forward to (default `https://api.openai.com`) |
 | `TRACE_SINK_FORMAT` | `kafka-rest` |
-| `TRACE_SINK_URL` | `http://kafka-rest:8082/topics/mlaiops.llm.traces` |
+| `TRACE_SINK_URL` | `http://kafka-rest:8082/topics/kionga.llm.traces` |
 
 It presents an **OpenAI-compatible** surface, so any OpenAI-style client works by
 setting its base URL to the proxy.
@@ -96,7 +96,7 @@ PostgreSQL (v3 needs ClickHouse, Redis, and workers, which is too heavy for one 
 | **Image** | `langfuse/langfuse:2` |
 | **Host port** | `3000` (`LANGFUSE_PORT`) |
 | **Backend** | PostgreSQL (`langfuse` database) |
-| **Local login** | `admin@local.dev` / `mlaiops-local-admin` |
+| **Local login** | `admin@local.dev` / `kionga-local-admin` |
 | **API keys** | `pk-lf-local-dev` / `sk-lf-local-dev` (headless init) |
 
 The gateway proxies Langfuse prompt management under `GET /api/v1/prompts` for the
@@ -116,9 +116,9 @@ and publishes results.
 
 | Demo | Input topic | Output topic | Logic |
 | --- | --- | --- | --- |
-| **Fraud detection** | `mlaiops.transactions` | `mlaiops.fraud.alerts` | feature enrichment → live fraud model (`FRAUD_MODEL_ENDPOINT`) or built-in rule → alert |
-| **Call-center analysis** | `mlaiops.callcenter.transcripts` | `mlaiops.callcenter.insights` | LangGraph agent (`CALLCENTER_AGENT_ID`) or keyword sentiment → intent/summary |
-| **Recommendations** | `mlaiops.user.activity` | `mlaiops.recs.results` | profile features → plan-ranked catalog |
+| **Fraud detection** | `kionga.transactions` | `kionga.fraud.alerts` | feature enrichment → live fraud model (`FRAUD_MODEL_ENDPOINT`) or built-in rule → alert |
+| **Call-center analysis** | `kionga.callcenter.transcripts` | `kionga.callcenter.insights` | LangGraph agent (`CALLCENTER_AGENT_ID`) or keyword sentiment → intent/summary |
+| **Recommendations** | `kionga.user.activity` | `kionga.recs.results` | profile features → plan-ranked catalog |
 
 It reports live stats (throughput, latency, flagged counts) to
 `POST /api/v1/realtime/{demo}`, surfaced on the console's Real-Time panel. The poll

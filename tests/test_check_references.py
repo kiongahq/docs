@@ -38,7 +38,7 @@ def workspace(tmp_path: Path) -> Path:
           gateway:
             environment:
               OIDC_ISSUER: x
-              MLAIOPS_LOCAL_ROLE: admin
+              KIONGA_LOCAL_ROLE: admin
               KIONGA_LOG_EXPORT_URL: ""
             ports: ["${KIONGA_BIND_ADDRESS:-127.0.0.1}:${GATEWAY_PORT:-8080}:8080"]
     """)
@@ -81,26 +81,26 @@ def workspace(tmp_path: Path) -> Path:
                 "sync", help="clone or update"
             )
     """)
-    write(root / "sdk-python" / "mlaiops_sdk" / "__init__.py", """
-        from .client import MLAIOpsClient
+    write(root / "sdk-python" / "kionga" / "__init__.py", """
+        from .client import KiongaClient
         from .models import Project
-        __all__ = ["MLAIOpsClient", "Project", "build_chat_model"]
-        _LAZY = {"build_chat_model": ("mlaiops_sdk.llm", "build_chat_model")}
+        __all__ = ["KiongaClient", "Project", "build_chat_model"]
+        _LAZY = {"build_chat_model": ("kionga.llm", "build_chat_model")}
     """)
-    write(root / "sdk-python" / "mlaiops_sdk" / "models.py", """
+    write(root / "sdk-python" / "kionga" / "models.py", """
         from pydantic import BaseModel
         class Project(BaseModel):
             id: str
             name: str
     """)
-    write(root / "sdk-python" / "mlaiops_sdk" / "client.py", """
-        class MLAIOpsClient:
+    write(root / "sdk-python" / "kionga" / "client.py", """
+        class KiongaClient:
             def __init__(self, base_url: str = "", *, actor: str = "") -> None: ...
             def __enter__(self): ...
             def list_projects(self) -> list[Project]: ...
             def create_project(self, name: str, *, description: str = "") -> Project: ...
     """)
-    write(root / "sdk-python" / "mlaiops_sdk" / "llm.py", "def build_chat_model(**kwargs): ...\n")
+    write(root / "sdk-python" / "kionga" / "llm.py", "def build_chat_model(**kwargs): ...\n")
     return root
 
 
@@ -154,10 +154,10 @@ def test_paths_into_sibling_repositories(workspace: Path) -> None:
 def test_environment_variables(workspace: Path) -> None:
     findings = check(workspace, """
         Set `KIONGA_BIND_ADDRESS=0.0.0.0` or KIONGA_START_RETRIES; tune `KIONGA_LOG_EXPORT_*`.
-        `OIDC_ISSUER` is required; `OIDC_ISSUER_URL` and `MLAIOPS_LOCAL_ROLES` are not real,
+        `OIDC_ISSUER` is required; `OIDC_ISSUER_URL` and `KIONGA_LOCAL_ROLES` are not real,
         and neither is `KIONGA_NOPE_*`.
     """, env=True)
-    assert values(findings) == ["OIDC_ISSUER_URL", "MLAIOPS_LOCAL_ROLES", "KIONGA_NOPE_*"]
+    assert values(findings) == ["OIDC_ISSUER_URL", "KIONGA_LOCAL_ROLES", "KIONGA_NOPE_*"]
 
 
 def test_routes_against_registered_patterns(workspace: Path) -> None:
@@ -175,7 +175,7 @@ def test_routes_against_registered_patterns(workspace: Path) -> None:
         The browser returns to `/auth/callback`, not `/auth/return`.
 
         ```bash
-        curl -s "$MLAIOPS_URL/api/v1/projects"
+        curl -s "$KIONGA_URL/api/v1/projects"
         curl -s "${GATEWAY}/api/v1/project/1"
         ```
 
@@ -194,11 +194,11 @@ def test_routes_against_registered_patterns(workspace: Path) -> None:
 def test_cli_commands(workspace: Path) -> None:
     findings = check(workspace, """
         ```bash
-        mlaiops project list
-        MLAIOPS_URL=https://example.com mlaiops pipeline submit <project-id>
-        ./bin/mlaiops-cli project delete prj-1
-        mlaiops widget list
-        psql -U mlaiops mlaiops
+        kionga-cli project list
+        KIONGA_URL=https://example.com kionga-cli pipeline submit <project-id>
+        ./bin/kionga-cli project delete prj-1
+        kionga widget list
+        psql -U kionga kionga
         kionga scaffold churn --template production-ml
         kionga project sync prj-1
         kionga project clone prj-1
@@ -206,35 +206,35 @@ def test_cli_commands(workspace: Path) -> None:
         ```
     """, cli=True)
     assert values(findings) == [
-        "mlaiops project delete", "mlaiops widget", "kionga project clone", "kionga deploy",
+        "kionga-cli project delete", "kionga widget", "kionga project clone", "kionga deploy",
     ]
 
 
 def test_sdk_symbols_methods_and_keywords(workspace: Path) -> None:
     findings = check(workspace, """
         ```python
-        from mlaiops_sdk import MLAIOpsClient, Project, build_chat_model, Missing
-        from mlaiops_sdk.nothing import x
+        from kionga import KiongaClient, Project, build_chat_model, Missing
+        from kionga.nothing import x
 
-        with MLAIOpsClient(base_url="http://localhost:8080", actor="me") as client:
+        with KiongaClient(base_url="http://localhost:8080", actor="me") as client:
             project = client.create_project("demo", description="d", owner="me")
             print(project.id, project.title)
             client.list_project()
         build_chat_model(model="x")
-        MLAIOpsClient(token="t")
+        KiongaClient(token="t")
         ```
 
         Inline `client.list_projects()` is fine; `client.py` is a file name.
-        `mlaiops_sdk.Project` exists; `mlaiops_sdk.Projects` does not.
+        `kionga.Project` exists; `kionga.Projects` does not.
     """, sdk=True)
     assert values(findings) == [
-        "from mlaiops_sdk import Missing",
-        "mlaiops_sdk.nothing",
+        "from kionga import Missing",
+        "kionga.nothing",
         "client.create_project",
         "project.title",
         "client.list_project",
-        "MLAIOpsClient",
-        "mlaiops_sdk.Projects",
+        "KiongaClient",
+        "kionga.Projects",
     ]
 
 
@@ -310,3 +310,13 @@ def test_boundary_flags_code_internals_on_product_pages():
 
 def test_boundary_runs_only_for_the_product_site():
     assert "boundary" not in cr.CHECKS and "boundary" in cr.PRODUCT_CHECKS
+
+
+
+def test_inline_kionga_topics_domains_and_attributes_are_not_sdk(workspace: Path) -> None:
+    """Kafka topics, domains and trace attributes also start with `kionga.`."""
+    findings = check(workspace, """
+        Events go to `kionga.audit.operations`, CRDs use `kionga.dev`, and spans
+        carry `kionga.run_id`. `kionga.Projects` is a typo, as is `kionga.nothing.x`.
+        """)
+    assert values(findings) == ["kionga.Projects"]

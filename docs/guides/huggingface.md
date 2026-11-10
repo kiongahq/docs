@@ -83,18 +83,18 @@ print(model.artifact_uri)
    never copies your connected account into workspaces:
 
     ```python
-    from mlaiops_sdk.huggingface import connect
+    from kionga.huggingface import connect
     connect()  # interactive Hub login; never paste a token into saved code
     ```
 
 3. Run the download:
 
     ```python
-    from mlaiops_sdk import MLAIOpsClient
-    from mlaiops_sdk.huggingface import download_model
+    from kionga import KiongaClient
+    from kionga.huggingface import download_model
 
     repo = "sentence-transformers/all-MiniLM-L6-v2"
-    with MLAIOpsClient() as platform:
+    with KiongaClient() as platform:
         model = next(m for m in platform.list_models()
                      if m.artifact_uri.startswith(f"hf://{repo}@"))
         path = download_model(model, cache_dir="/workspace/huggingface-cache")
@@ -123,7 +123,7 @@ source .venv/bin/activate
 pip install './sdk-python[huggingface]'
 ```
 
-Outside Kionga, export `MLAIOPS_URL` and a personal API key as `MLAIOPS_TOKEN`.
+Outside Kionga, export `KIONGA_URL` and a personal API key as `KIONGA_TOKEN`.
 That key is for Kionga, not Hugging Face. In pipeline jobs, provide `HF_TOKEN`
 through your deployment's secret manager, never as a parameter or in a committed
 file.

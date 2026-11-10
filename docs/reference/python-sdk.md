@@ -1,18 +1,18 @@
 ---
 icon: material/language-python
-description: Reference for the Kionga Python SDK, covering installation, configuration, every MLAIOpsClient method, and the tracing, tools, pipeline, language model and agent helpers.
+description: Reference for the Kionga Python SDK, covering installation, configuration, every KiongaClient method, and the tracing, tools, pipeline, language model and agent helpers.
 ---
 
 # Python SDK
 
-The Python SDK is the `mlaiops_sdk` package (distribution name `mlaiops-sdk`). Use
+The Python SDK is the `kionga` package (distribution name `kionga`). Use
 it from notebooks, scripts, training jobs and agents to manage Kionga resources
 and to build agents with tracing, tools, memory and a language model you choose.
 
 ```python
-from mlaiops_sdk import MLAIOpsClient
+from kionga import KiongaClient
 
-with MLAIOpsClient() as client:
+with KiongaClient() as client:
     project = client.create_project("customer-churn", template="production-ml")
     run = client.submit_pipeline(project.id)
     print(run.id, run.status)
@@ -40,13 +40,13 @@ The SDK requires Python 3.11 or later. Its core dependencies are `httpx` and
 === "From GitHub"
 
     ```bash
-    pip install "mlaiops-sdk[agents] @ git+https://github.com/kiongahq/sdk-python.git"
+    pip install "kionga[agents] @ git+https://github.com/kiongahq/sdk-python.git"
     ```
 
     To pin the `v0.2.0` release instead:
 
     ```bash
-    pip install "mlaiops-sdk[agents] @ https://github.com/kiongahq/sdk-python/archive/refs/tags/v0.2.0.tar.gz"
+    pip install "kionga[agents] @ https://github.com/kiongahq/sdk-python/archive/refs/tags/v0.2.0.tar.gz"
     ```
 
 === "From PyPI"
@@ -57,7 +57,7 @@ The SDK requires Python 3.11 or later. Its core dependencies are `httpx` and
     After the first PyPI release is published, install the distribution with:
 
     ```bash
-    python -m pip install "mlaiops-sdk[agents]"
+    python -m pip install "kionga[agents]"
     ```
 
     Check the [component changelog](../changelog.md) for available releases and
@@ -66,9 +66,9 @@ The SDK requires Python 3.11 or later. Its core dependencies are `httpx` and
 
 | Extra | Adds | Needed for |
 | --- | --- | --- |
-| *(none)* | `httpx`, `pydantic` | `MLAIOpsClient`, `tracing`, `tools` registry, `pipelines` |
+| *(none)* | `httpx`, `pydantic` | `KiongaClient`, `tracing`, `tools` registry, `pipelines` |
 | `agents` | LangGraph, the LangGraph PostgreSQL checkpointer, LangChain with its OpenAI and Anthropic integrations, Langfuse, and `psycopg` | `build_chat_model`, `get_langgraph_checkpointer`, `AgentMemoryClient`, `langchain_tools`, Langfuse tracing |
-| `huggingface` | `huggingface-hub` | `mlaiops_sdk.huggingface` |
+| `huggingface` | `huggingface-hub` | `kionga.huggingface` |
 | `agno` | Agno | Agno agents through `AgnoAdapter` |
 | `nooa` | NOOA | NOOA agents through `NooaAdapter` |
 | `runtime` | `agents` plus FastAPI and `uvicorn` | Running your own agent runtime |
@@ -76,25 +76,25 @@ The SDK requires Python 3.11 or later. Its core dependencies are `httpx` and
 
 ## Configure and authenticate
 
-`MLAIOpsClient()` reads its connection from the environment:
+`KiongaClient()` reads its connection from the environment:
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `MLAIOPS_URL` | `http://localhost:8080` | Kionga base URL. Used when you do not pass `base_url`. |
-| `MLAIOPS_TOKEN` | *(unset)* | Personal API key, sent as `Authorization: Bearer <key>`. Used when you do not pass `token`. |
-| `MLAIOPS_ALLOW_INSECURE_HTTP` | *(unset)* | Set to `1` to send the key over plain HTTP to a host the SDK would otherwise refuse. See [Plain HTTP](#plain-http). |
+| `KIONGA_URL` | `http://localhost:8080` | Kionga base URL. Used when you do not pass `base_url`. |
+| `KIONGA_TOKEN` | *(unset)* | Personal API key, sent as `Authorization: Bearer <key>`. Used when you do not pass `token`. |
+| `KIONGA_ALLOW_INSECURE_HTTP` | *(unset)* | Set to `1` to send the key over plain HTTP to a host the SDK would otherwise refuse. See [Plain HTTP](#plain-http). |
 
-- **Inside a Kionga workspace** (Jupyter workbench or browser IDE), `MLAIOPS_URL`
+- **Inside a Kionga workspace** (Jupyter workbench or browser IDE), `KIONGA_URL`
   is preset to a workspace helper that signs your calls as the workspace owner.
   Do not set a token.
-- **Outside Kionga**, set `MLAIOPS_URL` to your Kionga URL and `MLAIOPS_TOKEN` to
+- **Outside Kionga**, set `KIONGA_URL` to your Kionga URL and `KIONGA_TOKEN` to
   a personal API key from **Settings → Personal API keys**. Keep the key in a
   secret manager or your OS keychain. A key acts as a normal `user` limited to
   its scopes; see [Personal API keys](rbac.md#personal-api-keys).
 
-!!! note "Release v0.2.0 and `MLAIOPS_URL`"
-    The `v0.2.0` release reads `MLAIOPS_TOKEN` but not `MLAIOPS_URL`. With that
-    release, pass the URL explicitly: `MLAIOpsClient("https://kionga.example.com")`.
+!!! note "Release v0.2.0 and `KIONGA_URL`"
+    The `v0.2.0` release reads `KIONGA_TOKEN` but not `KIONGA_URL`. With that
+    release, pass the URL explicitly: `KiongaClient("https://kionga.example.com")`.
     Installs from GitHub `main`, from your checkout, and in Kionga workspaces read
     both.
 
@@ -102,22 +102,22 @@ Other modules read these variables:
 
 | Variable | Read by | Purpose |
 | --- | --- | --- |
-| `MLAIOPS_URL`, `MLAIOPS_TOKEN` | `tracing` | Where trace summaries are sent. Without `MLAIOPS_URL`, summaries are skipped. |
-| `MLAIOPS_AGENT_ID`, `MLAIOPS_USER_ID`, `MLAIOPS_SESSION_ID` | `tracing` | Agent, user and session recorded on trace summaries |
+| `KIONGA_URL`, `KIONGA_TOKEN` | `tracing` | Where trace summaries are sent. Without `KIONGA_URL`, summaries are skipped. |
+| `KIONGA_AGENT_ID`, `KIONGA_USER_ID`, `KIONGA_SESSION_ID` | `tracing` | Agent, user and session recorded on trace summaries |
 | `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, `LANGFUSE_HOST` | `tracing` | Langfuse tracing. Without both keys, Langfuse is skipped. |
-| `MLAIOPS_LLM_BACKEND` | `llm` | Default backend for `build_chat_model` (`openai` when unset) |
-| `MLAIOPS_LLM_MODEL` | `llm` | Default model name |
-| `MLAIOPS_LLM_BASE_URL`, then `OPENAI_BASE_URL` | `llm` | Base URL for OpenAI-protocol backends |
+| `KIONGA_LLM_BACKEND` | `llm` | Default backend for `build_chat_model` (`openai` when unset) |
+| `KIONGA_LLM_MODEL` | `llm` | Default model name |
+| `KIONGA_LLM_BASE_URL`, then `OPENAI_BASE_URL` | `llm` | Base URL for OpenAI-protocol backends |
 | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` | `llm` | Provider keys |
-| `MLAIOPS_CHECKPOINT_DSN`, then `DATABASE_URL` | `agents` | PostgreSQL for LangGraph checkpoints |
-| `MLAIOPS_MEMORY_DSN`, then `DATABASE_URL` | `agents` | PostgreSQL with pgvector for long-term memory |
-| `MLAIOPS_FEATURE_GATEWAY_URL` | `agents` | Online feature lookups |
+| `KIONGA_CHECKPOINT_DSN`, then `DATABASE_URL` | `agents` | PostgreSQL for LangGraph checkpoints |
+| `KIONGA_MEMORY_DSN`, then `DATABASE_URL` | `agents` | PostgreSQL with pgvector for long-term memory |
+| `KIONGA_FEATURE_GATEWAY_URL` | `agents` | Online feature lookups |
 | `HF_TOKEN` | `huggingface` | Hugging Face Hub token for non-interactive downloads |
 
-## MLAIOpsClient
+## KiongaClient
 
 ```python
-MLAIOpsClient(
+KiongaClient(
     base_url: str | None = None,
     *,
     token: str | None = None,
@@ -129,12 +129,12 @@ MLAIOpsClient(
 
 | Parameter | Description |
 | --- | --- |
-| `base_url` | Kionga base URL. Defaults to `MLAIOPS_URL`, then `http://localhost:8080`. |
-| `token` | Personal API key. Defaults to `MLAIOPS_TOKEN`. |
-| `actor` | Sent as the `X-MLAIOps-Actor` header. Kionga uses it for attribution only when the request has no authenticated identity. |
+| `base_url` | Kionga base URL. Defaults to `KIONGA_URL`, then `http://localhost:8080`. |
+| `token` | Personal API key. Defaults to `KIONGA_TOKEN`. |
+| `actor` | Sent as the `X-Kionga-Actor` header. Kionga uses it for attribution only when the request has no authenticated identity. |
 | `timeout` | Request timeout in seconds. `invoke_agent` has its own timeout. |
 | `transport` | A custom `httpx` transport, for example for tests. |
-| `allow_insecure_http` | `True` sends the key over plain HTTP to any host and logs a warning. `False` refuses even when `MLAIOPS_ALLOW_INSECURE_HTTP` is set. Defaults to that variable. |
+| `allow_insecure_http` | `True` sends the key over plain HTTP to any host and logs a warning. `False` refuses even when `KIONGA_ALLOW_INSECURE_HTTP` is set. Defaults to that variable. |
 
 ### Plain HTTP {#plain-http}
 
@@ -298,8 +298,8 @@ agent can call it. Creating and testing connections requires the `admin` or
 
 ### Response models
 
-All methods return Pydantic models from `mlaiops_sdk` (also importable from
-`mlaiops_sdk.models`). Timestamps are `datetime` values.
+All methods return Pydantic models from `kionga` (also importable from
+`kionga.models`). Timestamps are `datetime` values.
 
 | Model | Fields |
 | --- | --- |
@@ -322,18 +322,18 @@ All methods return Pydantic models from `mlaiops_sdk` (also importable from
 
 ## Tracing
 
-Import from `mlaiops_sdk.tracing` (`trace_llm` and `LangfuseContext` are also
-exported from `mlaiops_sdk`). Tracing never interrupts your code: if Kionga or
+Import from `kionga.tracing` (`trace_llm` and `LangfuseContext` are also
+exported from `kionga`). Tracing never interrupts your code: if Kionga or
 Langfuse is unreachable, the trace is dropped and your function still runs.
 
 ### `trace_llm(project)`
 
 A decorator that records one trace summary per call: the function name, status
-(`succeeded` or `failed`), duration, and `project`. It sets `MLAIOPS_TRACE_ID`
+(`succeeded` or `failed`), duration, and `project`. It sets `KIONGA_TRACE_ID`
 for the duration of the call and re-raises any exception.
 
 ```python
-from mlaiops_sdk import trace_llm
+from kionga import trace_llm
 
 @trace_llm(project="support")
 def answer(question: str) -> str:
@@ -353,7 +353,7 @@ a trace summary to Kionga when the block exits.
 | `score(*, name, value)` | Records a score on the summary and, when configured, in Langfuse |
 
 ```python
-from mlaiops_sdk import LangfuseContext
+from kionga import LangfuseContext
 
 with LangfuseContext(project="support", session_id=session_id) as trace:
     result = graph.invoke(state, config=trace.langgraph_config)
@@ -365,8 +365,8 @@ best-effort delivery.
 
 ## Tools
 
-Import from `mlaiops_sdk.tools` (`register_tool` is also exported from
-`mlaiops_sdk`). The registry is local to your Python process.
+Import from `kionga.tools` (`register_tool` is also exported from
+`kionga`). The registry is local to your Python process.
 
 | Name | Description |
 | --- | --- |
@@ -380,8 +380,8 @@ Import from `mlaiops_sdk.tools` (`register_tool` is also exported from
 `function`.
 
 ```python
-from mlaiops_sdk import register_tool
-from mlaiops_sdk.tools import langchain_tools
+from kionga import register_tool
+from kionga.tools import langchain_tools
 
 @register_tool(name="order_status", version="1.0", description="Look up an order")
 def order_status(order_id: str) -> str:
@@ -392,7 +392,7 @@ tools = langchain_tools(["order_status"])
 
 ## Pipelines
 
-`mlaiops_sdk.pipelines` builds pipeline definitions in Python.
+`kionga.pipelines` builds pipeline definitions in Python.
 
 | Class | Fields |
 | --- | --- |
@@ -409,7 +409,7 @@ returns the arguments for `create_pipeline_definition`. When you do not set
 other uses `prefect`.
 
 ```python
-from mlaiops_sdk.pipelines import Pipeline, PipelineStep, ResourceRequirements
+from kionga.pipelines import Pipeline, PipelineStep, ResourceRequirements
 
 pipeline = (
     Pipeline("nightly-train")
@@ -427,7 +427,7 @@ See [Pipelines](../guides/pipelines.md) for the YAML format and every flow optio
 
 ## Language models
 
-`mlaiops_sdk.llm` builds a LangChain chat model for the configured provider
+`kionga.llm` builds a LangChain chat model for the configured provider
 (needs the `agents` extra).
 
 `build_chat_model(backend=None, model=None, *, base_url=None, api_key=None, temperature=0.0, **kwargs)`
@@ -436,12 +436,12 @@ See [Pipelines](../guides/pipelines.md) for the YAML format and every flow optio
 | --- | --- | --- |
 | `openai` | `gpt-4o` | `OPENAI_API_KEY` or `api_key` |
 | `anthropic` | `claude-sonnet-4-5` | `ANTHROPIC_API_KEY` or `api_key` |
-| `openai-compatible` | `default` | A base URL from `base_url`, `MLAIOPS_LLM_BASE_URL` or `OPENAI_BASE_URL` |
+| `openai-compatible` | `default` | A base URL from `base_url`, `KIONGA_LLM_BASE_URL` or `OPENAI_BASE_URL` |
 | `self-hosted` | `default` | Same as `openai-compatible` |
 | `mock` | | Nothing. A deterministic model for tests. |
 
-`backend` defaults to `MLAIOPS_LLM_BACKEND`, then `openai`. `model` defaults to
-`MLAIOPS_LLM_MODEL`, then the backend default. Extra keyword arguments go to the
+`backend` defaults to `KIONGA_LLM_BACKEND`, then `openai`. `model` defaults to
+`KIONGA_LLM_MODEL`, then the backend default. Extra keyword arguments go to the
 LangChain model. A missing key, URL or package raises `MissingLLMConfiguration`.
 
 `MockChatModel(responses=None)` replies with the scripted responses in order and
@@ -451,14 +451,14 @@ repeats the last one. A response is a string or a tool call,
 
 ## Agent state and memory
 
-`mlaiops_sdk.agents` needs the `agents` extra.
+`kionga.agents` needs the `agents` extra.
 
 `get_langgraph_checkpointer(dsn=None)` returns the LangGraph PostgreSQL
 checkpointer (an async context manager). The DSN defaults to
-`MLAIOPS_CHECKPOINT_DSN`, then `DATABASE_URL`.
+`KIONGA_CHECKPOINT_DSN`, then `DATABASE_URL`.
 
 ```python
-from mlaiops_sdk import get_langgraph_checkpointer
+from kionga import get_langgraph_checkpointer
 
 async with get_langgraph_checkpointer() as saver:
     await saver.setup()
@@ -483,15 +483,15 @@ explicitly choose `scope="agent"`. `forget` always needs a user. Rows stored bef
 user scoping have no owner: they stay in the table, and only `scope="agent"` reads
 them. Feature lookups need no user.
 
-Memory uses `MLAIOPS_MEMORY_DSN`, then `DATABASE_URL`, and feature lookups use
-`MLAIOPS_FEATURE_GATEWAY_URL`; a missing value raises `MissingConfiguration`. The
+Memory uses `KIONGA_MEMORY_DSN`, then `DATABASE_URL`, and feature lookups use
+`KIONGA_FEATURE_GATEWAY_URL`; a missing value raises `MissingConfiguration`. The
 default embedding model, `HashingEmbedder`, is deterministic and runs offline. Pass any
 object with an `embed(text) -> list[float]` method that returns 256 values to use
 a different embedding.
 
 ## Other agent frameworks
 
-`mlaiops_sdk.agent_adapters` lets agents built with other frameworks run behind
+`kionga.agent_adapters` lets agents built with other frameworks run behind
 Kionga's `graph_module` contract.
 
 | Name | Description |
@@ -508,7 +508,7 @@ Replies are returned whole, not streamed token by token. See
 
 ## Hugging Face
 
-`mlaiops_sdk.huggingface` downloads models you imported into Kionga (needs the
+`kionga.huggingface` downloads models you imported into Kionga (needs the
 `huggingface` extra).
 
 | Function | Description |

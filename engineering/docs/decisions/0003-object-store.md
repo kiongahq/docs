@@ -44,7 +44,7 @@ digest, runs as the `objectstore` Compose service.
 
 - Good, because fresh installs and CI start again with a maintained, pinned image.
 - Neutral, because the Compose service and DNS name are both `objectstore`, with
-  credentials `mlaiops` and `mlaiops-local-secret` locally (`OBJECTSTORE_*` to
+  credentials `kionga` and `kionga-local-secret` locally (`OBJECTSTORE_*` to
   override).
 - Neutral, because RustFS runs as UID 10001 with its own `objectstore-data` volume.
   The local stack has no automatic migration and no MinIO DNS alias; older Docker

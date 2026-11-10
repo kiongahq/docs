@@ -36,7 +36,7 @@ its own right and gets a [decision record](../decisions/index.md).
 | Convention | Detail |
 | --- | --- |
 | REST API | Base path `/api/v1`, JSON bodies; unknown request fields are rejected; errors use `{"error": "<code>", "message": "<text>"}` |
-| Kubernetes API | Group and version `mlaiops.io/v1alpha1`; kinds `KiongaAgent`, `KiongaPipelineRun`, `KiongaTool`, `KiongaConnection`, `KiongaModelPromotion`, `KiongaWorkspace` |
-| Identifiers | Product-facing identifiers use the Kionga vocabulary (`kionga_` cookies, the `kionga` workspace command, `KIONGA_*` variables); the API group, Go module paths and `MLAIOPS_*` configuration keep their earlier names ([identifier migration](../status/identifier-migration.md)) |
+| Kubernetes API | Group and version `kionga.dev/v1alpha1`; kinds `KiongaAgent`, `KiongaPipelineRun`, `KiongaTool`, `KiongaConnection`, `KiongaModelPromotion`, `KiongaWorkspace` |
+| Identifiers | Product-facing identifiers use the Kionga vocabulary (`kionga_` cookies, the `kionga` workspace command, `KIONGA_*` variables); the API group, Go module paths and `KIONGA_*` configuration keep their earlier names ([identifier migration](../status/identifier-migration.md)) |
 | Secrets | Never in Helm values, the non-secret config file, or command lines; supplied as environment variables locally and as `<NAME>_FILE` paths on servers and clusters ([configuration and secrets](08-crosscutting-concepts.md#configuration-and-secrets)) |
 | Commits | Conventional commit messages, for example `feat(auth): ...` or `fix(security): ...` ([contributing](../contributing/index.md#commit-conventions)) |

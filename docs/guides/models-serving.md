@@ -17,8 +17,8 @@ roll back when you need to.
 - The model is logged to MLflow, or stored at an artifact URI that the serving
   image can load.
 - Deployment needs the serving manager, which the Compose stack runs for you.
-- For the API examples, export `MLAIOPS_URL` and a personal API key with the
-  `models` scope as `MLAIOPS_TOKEN`. See
+- For the API examples, export `KIONGA_URL` and a personal API key with the
+  `models` scope as `KIONGA_TOKEN`. See
   [Authentication](../reference/api.md#authentication).
 
 ## Register a model version
@@ -39,8 +39,8 @@ A training pipeline usually registers its model. To register one yourself:
 === "API"
 
     ```bash
-    curl -s -X POST "$MLAIOPS_URL/api/v1/models" \
-      -H "Authorization: Bearer $MLAIOPS_TOKEN" \
+    curl -s -X POST "$KIONGA_URL/api/v1/models" \
+      -H "Authorization: Bearer $KIONGA_TOKEN" \
       -H 'Content-Type: application/json' \
       -d '{"project_id": "prj-123", "name": "churn-classifier", "version": "1",
            "artifact_uri": "models:/m-1234",
@@ -85,8 +85,8 @@ Promotion moves a version to `staging`, `production` or `archived`. Promoting to
 === "API"
 
     ```bash
-    curl -s -X POST "$MLAIOPS_URL/api/v1/models/<model-id>/promote" \
-      -H "Authorization: Bearer $MLAIOPS_TOKEN" \
+    curl -s -X POST "$KIONGA_URL/api/v1/models/<model-id>/promote" \
+      -H "Authorization: Bearer $KIONGA_TOKEN" \
       -H 'Content-Type: application/json' \
       -d '{"stage": "production"}'
     ```
@@ -111,15 +111,15 @@ its endpoint. Deployment also requires a `passed` quality gate.
 === "API"
 
     ```bash
-    curl -s -X POST "$MLAIOPS_URL/api/v1/models/<model-id>/deploy" \
-      -H "Authorization: Bearer $MLAIOPS_TOKEN" \
+    curl -s -X POST "$KIONGA_URL/api/v1/models/<model-id>/deploy" \
+      -H "Authorization: Bearer $KIONGA_TOKEN" \
       -H 'Content-Type: application/json' \
       -d '{"canary_weight": 0}'
     ```
 
 When the container starts, the model's `deployment_status` becomes `serving`
 and its `endpoint_url` is recorded, for example
-`http://mlaiops-serve-churn-classifier:5001`. If the serving manager rejects the
+`http://kionga-serve-churn-classifier:5001`. If the serving manager rejects the
 deployment, the status becomes `failed` and the request returns `502` with the
 reason.
 
@@ -141,8 +141,8 @@ The gateway forwards your request to the model's MLflow `/invocations` route.
 === "API"
 
     ```bash
-    curl -s -X POST "$MLAIOPS_URL/api/v1/models/<model-id>/predict" \
-      -H "Authorization: Bearer $MLAIOPS_TOKEN" \
+    curl -s -X POST "$KIONGA_URL/api/v1/models/<model-id>/predict" \
+      -H "Authorization: Bearer $KIONGA_TOKEN" \
       -H 'Content-Type: application/json' \
       -d '{"inputs": [[0.1,-1.2,0.5,2.0,0.3,-0.7,1.1,0.0,-0.4,0.9,-1.5,0.2]]}'
     ```
@@ -170,8 +170,8 @@ Rollback returns the version to its previous stage, sets its deployment status t
 === "API"
 
     ```bash
-    curl -s -X POST "$MLAIOPS_URL/api/v1/models/<model-id>/rollback" \
-      -H "Authorization: Bearer $MLAIOPS_TOKEN" -d '{}'
+    curl -s -X POST "$KIONGA_URL/api/v1/models/<model-id>/rollback" \
+      -H "Authorization: Bearer $KIONGA_TOKEN" -d '{}'
     ```
 
 A version that was never promoted has no previous stage, and rollback returns

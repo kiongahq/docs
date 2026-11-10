@@ -76,7 +76,7 @@ turn and reports the session's turns, tokens and cost to Kionga.
 
 Token counts come from the usage the model reports; Kionga does not estimate
 them. **Cost** is computed from the per-1,000-token rates you configure
-(`MLAIOPS_COST_PER_1K_INPUT` and `MLAIOPS_COST_PER_1K_OUTPUT`).
+(`KIONGA_COST_PER_1K_INPUT` and `KIONGA_COST_PER_1K_OUTPUT`).
 
 Calls from the `openai` and `openai-compatible` backends go through the **trace
 proxy**, which forwards each call to your provider and publishes a trace of it to

@@ -47,8 +47,8 @@ artifacts. No package is published from a pull request or an arbitrary tag push.
   overwrite an existing release version. Deploy by digest.
 - SDK: build and test a wheel and source distribution once. Attach them and
   checksums to the GitHub release. Optional PyPI publication uses those same
-  verified files and does not block GitHub release assets. The distribution remains `mlaiops-sdk`; imports remain
-  `mlaiops_sdk`.
+  verified files and does not block GitHub release assets. The distribution remains `kionga`; imports remain
+  `kionga`.
 - Deployment: lint and package the Helm chart, then attach the archive and
   checksums to its release. Deployments supply explicit component image digests;
   the chart version is not a cross-component compatibility guarantee.
@@ -92,7 +92,7 @@ existing project if it has already been created:
 
 | Field | Value |
 | --- | --- |
-| Project | `mlaiops-sdk` |
+| Project | `kionga` |
 | GitHub owner | `kiongahq` |
 | Repository | `sdk-python` |
 | Workflow filename | `publish.yml` |

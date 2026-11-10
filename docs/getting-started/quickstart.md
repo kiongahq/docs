@@ -20,21 +20,21 @@ Python SDK and the REST API. All three call the same API, so you can mix them.
 - To use the curl tabs, sign in once from a terminal and keep the session cookie:
 
     ```bash
-    export MLAIOPS_URL="${MLAIOPS_URL:-http://localhost:8080}"
-    curl -fsS "$MLAIOPS_URL/api/v1/health"
+    export KIONGA_URL="${KIONGA_URL:-http://localhost:8080}"
+    curl -fsS "$KIONGA_URL/api/v1/health"
     curl -fsS -o /dev/null -c kionga.cookies \
-      --data-urlencode username=admin --data-urlencode password=mlaiops-local \
-      "$MLAIOPS_URL/auth/local/login"
-    curl -fsS -b kionga.cookies "$MLAIOPS_URL/api/v1/me"
+      --data-urlencode username=admin --data-urlencode password=kionga-local \
+      "$KIONGA_URL/auth/local/login"
+    curl -fsS -b kionga.cookies "$KIONGA_URL/api/v1/me"
     ```
 
     The health check returns `{"status":"ok",...}` and needs no sign-in. The last
     command returns your identity. If the stack started on a different port, set
-    `MLAIOPS_URL` to the console URL that `make -C deploy local-up` printed.
+    `KIONGA_URL` to the console URL that `make -C deploy local-up` printed.
 
 !!! note "Personal API keys"
     Scripts and tools that run outside Kionga authenticate with a personal API key
-    from **Settings → Personal API keys**, exported as `MLAIOPS_TOKEN`. A key acts
+    from **Settings → Personal API keys**, exported as `KIONGA_TOKEN`. A key acts
     as a normal `user`, limited to the services and projects it names and to its
     creator's provisioned access profile. The local `admin` account has no access
     profile until an administrator provisions one, so its keys cannot create
@@ -43,14 +43,14 @@ Python SDK and the REST API. All three call the same API, so you can mix them.
 
 !!! warning "Local credentials"
     The local stack uses development credentials such as `admin` /
-    `mlaiops-local` and listens only on `127.0.0.1`. Keep it that way unless you
+    `kionga-local` and listens only on `127.0.0.1`. Keep it that way unless you
     change the credentials. See
     [Local credentials and network access](installation.md#local-credentials-and-network-access).
 
 ## Step 1: Sign in
 
 Open <http://localhost:8080/console> and sign in with the local account
-`admin` and password `mlaiops-local`.
+`admin` and password `kionga-local`.
 
 The console opens on **Overview**.
 
@@ -69,9 +69,9 @@ A project owns everything you build in this tutorial.
 === "SDK"
 
     ```python
-    from mlaiops_sdk import MLAIOpsClient
+    from kionga import KiongaClient
 
-    client = MLAIOpsClient()
+    client = KiongaClient()
     project = client.create_project(
         "churn",
         template="production-ml",
@@ -84,7 +84,7 @@ A project owns everything you build in this tutorial.
 === "curl"
 
     ```bash
-    curl -s -b kionga.cookies -X POST "$MLAIOPS_URL/api/v1/projects" \
+    curl -s -b kionga.cookies -X POST "$KIONGA_URL/api/v1/projects" \
       -H 'Content-Type: application/json' \
       -d '{"name":"churn","template":"production-ml","framework":"scikit-learn","accelerator":"cpu"}'
     ```
@@ -120,10 +120,10 @@ evaluates it, and registers it in your project as `churn-classifier`.
 === "curl"
 
     ```bash
-    curl -s -b kionga.cookies -X POST "$MLAIOPS_URL/api/v1/pipelines/submit" \
+    curl -s -b kionga.cookies -X POST "$KIONGA_URL/api/v1/pipelines/submit" \
       -H 'Content-Type: application/json' \
       -d '{"project_id":"<project-id>","name":"training-pipeline"}'
-    curl -s -b kionga.cookies "$MLAIOPS_URL/api/v1/pipelines/runs/<run-id>"
+    curl -s -b kionga.cookies "$KIONGA_URL/api/v1/pipelines/runs/<run-id>"
     ```
 
 The run moves through `validate-data`, `train-model`, `evaluate`, and
@@ -153,10 +153,10 @@ run view to see the error.
 === "curl"
 
     ```bash
-    curl -s -b kionga.cookies "$MLAIOPS_URL/api/v1/models"
-    curl -s -b kionga.cookies -X POST "$MLAIOPS_URL/api/v1/models/<model-id>/promote" \
+    curl -s -b kionga.cookies "$KIONGA_URL/api/v1/models"
+    curl -s -b kionga.cookies -X POST "$KIONGA_URL/api/v1/models/<model-id>/promote" \
       -H 'Content-Type: application/json' -d '{"stage":"production"}'
-    curl -s -b kionga.cookies -X POST "$MLAIOPS_URL/api/v1/models/<model-id>/deploy" \
+    curl -s -b kionga.cookies -X POST "$KIONGA_URL/api/v1/models/<model-id>/deploy" \
       -H 'Content-Type: application/json' -d '{"canary_weight":0}'
     ```
 
@@ -175,7 +175,7 @@ The model expects rows of 12 numeric features.
 === "curl"
 
     ```bash
-    curl -s -b kionga.cookies -X POST "$MLAIOPS_URL/api/v1/models/<model-id>/predict" \
+    curl -s -b kionga.cookies -X POST "$KIONGA_URL/api/v1/models/<model-id>/predict" \
       -H 'Content-Type: application/json' \
       -d '{"inputs": [[0.1,-1.2,0.5,2.0,0.3,-0.7,1.1,0.0,-0.4,0.9,-1.5,0.2]]}'
     ```
@@ -198,7 +198,7 @@ it in your project, then talk to it.
 
     1. Open **Agents** and click **＋ Deploy agent**.
     2. Select the `churn` project and set the agent name to `customer-support`.
-    3. Keep the default image `mlaiops/agent-runtime:latest`, graph module
+    3. Keep the default image `kionga/agent-runtime:latest`, graph module
        `agents.customer_support.graph:build`, and LLM backend **Mock**.
     4. Click **Deploy agent**.
     5. When the agent shows as ready, click **Chat** and ask
@@ -209,7 +209,7 @@ it in your project, then talk to it.
     ```python
     agent = client.deploy_agent(
         project.id, "customer-support", "1.0",
-        image="mlaiops/agent-runtime:latest",
+        image="kionga/agent-runtime:latest",
         graph_module="agents.customer_support.graph:build",
     )
     reply = client.invoke_agent(agent.id, "When are invoices issued?")
@@ -224,7 +224,7 @@ see [Using a real LLM](../guides/agents.md#using-a-real-llm).
 !!! note "One shared agent runtime"
     On the local stack, every agent runs on one shared runtime that serves
     `agents.customer_support.graph:build` with the language model set by
-    `MLAIOPS_LLM_BACKEND`. Kionga records the image and backend you choose, but uses
+    `KIONGA_LLM_BACKEND`. Kionga records the image and backend you choose, but uses
     them only on Kubernetes, where each agent gets its own runtime.
 
 ## What you built

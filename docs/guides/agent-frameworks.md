@@ -34,7 +34,7 @@ your own module to the project and image.
 1. Write a factory that returns an adapter. This example runs offline:
 
     ```python
-    from mlaiops_sdk.agent_adapters import AgentResult, CallableAdapter, agent_factory
+    from kionga.agent_adapters import AgentResult, CallableAdapter, agent_factory
 
     @agent_factory("my-framework")
     def build():
@@ -45,7 +45,7 @@ your own module to the project and image.
         return CallableAdapter(run)
     ```
 
-2. Point the runtime at it with `MLAIOPS_GRAPH_MODULE=my_project.agent:build`.
+2. Point the runtime at it with `KIONGA_GRAPH_MODULE=my_project.agent:build`.
 
 The `@agent_factory` decorator tells the runtime not to build a LangChain model or
 a LangGraph checkpointer, so your factory owns its provider and state. Choosing an
@@ -83,7 +83,7 @@ fresh Agno object with explicit `session_id` and `user_id`.
 
     ```dotenv
     AGENT_RUNTIME_EXTRAS=runtime,agno
-    MLAIOPS_GRAPH_MODULE=agents.framework_examples:build_agno
+    KIONGA_GRAPH_MODULE=agents.framework_examples:build_agno
     AGNO_MODEL=your-provider-model-id
     # Set your provider key as LLM_UPSTREAM_API_KEY too; never put it in an image
     # or a contract. See "Project keys" in the agents guide.

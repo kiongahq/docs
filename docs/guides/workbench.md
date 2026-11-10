@@ -40,13 +40,13 @@ the console.
 ## Call Kionga from a notebook
 
 Inside the workbench, the SDK reaches the platform through a local helper set in
-`MLAIOPS_URL` and acts as you. You do not need a personal API key, and your
+`KIONGA_URL` and acts as you. You do not need a personal API key, and your
 browser session is never copied into the notebook kernel.
 
 ```python
-from mlaiops_sdk import MLAIOpsClient
+from kionga import KiongaClient
 
-with MLAIOpsClient() as client:
+with KiongaClient() as client:
     for project in client.list_projects():
         print(project.id, project.name)
 ```
@@ -77,13 +77,13 @@ can use ordinary file APIs:
 ```python
 from pathlib import Path
 
-features = Path("/workspace/object-store/mlaiops-features")
+features = Path("/workspace/object-store/kionga-features")
 print(list(features.iterdir()))
 ```
 
 Files you write under these paths go straight to object storage. The mounted
-buckets are `mlaiops-models`, `mlaiops-artifacts`, `mlaiops-features`,
-`mlaiops-traces`, `mlaiops-agents` and `mlaiops-pipeline-logs`.
+buckets are `kionga-models`, `kionga-artifacts`, `kionga-features`,
+`kionga-traces`, `kionga-agents` and `kionga-pipeline-logs`.
 
 **Verify:** `ls /workspace/object-store` in a terminal lists the buckets.
 
@@ -172,10 +172,10 @@ endpoint.
 2. Register the version with Kionga:
 
     ```python
-    from mlaiops_sdk import MLAIOpsClient
+    from kionga import KiongaClient
 
     version = mlflow.MlflowClient().get_latest_versions("notebook-classifier")[0].version
-    with MLAIOpsClient() as client:
+    with KiongaClient() as client:
         project_id = client.list_projects()[0].id
         registered = client.register_model(
             project_id, "notebook-classifier", version, logged.model_uri,
@@ -196,17 +196,17 @@ Every workbench kernel and terminal has these variables set:
 
 | Variable | Points to |
 | --- | --- |
-| `MLAIOPS_URL` | The local helper that calls Kionga as you |
+| `KIONGA_URL` | The local helper that calls Kionga as you |
 | `MLFLOW_TRACKING_URI` | MLflow |
 | `MLFLOW_S3_ENDPOINT_URL`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | The object store used by MLflow |
-| `MLAIOPS_FEATURE_GATEWAY_URL` | The feature gateway |
+| `KIONGA_FEATURE_GATEWAY_URL` | The feature gateway |
 | `KAFKA_REST_URL` | The Kafka REST proxy |
 | `PREFECT_API_URL` | Prefect |
 | `DATABASE_URL` | PostgreSQL with pgvector |
 | `REDIS_URL` | Redis |
 | `LANGFUSE_HOST`, `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY` | Langfuse |
 
-The workbench runs Python 3.11 with the Kionga SDK (`mlaiops_sdk`) and the
+The workbench runs Python 3.11 with the Kionga SDK (`kionga`) and the
 platform modules `pipelines`, `features`, `realtime` and `agents`. The terminal
 also has `git`, `curl`, `codex`, `claude` and `kionga`.
 

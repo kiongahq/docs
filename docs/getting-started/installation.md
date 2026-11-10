@@ -69,7 +69,7 @@ When the stack is ready, the command prints:
 ```text
 Kionga is ready.
   Console:  http://localhost:8080
-  Login:    admin / mlaiops-local
+  Login:    admin / kionga-local
 ```
 
 The port in the console URL differs when the default port was busy. `make -C deploy local` is an alias for
@@ -79,7 +79,7 @@ The port in the console URL differs when the default port was busy. `make -C dep
 
 Open <http://localhost:8080> for the landing page, or go straight to the console
 at <http://localhost:8080/console>. Sign in with the local account `admin` and
-password `mlaiops-local`, or with one of the single sign-on test accounts described in
+password `kionga-local`, or with one of the single sign-on test accounts described in
 [Single sign-on](../operations/single-sign-on.md#try-it-locally).
 
 You see the console's **Overview** page.
@@ -90,7 +90,7 @@ You see the console's **Overview** page.
 ./deploy/scripts/demo-smoke.sh
 ```
 
-The check signs in with the local account (or uses `MLAIOPS_TOKEN` when you set
+The check signs in with the local account (or uses `KIONGA_TOKEN` when you set
 it), creates a project, runs a real training pipeline, deploys the trained model
 and requests a live prediction, deploys and invokes an agent, reads online
 features, browses storage, and scores real-time events. `make -C deploy smoke`
@@ -112,14 +112,14 @@ GATEWAY=http://localhost:18080 ./deploy/scripts/demo-smoke.sh
 | Service | URL | Sign-in (local defaults) |
 | --- | --- | --- |
 | Landing page | <http://localhost:8080> | None |
-| Console and API | <http://localhost:8080/console> | `admin` / `mlaiops-local`, or single sign-on |
+| Console and API | <http://localhost:8080/console> | `admin` / `kionga-local`, or single sign-on |
 | Jupyter workbench | <http://localhost:8080/workspace?tool=workbench> | Your console session |
 | Browser IDE | <http://localhost:8080/workspace?tool=ide> | Your console session. Start it first with `make -C deploy ide-up`. |
 | Dex (single sign-on) | <http://localhost:5556/dex> | Test directory password `kionga-sso-dev` |
 | MLflow | <http://localhost:15000> | None |
 | Prefect | <http://localhost:4200> | None |
-| Langfuse | <http://localhost:3000> | `admin@local.dev` / `mlaiops-local-admin` |
-| RustFS console | <http://localhost:9001> | `mlaiops` / `mlaiops-local-secret` |
+| Langfuse | <http://localhost:3000> | `admin@local.dev` / `kionga-local-admin` |
+| RustFS console | <http://localhost:9001> | `kionga` / `kionga-local-secret` |
 
 [Service endpoints](../reference/service-endpoints.md) lists every service, and
 [Services and ports](../reference/services.md) lists every port.
@@ -135,22 +135,22 @@ GATEWAY=http://localhost:18080 ./deploy/scripts/demo-smoke.sh
 
 | Port (variable) | Service | Default credential |
 | --- | --- | --- |
-| `8080` (`GATEWAY_PORT`) | Console and API | `admin` / `mlaiops-local`; internal service token `kionga-local-service-token` |
-| `5432` (`POSTGRES_PORT`) | PostgreSQL | `mlaiops` / `mlaiops-local` |
+| `8080` (`GATEWAY_PORT`) | Console and API | `admin` / `kionga-local`; internal service token `kionga-local-service-token` |
+| `5432` (`POSTGRES_PORT`) | PostgreSQL | `kionga` / `kionga-local` |
 | `6379` (`REDIS_PORT`) | Redis | None |
 | `9092` (`KAFKA_PORT`) | Kafka broker | None, and no encryption |
 | `8082` (`KAFKA_REST_PORT`) | Kafka REST proxy | None |
-| `9000` / `9001` (`OBJECTSTORE_PORT` / `OBJECTSTORE_CONSOLE_PORT`) | RustFS S3 API and console | `mlaiops` / `mlaiops-local-secret` |
+| `9000` / `9001` (`OBJECTSTORE_PORT` / `OBJECTSTORE_CONSOLE_PORT`) | RustFS S3 API and console | `kionga` / `kionga-local-secret` |
 | `15000` (`MLFLOW_PORT`) | MLflow | None |
 | `4200` (`PREFECT_PORT`) | Prefect | None |
-| `3000` (`LANGFUSE_PORT`) | Langfuse | `admin@local.dev` / `mlaiops-local-admin`; project keys `pk-lf-local-dev` / `sk-lf-local-dev` |
+| `3000` (`LANGFUSE_PORT`) | Langfuse | `admin@local.dev` / `kionga-local-admin`; project keys `pk-lf-local-dev` / `sk-lf-local-dev` |
 | `5556` (`DEX_PORT`) | Dex single sign-on | Test directory password `kionga-sso-dev` |
 | `8083` (`FEATURE_GATEWAY_PORT`) | Feature gateway | Internal service token |
 | `8084` (`STORAGE_PROXY_PORT`) | Storage proxy | Internal service token |
 | `8085` (`SERVING_MANAGER_PORT`) | Serving manager | Internal service token |
 | `8081` (`TRACE_PROXY_PORT`) | Trace proxy | None |
 | `19000` (`AGENT_RUNTIME_PORT`) | Agent runtime | None |
-| `8888` (`JUPYTER_PORT`), always `127.0.0.1` | Jupyter workbench | Token `mlaiops-local` |
+| `8888` (`JUPYTER_PORT`), always `127.0.0.1` | Jupyter workbench | Token `kionga-local` |
 
 To check that a data service is not reachable from your network, run this from
 another machine on the same network, with your machine's address in place of

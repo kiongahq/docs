@@ -80,7 +80,7 @@ imports Go code and no Go repository embeds Python.
 ## More information
 
 Written after the fact. Evidence: the first platform commit (`610529d`, 2026-06-27)
-already contained `go/cmd`, `go/internal` and a Python `mlaiops_sdk`; the split into
+already contained `go/cmd`, `go/internal` and a Python `kionga`; the split into
 repositories ([decision 0010](0010-repository-per-component.md)) kept the language
 boundary; `platform/go/go.mod`; `sdk-python/pyproject.toml`. See
 [technology](../architecture/technology.md#languages-and-runtimes).

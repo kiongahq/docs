@@ -27,19 +27,19 @@ deployments replace all of them; see [Choose a deployment](../operations/index.m
 | Service | From your machine | Inside the stack | Credentials (local defaults) |
 | --- | --- | --- | --- |
 | Landing page | `http://localhost:8080` | `http://gateway:8080` | None |
-| Console and API | `http://localhost:8080/console` | `http://gateway:8080` | `admin` / `mlaiops-local` (role from `MLAIOPS_LOCAL_ROLE`), or single sign-on |
+| Console and API | `http://localhost:8080/console` | `http://gateway:8080` | `admin` / `kionga-local` (role from `KIONGA_LOCAL_ROLE`), or single sign-on |
 | Dex (single sign-on) | `http://localhost:5556/dex` | `http://dex:5556/dex` | Test directory password `kionga-sso-dev` |
-| Jupyter workbench | `http://localhost:8080/workspace?tool=workbench` | `http://jupyter:8888` | Your console session. For diagnostics only: `http://127.0.0.1:8888/workspaces/workbench/` with token `mlaiops-local` (`JUPYTER_TOKEN`). |
+| Jupyter workbench | `http://localhost:8080/workspace?tool=workbench` | `http://jupyter:8888` | Your console session. For diagnostics only: `http://127.0.0.1:8888/workspaces/workbench/` with token `kionga-local` (`JUPYTER_TOKEN`). |
 | Browser IDE (optional) | `http://localhost:8080/workspace?tool=ide` | `http://ide:8080` | Your console session; no published port |
 | Langflow canvas (optional) | `http://localhost:8080/console/langflow` | `http://langflow:7860` | Your Kionga console session; no published port |
 | MLflow | `http://localhost:15000` | `http://mlflow:5000` | None |
 | Prefect | `http://localhost:4200` | `http://prefect-server:4200` | None |
-| Langfuse | `http://localhost:3000` | `http://langfuse:3000` | `admin@local.dev` / `mlaiops-local-admin`; API keys `pk-lf-local-dev` / `sk-lf-local-dev` |
-| Object storage (S3 API) | `http://localhost:9000` | `http://objectstore:9000` | `mlaiops` / `mlaiops-local-secret` |
+| Langfuse | `http://localhost:3000` | `http://langfuse:3000` | `admin@local.dev` / `kionga-local-admin`; API keys `pk-lf-local-dev` / `sk-lf-local-dev` |
+| Object storage (S3 API) | `http://localhost:9000` | `http://objectstore:9000` | `kionga` / `kionga-local-secret` |
 | Object storage console | `http://localhost:9001` | Not used inside the stack | Same as the S3 API |
 | Kafka | `localhost:9092` | `kafka:9092` | None |
 | Kafka REST | `http://localhost:8082` | `http://kafka-rest:8082` | None |
-| PostgreSQL (with pgvector) | `localhost:5432` | `postgres:5432` | User `mlaiops`, password `mlaiops-local`, database `mlaiops` |
+| PostgreSQL (with pgvector) | `localhost:5432` | `postgres:5432` | User `kionga`, password `kionga-local`, database `kionga` |
 | Redis (online features) | `localhost:6379` | `redis:6379` | None |
 | Feature gateway | `http://localhost:8083` | `http://feature-gateway:8083` | None locally |
 | Storage proxy | `http://localhost:8084` | `http://storage-proxy:8084` | None locally |
@@ -51,15 +51,15 @@ deployments replace all of them; see [Choose a deployment](../operations/index.m
 
 Open the workbench from the console sidebar (**Jupyter workbench**). It includes:
 
-- The Python SDK (`mlaiops_sdk`) with the `agents` and `huggingface` extras, and
+- The Python SDK (`kionga`) with the `agents` and `huggingface` extras, and
   Kionga's example modules (`pipelines`, `features`, `realtime`, `agents`).
 - A terminal (**File → New → Terminal**) with `git`, `curl` and the `kionga`
   command.
 - The same `scikit-learn` and `mlflow` versions as the model server image, so a
   model you train in a notebook serves without version mismatches.
-- Every connection preset in environment variables: `MLAIOPS_URL`,
+- Every connection preset in environment variables: `KIONGA_URL`,
   `MLFLOW_TRACKING_URI`, `MLFLOW_S3_ENDPOINT_URL` with `AWS_ACCESS_KEY_ID` and
-  `AWS_SECRET_ACCESS_KEY`, `MLAIOPS_FEATURE_GATEWAY_URL`, `KAFKA_REST_URL`,
+  `AWS_SECRET_ACCESS_KEY`, `KIONGA_FEATURE_GATEWAY_URL`, `KAFKA_REST_URL`,
   `PREFECT_API_URL`, `DATABASE_URL`, `REDIS_URL`, and `LANGFUSE_HOST`,
   `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY`.
 - The storage buckets mounted under `/workspace/object-store`.
@@ -73,11 +73,11 @@ Notebooks are stored in the `jupyter-data` volume and survive restarts. See
 
 | Tool | Settings |
 | --- | --- |
-| MLflow client | `MLFLOW_TRACKING_URI=http://localhost:15000`; for artifacts, `MLFLOW_S3_ENDPOINT_URL=http://localhost:9000`, `AWS_ACCESS_KEY_ID=mlaiops`, `AWS_SECRET_ACCESS_KEY=mlaiops-local-secret` |
+| MLflow client | `MLFLOW_TRACKING_URI=http://localhost:15000`; for artifacts, `MLFLOW_S3_ENDPOINT_URL=http://localhost:9000`, `AWS_ACCESS_KEY_ID=kionga`, `AWS_SECRET_ACCESS_KEY=kionga-local-secret` |
 | S3 clients (AWS CLI, `boto3`, `rclone`) | Endpoint `http://localhost:9000`, the same keys, path-style addressing |
-| `psql` | `psql postgres://mlaiops:mlaiops-local@localhost:5432/mlaiops` |
+| `psql` | `psql postgres://kionga:kionga-local@localhost:5432/kionga` |
 | Kafka clients | Brokers `localhost:9092`, or REST at `http://localhost:8082` |
-| Kionga API, SDK and CLI | `MLAIOPS_URL=http://localhost:8080` (or your port), authenticated as described in [REST API authentication](api.md#authentication) |
+| Kionga API, SDK and CLI | `KIONGA_URL=http://localhost:8080` (or your port), authenticated as described in [REST API authentication](api.md#authentication) |
 
 ## Register connections in the console
 
@@ -127,8 +127,8 @@ item stays pending unless you connect one, for example a Kind cluster.
 ## Connect more services
 
 - **A real language model for agents**: in `deploy/.env`, set
-  `MLAIOPS_LLM_BACKEND` (`openai`, `anthropic` or `openai-compatible`), the
-  provider key, and optionally `MLAIOPS_LLM_MODEL`, then recreate the agent
+  `KIONGA_LLM_BACKEND` (`openai`, `anthropic` or `openai-compatible`), the
+  provider key, and optionally `KIONGA_LLM_MODEL`, then recreate the agent
   runtime. The `openai` and `openai-compatible` backends go through the trace
   proxy, so every call is recorded; `anthropic` calls Anthropic directly. See
   [LLM providers](configuration.md#llm-providers).
@@ -160,7 +160,7 @@ To let teams use their own buckets, see
 
 - **A connection shows unhealthy**: its address must resolve from inside the
   stack. Test it from a temporary container on the stack's network, for example
-  `docker run --rm --network mlaiops_default curlimages/curl -fsS http://mlflow:5000/health`.
+  `docker run --rm --network kionga_default curlimages/curl -fsS http://mlflow:5000/health`.
 - **It works in the console but fails from your laptop, or the reverse**: you used
   an inside-the-stack address outside the stack, or a `localhost` address inside
   it. Swap it using the table above.

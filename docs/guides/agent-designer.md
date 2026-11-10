@@ -24,7 +24,7 @@ call.
   (`make local-up`) starts it as `agent-designer-runner`. If it is missing, **Run**
   reports *The agent designer runner is not configured*.
 - Without provider keys, the stack uses the deterministic `mock` chat model. To
-  use a real model, set `MLAIOPS_LLM_BACKEND` and the provider key (see
+  use a real model, set `KIONGA_LLM_BACKEND` and the provider key (see
   [Build agents](agents.md#using-a-real-llm)). Model calls go out through the
   trace-proxy.
 
@@ -260,9 +260,9 @@ a number.
 ## Automate with the Python SDK
 
 ```python
-from mlaiops_sdk import MLAIOpsClient
+from kionga import KiongaClient
 
-client = MLAIOpsClient()
+client = KiongaClient()
 template = next(t for t in client.agent_designer_templates() if t["id"] == "structured-extraction")
 design = client.create_agent_design("prj-demo", "Order extractor", template["graph"])
 run = client.run_agent_design(design["id"], "Ada wants order 42 refunded")

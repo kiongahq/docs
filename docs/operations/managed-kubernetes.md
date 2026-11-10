@@ -84,12 +84,12 @@ Store these in your secret manager, never in Helm values or command arguments:
 
 | Kubernetes Secret | Keys |
 | --- | --- |
-| `kionga-gateway` | `DATABASE_URL`, `OIDC_CLIENT_SECRET`, `MLAIOPS_INTERNAL_TOKEN`, `KIONGA_CREDENTIAL_KEY` |
-| `kionga-features` | `REDIS_URL`, `MLAIOPS_INTERNAL_TOKEN` |
-| `kionga-storage` | `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `MLAIOPS_INTERNAL_TOKEN` |
+| `kionga-gateway` | `DATABASE_URL`, `OIDC_CLIENT_SECRET`, `KIONGA_INTERNAL_TOKEN`, `KIONGA_CREDENTIAL_KEY` |
+| `kionga-features` | `REDIS_URL`, `KIONGA_INTERNAL_TOKEN` |
+| `kionga-storage` | `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `KIONGA_INTERNAL_TOKEN` |
 
 `DATABASE_URL` must use `sslmode=verify-full`. `OIDC_CLIENT_SECRET` and
-`MLAIOPS_INTERNAL_TOKEN` need at least 24 characters. `KIONGA_CREDENTIAL_KEY`
+`KIONGA_INTERNAL_TOKEN` need at least 24 characters. `KIONGA_CREDENTIAL_KEY`
 is the base64 encoding of exactly 32 bytes (`openssl rand -base64 32`); keep it
 stable across replicas and restarts, because it encrypts users' stored personal
 credentials.
@@ -153,7 +153,7 @@ credentials.
       `ingress.tlsSecretName` and `ingress.controllerNamespace`.
     - `workspaceIngress.baseDomain` and `config.KIONGA_WORKSPACE_BASE_DOMAIN`:
       the same wildcard base, for example `workspaces.example.com`.
-    - `config`: your OIDC endpoints, `MLAIOPS_ALLOWED_ORIGIN`
+    - `config`: your OIDC endpoints, `KIONGA_ALLOWED_ORIGIN`
       (`https://<console-host>`), `OIDC_REDIRECT_URL`
       (`https://<console-host>/auth/callback`) and the engine and storage
       addresses. The example's internal URLs assume release `kionga` in
@@ -174,7 +174,7 @@ credentials.
       and add the key to their Secrets. Lists in an overlay replace the
       defaults, so repeat the default keys.
     - **Break-glass administrator:** set `config.KIONGA_LOCAL_LOGIN: "true"`,
-      add `MLAIOPS_LOCAL_PASSWORD` to the gateway's `secrets` list and Secret.
+      add `KIONGA_LOCAL_PASSWORD` to the gateway's `secrets` list and Secret.
       The gateway refuses to start unless that password has at least 16
       characters and contains none of `local`, `change-me` or `password`.
     - **Workspace storage classes:** set

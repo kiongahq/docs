@@ -9,7 +9,7 @@ Kionga includes a feature store for both real-time and batch use:
 
 - **Online:** feature values in Redis, served through the feature gateway for
   low-latency reads by models, agents and stream processors.
-- **Offline:** Parquet snapshots in object storage (`s3://mlaiops-features` by
+- **Offline:** Parquet snapshots in object storage (`s3://kionga-features` by
   default) for training and analysis.
 
 Every feature view has a versioned definition, a materialization history, and a
@@ -28,8 +28,8 @@ a feature store you already run, such as Feast, see
   or the materializer's service identity. Normal users cannot.
 - **To run the materializer and the retention sweep:** shell access to the
   deployment, or a Kionga workspace terminal for the Python modules.
-- For the API examples, export `MLAIOPS_URL` and a personal API key with the
-  `features` scope as `MLAIOPS_TOKEN`.
+- For the API examples, export `KIONGA_URL` and a personal API key with the
+  `features` scope as `KIONGA_TOKEN`.
 
 ## Browse feature views
 
@@ -42,8 +42,8 @@ a feature store you already run, such as Feast, see
 === "API"
 
     ```bash
-    curl -s -H "Authorization: Bearer $MLAIOPS_TOKEN" \
-      "$MLAIOPS_URL/api/v1/features/views" | python -m json.tool
+    curl -s -H "Authorization: Bearer $KIONGA_TOKEN" \
+      "$KIONGA_URL/api/v1/features/views" | python -m json.tool
     ```
 
 The bundled demo views are:
@@ -68,11 +68,11 @@ A view with a TTL of `0` never goes stale.
 ## Read online features
 
 The feature gateway answers lookups in a Feast-compatible shape. From a Kionga
-workspace, its address is in `MLAIOPS_FEATURE_GATEWAY_URL`; on a Compose host it
+workspace, its address is in `KIONGA_FEATURE_GATEWAY_URL`; on a Compose host it
 listens on `http://localhost:8083`.
 
 ```bash
-curl -s -X POST "$MLAIOPS_FEATURE_GATEWAY_URL/get-online-features" \
+curl -s -X POST "$KIONGA_FEATURE_GATEWAY_URL/get-online-features" \
   -H 'Content-Type: application/json' \
   -d '{"feature_service": "customer_profile", "entities": [{"entity_id": "u123"}]}'
 ```
@@ -101,12 +101,12 @@ feature gateway, writes an offline snapshot, and reports the run.
    materializer, post the same fields to the API:
 
     ```bash
-    curl -s -X POST "$MLAIOPS_URL/api/v1/features" \
-      -H "Authorization: Bearer $MLAIOPS_TOKEN" \
+    curl -s -X POST "$KIONGA_URL/api/v1/features" \
+      -H "Authorization: Bearer $KIONGA_TOKEN" \
       -H 'Content-Type: application/json' \
       -d '{"name": "customer_profile", "entity": "entity_id",
            "fields": [{"name": "plan", "type": "string"}],
-           "tags": ["customer"], "source": "s3://mlaiops-features/customer_profile",
+           "tags": ["customer"], "source": "s3://kionga-features/customer_profile",
            "ttl_seconds": 3600}'
     ```
 
@@ -117,7 +117,7 @@ feature gateway, writes an offline snapshot, and reports the run.
     ```
 
     It applies each view, writes its online values, writes a Parquet snapshot
-    under `s3://mlaiops-features/`, reports the run, and exits. You can also run
+    under `s3://kionga-features/`, reports the run, and exits. You can also run
     it as `python -m features.materialize`.
 
 Applying a definition that changed (entity, fields, tags, source or TTL) creates
@@ -128,10 +128,10 @@ creates nothing.
 and the history lists the run:
 
 ```bash
-curl -s -H "Authorization: Bearer $MLAIOPS_TOKEN" \
-  "$MLAIOPS_URL/api/v1/features/customer_profile/versions"
-curl -s -H "Authorization: Bearer $MLAIOPS_TOKEN" \
-  "$MLAIOPS_URL/api/v1/features/customer_profile/lineage"
+curl -s -H "Authorization: Bearer $KIONGA_TOKEN" \
+  "$KIONGA_URL/api/v1/features/customer_profile/versions"
+curl -s -H "Authorization: Bearer $KIONGA_TOKEN" \
+  "$KIONGA_URL/api/v1/features/customer_profile/lineage"
 ```
 
 The lineage lists each run's `run_id`, `source_dataset`, `offline_uri`,

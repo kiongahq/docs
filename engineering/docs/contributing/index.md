@@ -66,7 +66,7 @@ Optional lanes against a running system: `make -C platform test-browser` (Playwr
 
 Gate tests are deterministic and network-free: the mock LLM backend and the hashing
 embedding function stand in for providers. The paid evaluation lane in `agent-runtime` runs only
-with `MLAIOPS_RUN_EVALS=1` and a real provider key.
+with `KIONGA_RUN_EVALS=1` and a real provider key.
 
 ## CI gates
 

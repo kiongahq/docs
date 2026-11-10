@@ -51,7 +51,7 @@ def credentials_table():
 def test_installation_warns_about_development_credentials():
     text = credentials_table()
     assert '!!! warning "Development credentials"' in text
-    for credential in ("mlaiops-local", "mlaiops-local-secret", "mlaiops-local-admin", "kionga-local-service-token"):
+    for credential in ("kionga-local", "kionga-local-secret", "kionga-local-admin", "kionga-local-service-token"):
         assert credential in text, f"{credential} is a default but not listed"
     assert "nc -vz" in text  # the reachability check from another machine
 
@@ -71,9 +71,9 @@ def test_start_pages_link_to_the_warning(page):
 
 def test_local_role_does_not_claim_anonymous_access():
     text = (DOCS / "reference" / "configuration.md").read_text()
-    row = next(line for line in text.splitlines() if line.startswith("| `MLAIOPS_LOCAL_ROLE`"))
+    row = next(line for line in text.splitlines() if line.startswith("| `KIONGA_LOCAL_ROLE`"))
     assert "every API request still needs a credential" in row
-    origin = next(line for line in text.splitlines() if line.startswith("| `MLAIOPS_ALLOWED_ORIGIN`"))
+    origin = next(line for line in text.splitlines() if line.startswith("| `KIONGA_ALLOWED_ORIGIN`"))
     assert "never allows credentials" in origin
 
 
@@ -210,4 +210,4 @@ def test_models_guide_does_not_claim_servers_hold_credentials():
 def test_sdk_reference_describes_memory_scoping_and_plain_http():
     text = (DOCS / "reference" / "python-sdk.md").read_text()
     assert 'user_id=None, tenant_id=""' in text and "`forget(" in text and 'scope="user"' in text
-    assert "`MLAIOPS_ALLOW_INSECURE_HTTP`" in text and "InsecureTransportError" in text
+    assert "`KIONGA_ALLOW_INSECURE_HTTP`" in text and "InsecureTransportError" in text

@@ -192,7 +192,7 @@ Test cases accept `expected.calls` (node IDs that must complete) and
 | `KIONGA_NATIVE_AGENT_IMAGE` | gateway | The `agent-runtime` image used for deployed versions. |
 | `KIONGA_DESIGNER_RUNNER_TOKEN` | runner | Must equal the gateway's token. It must be at least 16 characters, or the runner refuses to start. |
 | `KIONGA_DESIGNER_PORT`, `KIONGA_DESIGNER_MAX_RUNS` | runner | Listen port (9100) and the concurrency cap (8). |
-| `MLAIOPS_LLM_BACKEND`, `MLAIOPS_LLM_MODEL`, `MLAIOPS_LLM_BASE_URL` | runner | The platform chat model used by `model` nodes set to `llm`. |
+| `KIONGA_LLM_BACKEND`, `KIONGA_LLM_MODEL`, `KIONGA_LLM_BASE_URL` | runner | The platform chat model used by `model` nodes set to `llm`. |
 | `KIONGA_JUDGE_BACKEND`, `KIONGA_JUDGE_MODEL` | runner | Optional judge model for evaluations; defaults to the platform chat model. The `mock` backend cannot judge. |
 
 ## Migration from version 1 drafts

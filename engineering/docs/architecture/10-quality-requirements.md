@@ -85,7 +85,7 @@ flowchart LR
 | P2 | The bundled object store is changed | Compose still uses pinned RustFS and every S3 client points at `objectstore` | `test_object_store_is_pinned_rustfs_and_every_client_uses_it` in `deploy/tests/test_local_bootstrap.py` |
 | R1 | A server or cluster install uses an image tag instead of a digest | The installer or chart refuses it | `test_vm_rejects_unsafe_inputs`, `test_chart_refuses_unpinned_default_images` |
 | R2 | A model trained in a notebook or pipeline is served | It loads, because MLflow and scikit-learn match across images | Pins in `pipeline-runner/requirements.txt`, `deploy/mlflow/Dockerfile`, `workspace/jupyter/Dockerfile`; `test_training_images_match_the_server` in `deploy/tests/test_mlflow_server.py` |
-| R3 | Gate tests run without network access or API keys | They pass: the mock LLM and hashing embedding function make them deterministic | `sdk-python/tests`, `agent-runtime/tests`; the paid evaluation lane runs only with `MLAIOPS_RUN_EVALS=1` |
+| R3 | Gate tests run without network access or API keys | They pass: the mock LLM and hashing embedding function make them deterministic | `sdk-python/tests`, `agent-runtime/tests`; the paid evaluation lane runs only with `KIONGA_RUN_EVALS=1` |
 
 ## Not yet measured
 

@@ -17,7 +17,7 @@ node's logs, search across runs, and stream new lines from a script.
   but without their logs.
 - You see only projects you can read. A run in another project returns a 404
   response.
-- For the API, export `MLAIOPS_URL` and a credential (see
+- For the API, export `KIONGA_URL` and a credential (see
   [Authentication](../reference/api.md#authentication)).
 
 ## Read the logs of one node
@@ -41,10 +41,10 @@ source.
 From the API:
 
 ```bash
-curl -s -H "Authorization: Bearer $MLAIOPS_TOKEN" \
-  "$MLAIOPS_URL/api/v1/logs?run_id=<run>&node=train&severity=warn,error&q=timeout"
-curl -s -H "Authorization: Bearer $MLAIOPS_TOKEN" \
-  "$MLAIOPS_URL/api/v1/logs?project_id=<project>&order=desc&limit=100&before=<sequence>"
+curl -s -H "Authorization: Bearer $KIONGA_TOKEN" \
+  "$KIONGA_URL/api/v1/logs?run_id=<run>&node=train&severity=warn,error&q=timeout"
+curl -s -H "Authorization: Bearer $KIONGA_TOKEN" \
+  "$KIONGA_URL/api/v1/logs?project_id=<project>&order=desc&limit=100&before=<sequence>"
 ```
 
 **Verify:** the results contain only entries that match your filters.
@@ -52,8 +52,8 @@ curl -s -H "Authorization: Bearer $MLAIOPS_TOKEN" \
 ## Stream logs from a script
 
 ```bash
-curl -N -H "Authorization: Bearer $MLAIOPS_TOKEN" \
-  "$MLAIOPS_URL/api/v1/logs/stream?run_id=<run>"
+curl -N -H "Authorization: Bearer $KIONGA_TOKEN" \
+  "$KIONGA_URL/api/v1/logs/stream?run_id=<run>"
 ```
 
 The stream uses Server-Sent Events. Each `event: logs` message carries a JSON
@@ -79,7 +79,7 @@ says otherwise.
 - **Secrets are redacted before storage:** cloud and provider keys, bearer and
   JSON web tokens, private key blocks, credentials in URLs, `password=` style
   pairs, and the values of the gateway's own secret environment variables.
-- **Streamed output per node is capped** at `MLAIOPS_PIPELINE_LOG_STREAM_LIMIT_BYTES`
+- **Streamed output per node is capped** at `KIONGA_PIPELINE_LOG_STREAM_LIMIT_BYTES`
   (default 5 MiB), with a truncation notice. The final output tail is still kept
   on the node.
 - **Retention:** entries older than `KIONGA_LOG_RETENTION_DAYS` (default 30) are
