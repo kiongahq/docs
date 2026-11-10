@@ -124,6 +124,8 @@ KiongaClient(
     actor: str | None = None,
     timeout: float = 10.0,
     transport: httpx.BaseTransport | None = None,
+    allow_insecure_http: bool | None = None,
+    retry: RetryPolicy | None = None,
 )
 ```
 
@@ -135,6 +137,47 @@ KiongaClient(
 | `timeout` | Request timeout in seconds. `invoke_agent` has its own timeout. |
 | `transport` | A custom `httpx` transport, for example for tests. |
 | `allow_insecure_http` | `True` sends the key over plain HTTP to any host and logs a warning. `False` refuses even when `KIONGA_ALLOW_INSECURE_HTTP` is set. Defaults to that variable. |
+| `retry` | When to retry. Defaults to `RetryPolicy()`. See [Errors and retries](#errors-and-retries). |
+
+### Errors and retries {#errors-and-retries}
+
+An error response raises a subclass of `KiongaAPIError`, which also subclasses
+`httpx.HTTPStatusError`, so existing `except` clauses keep working.
+
+| Error | Raised for |
+| --- | --- |
+| `BadRequestError` | 400 |
+| `AuthenticationError` | 401 |
+| `PermissionDeniedError` | 403 |
+| `NotFoundError` | 404 |
+| `ConflictError` | 409, for example `revision_conflict` |
+| `ValidationError` | 422 |
+| `RateLimitError` | 429. `retry_after` holds the wait in seconds, when the gateway sent one. |
+| `ServerError` | Any 5xx |
+| `KiongaAPIError` | Any other error status |
+| `KiongaConnectionError` | The gateway could not be reached |
+| `KiongaTimeoutError` | The gateway did not answer in time. A subclass of `KiongaConnectionError`. |
+
+Every `KiongaAPIError` has `status_code`, `code` (the gateway's machine-readable
+error), `message`, `request_id` and `response`. All errors subclass `KiongaError`.
+
+The client retries a 429, 502, 503 or 504 response, and a failed connection, with
+jittered exponential backoff. When the gateway sends `Retry-After`, it waits that
+long instead, up to `max_backoff`. It repeats a request only when doing so can't
+run the work twice:
+
+- GET, HEAD, OPTIONS, PUT and DELETE;
+- a POST or PATCH with an `Idempotency-Key` header;
+- any request whose connection failed before it was sent;
+- any request answered with 429, which the gateway sends before doing any work.
+
+A POST that timed out is not repeated, because it may have run.
+
+```python
+RetryPolicy(max_attempts=3, backoff=0.5, max_backoff=8.0, statuses=frozenset({429, 502, 503, 504}))
+```
+
+`RetryPolicy(max_attempts=1)` turns retries off.
 
 ### Plain HTTP {#plain-http}
 
@@ -296,6 +339,53 @@ Publishing requires a Kubernetes-managed runtime. See the
 agent can call it. Creating and testing connections requires the `admin` or
 `operator` role.
 
+### Agent teams
+
+See the [agent teams reference](agent-teams.md) for fields and limits. `fields`
+and `changes` are the documented content fields, such as `instructions`, `tools`
+or `limits`.
+
+| Method | Returns | Gateway call |
+| --- | --- | --- |
+| `list_agent_definitions(project_id="")` | `list[AgentDefinition]` | `GET /api/v1/agent-definitions` |
+| `get_agent_definition(definition_id)` | `AgentDefinition` | `GET /api/v1/agent-definitions/{id}` |
+| `create_agent_definition(project_id, name, **fields)` | `AgentDefinition` | `POST /api/v1/agent-definitions` |
+| `update_agent_definition(definition, **changes)` | `AgentDefinition` | `PUT /api/v1/agent-definitions/{id}` |
+| `delete_agent_definition(definition_id)` | `None` | `DELETE /api/v1/agent-definitions/{id}` |
+| `agent_definition_revisions(definition_id)` | `list[dict]` | `GET /api/v1/agent-definitions/{id}/revisions` |
+| `list_agent_teams(project_id="")` | `list[AgentTeam]` | `GET /api/v1/agent-teams` |
+| `get_agent_team(team_id)` | `AgentTeam` | `GET /api/v1/agent-teams/{id}` |
+| `create_agent_team(project_id, name, members, **fields)` | `AgentTeam` | `POST /api/v1/agent-teams` |
+| `update_agent_team(team, **changes)` | `AgentTeam` | `PUT /api/v1/agent-teams/{id}` |
+| `delete_agent_team(team_id)` | `None` | `DELETE /api/v1/agent-teams/{id}` |
+| `agent_team_revisions(team_id)` | `list[dict]` | `GET /api/v1/agent-teams/{id}/revisions` |
+| `start_team_run(team_id, input, *, allow_side_effects=False, idempotency_key="")` | `TeamRun` | `POST /api/v1/team-runs` |
+| `list_team_runs(team_id="", project_id="")` | `list[TeamRun]` | `GET /api/v1/team-runs` |
+| `get_team_run(run_id)` | `TeamRun` | `GET /api/v1/team-runs/{id}` |
+| `team_run_workers(run_id)` | `list[TeamWorker]` | `GET /api/v1/team-runs/{id}/workers` |
+| `get_team_worker(run_id, worker_id)` | `TeamWorker` | `GET /api/v1/team-runs/{id}/workers/{wid}` |
+| `send_team_message(run_id, to, text)` | `dict` | `POST /api/v1/team-runs/{id}/messages` |
+| `cancel_team_run(run_id)` | `TeamRun` | `POST /api/v1/team-runs/{id}/cancel` |
+| `resume_team_run(run_id)` | `TeamRun` | `POST /api/v1/team-runs/{id}/resume` |
+| `team_run_events(run_id, *, after=0, follow=False, poll_interval=1.0)` | iterator of `TeamEvent` | `GET /api/v1/team-runs/{id}/events?after=` |
+| `wait_for_team_run(run_id, *, timeout=3600.0, poll_interval=2.0)` | `TeamRun` | `GET /api/v1/team-runs/{id}`, repeated |
+
+- **Saving:** `update_agent_definition` and `update_agent_team` send the revision you
+  read. If someone saved after you, they raise `ConflictError` with code
+  `revision_conflict`, and `error.response.json()["latest"]` holds the current version.
+- **Starting a run:** `start_team_run` always sends an idempotency key, so a retried
+  start returns the same run. Pass your own key to deduplicate across processes.
+- **Who can start a run:** only people. A personal API key works. The workspace
+  credential that a Kionga notebook uses, and an agent run's credential, get
+  `PermissionDeniedError`.
+- **Events:** `team_run_events` reads every page. With `follow=True` it keeps polling
+  until the log is complete, so it never misses `run.finished`.
+- **Waiting:** `wait_for_team_run` returns when the run succeeds, fails or is
+  cancelled, and otherwise raises `TeamRunTimeout`, whose `run` is the last state.
+
+The team models keep fields the SDK doesn't name, so nothing the gateway returns is
+lost.
+
 ### Response models
 
 All methods return Pydantic models from `kionga` (also importable from
@@ -319,6 +409,11 @@ All methods return Pydantic models from `kionga` (also importable from
 | `Connection` | `id`, `name`, `type`, `endpoint`, `secret_ref`, `status`, `created_at`, `checked_at`, `message` |
 | `Readiness` | `percent`, `ready`, `items` (each with `key`, `label`, `status`, `description`, `action`) |
 | `AuditEvent` | `id`, `action`, `resource`, `resource_id`, `actor`, `metadata`, `created_at` |
+| `AgentDefinition` | `id`, `project_id`, `revision`, `name`, `description`, `instructions`, `model`, `tools`, `workspace`, `limits` |
+| `AgentTeam` | `id`, `project_id`, `revision`, `name`, `description`, `coordinator`, `members`, `brief`, `limits` |
+| `TeamRun` | `id`, `team_id`, `project_id`, `status`, `usage`, `resume_count`, and `finished` (true once `succeeded`, `failed` or `cancelled`) |
+| `TeamWorker` | `id`, `status`, `role`, `agent`, `task`, `report`, `last_error` |
+| `TeamEvent` | `seq`, `type` |
 
 ## Tracing
 
