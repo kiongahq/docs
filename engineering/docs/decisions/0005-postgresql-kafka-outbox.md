@@ -37,8 +37,8 @@ or roll back together.
 
 In one transaction, `writeTx` in `platform/go/internal/store/postgres.go` upserts the
 resource in `platform_resources`, inserts the audit event, inserts an outbox row for
-`mlaiops.audit.operations`, and for lifecycle actions inserts a command row for the
-matching `mlaiops.<kind>.commands` topic. The outbox worker
+`kionga.audit.operations`, and for lifecycle actions inserts a command row for the
+matching `kionga.<kind>.commands` topic. The outbox worker
 (`platform/go/internal/store/outbox.go`) publishes pending rows through the Kafka REST
 proxy every second and marks them published.
 

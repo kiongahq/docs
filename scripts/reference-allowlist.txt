@@ -47,3 +47,6 @@ route * /api/v1/agent-teams*
 
 # An example name in the langflow guide; the prefix is what the code defines.
 env KIONGA_CONNECTION_SECRET_SUPPORT
+
+# Kafka topic for LLM traces; it shares its first part with the kionga.llm module.
+sdk kionga.llm.traces

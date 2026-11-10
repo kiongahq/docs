@@ -71,7 +71,7 @@ Run these from the `docs` repository:
 
 `docs/scripts/check_references.py` reads every page and resolves what a reader would copy:
 `make` targets, paths into sibling repositories (checked against git-tracked files),
-environment variable names, REST routes the gateway registers, `mlaiops` and `kionga`
+environment variable names, REST routes the gateway registers, `kionga` and `kionga`
 CLI commands, and Python SDK names and call signatures. It also enforces the house
 style (no em dashes, no banned words). With `--product` it adds the boundary rule:
 product pages may not mention Go package paths or `.go` files, and must link to the

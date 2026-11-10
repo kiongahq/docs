@@ -25,8 +25,8 @@ for the previous runtime identifiers.
 | Kubernetes kinds | `KiongaAgent`, `KiongaPipelineRun`, `KiongaModelPromotion`, `KiongaWorkspace`, `KiongaTool`, `KiongaConnection` |
 | Kubernetes resource plurals | `kiongaagents`, `kiongapipelineruns`, `kiongamodelpromotions`, `kiongaworkspaces`, `kiongatools`, `kiongaconnections` |
 
-The API group remains `mlaiops.io/v1alpha1`, and the REST base path remains
-`/api/v1`. Repository module paths and `MLAIOPS_*` public configuration remain
+The API group remains `kionga.dev/v1alpha1`, and the REST base path remains
+`/api/v1`. Repository module paths and `KIONGA_*` public configuration remain
 unchanged unless listed above.
 
 ## Local and single-VM upgrade
@@ -52,7 +52,7 @@ treated as an in-place text edit on a live cluster.
 For a disposable Kind environment, recreate the cluster:
 
 ```bash
-kind delete cluster --name mlaiops
+kind delete cluster --name kionga
 make -C deploy kind-up
 make -C deploy test-e2e-kind
 ```

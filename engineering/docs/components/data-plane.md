@@ -15,7 +15,7 @@ PostgreSQL 16 with the **pgvector** extension. One database backs many concerns.
 | --- | --- |
 | **Image** | `pgvector/pgvector:pg16` |
 | **Host port** | `5432` (`POSTGRES_PORT`) |
-| **Credentials** | `mlaiops` / `mlaiops-local`, db `mlaiops` |
+| **Credentials** | `kionga` / `kionga-local`, db `kionga` |
 | **Volume** | `postgres-data` |
 | **Init** | `deploy/postgres/init.sql` (extensions, extra databases) |
 
@@ -48,11 +48,11 @@ the JVM proxy image it replaces.
 | **Images** | `apache/kafka:3.9.1`, `ghcr.io/aiven-open/karapace:6.1.4` |
 | **Host ports** | `9092` (broker), `8082` (REST) |
 
-Topics (created by `deploy/scripts/local-topics.sh`): `mlaiops.audit.operations`,
-the lifecycle command topics (`mlaiops.{pipeline,model,agent,tool,connection,workspace}.commands`),
-`mlaiops.llm.traces`, `mlaiops.feature.updates`, and the real-time demo topics
-(`mlaiops.transactions` → `mlaiops.fraud.alerts`, `mlaiops.callcenter.transcripts` →
-`mlaiops.callcenter.insights`, `mlaiops.user.activity` → `mlaiops.recs.results`).
+Topics (created by `deploy/scripts/local-topics.sh`): `kionga.audit.operations`,
+the lifecycle command topics (`kionga.{pipeline,model,agent,tool,connection,workspace}.commands`),
+`kionga.llm.traces`, `kionga.feature.updates`, and the real-time demo topics
+(`kionga.transactions` → `kionga.fraud.alerts`, `kionga.callcenter.transcripts` →
+`kionga.callcenter.insights`, `kionga.user.activity` → `kionga.recs.results`).
 
 The Kubernetes lifecycle worker uses an explicit Kafka REST consumer instance with
 `auto.commit.enable=false`. It dispatches records in poll order and commits the
@@ -78,10 +78,10 @@ The local hostname is `objectstore`. See
 | --- | --- |
 | **Image** | `rustfs/rustfs:1.0.1` (pinned by digest) |
 | **Host ports** | `9000` (S3 API), `9001` (web console), on `KIONGA_BIND_ADDRESS` |
-| **Credentials** | `mlaiops` / `mlaiops-local-secret` |
+| **Credentials** | `kionga` / `kionga-local-secret` |
 | **Volume** | `objectstore-data` |
 | **Health** | `GET http://objectstore:9000/health` |
-| **Buckets** | `mlaiops-models`, `-artifacts`, `-features`, `-traces`, `-agents`, `-pipeline-logs` |
+| **Buckets** | `kionga-models`, `-artifacts`, `-features`, `-traces`, `-agents`, `-pipeline-logs` |
 
 The shared Compose workbench mounts these buckets through S3FS at
 `/workspace/object-store/<bucket>`. The mount is a notebook convenience, not a POSIX
@@ -93,16 +93,16 @@ the bounded storage proxy.
 
 ## `mlflow`
 
-Experiment tracking and the model registry. Custom image (`mlaiops-mlflow`) pinning
+Experiment tracking and the model registry. Custom image (`kionga-mlflow`) pinning
 `mlflow==3.16.1`, `scikit-learn==1.7.0`, and `uvicorn` so the tracking server, the
 trainer, and the serving containers agree, preventing training-serving skew.
 
 | | |
 | --- | --- |
-| **Image** | `mlaiops-mlflow` (built from `deploy/mlflow/Dockerfile`) |
+| **Image** | `kionga-mlflow` (built from `deploy/mlflow/Dockerfile`) |
 | **Host port** | `15000` (container listens on 5000) |
 | **Backend** | PostgreSQL |
-| **Artifacts** | `s3://mlaiops-models` in the object store |
+| **Artifacts** | `s3://kionga-models` in the object store |
 | **Schema** | `mlflow db upgrade` runs before the server starts, so an older database migrates on the first start after an upgrade |
 | **Allowed hosts** | `MLFLOW_SERVER_ALLOWED_HOSTS`: `mlflow`, `mlflow:5000`, `localhost:*`, `127.0.0.1:*`. Other `Host` headers get `403` (DNS-rebinding protection). Add your hostname there to reach MLflow by another name. |
 

@@ -14,7 +14,7 @@ serves an interactive explorer at `/api-docs` and the OpenAPI document at
 
 | Item | Value |
 | --- | --- |
-| Base URL | Your Kionga URL. Locally `http://localhost:8080`, or the port in `GATEWAY_PORT`. Examples use `$MLAIOPS_URL`. |
+| Base URL | Your Kionga URL. Locally `http://localhost:8080`, or the port in `GATEWAY_PORT`. Examples use `$KIONGA_URL`. |
 | Request body | JSON with `Content-Type: application/json`. Unknown fields are rejected with `400 invalid_request`. |
 | Errors | Non-2xx responses return `{"error": "<code>", "message": "<detail>"}`. A policy denial (`403 access_denied`) also returns the `decision` that denied it. |
 | Common error codes | `400 invalid_request`, `401` (no or invalid credential), `403` (`Forbidden` when your role or services do not open the route, `access_denied` for a policy denial, `resource_not_provisioned` for a quota), `404 not_found`, `409 conflict`, `422 validation_error`, `502` when an engine fails, `503` when a runtime is not ready |
@@ -34,19 +34,19 @@ returns `401`.
 | Browser session | The `kionga_local_session` cookie (local sign-in) or the `kionga_session` cookie (single sign-on) | The signed-in person, with their role and access profile |
 | Personal API key | `Authorization: Bearer nxs_...`, created under **Settings → Personal API keys** | A normal `user` limited to the key's services and projects and to its creator's access profile. Never reaches `/api/v1/admin/*`, `/api/v1/settings/*`, the editorial API, or workspaces. |
 | OIDC token | `Authorization: Bearer <JWT>` from the configured issuer | The token's subject and roles |
-| Workspace identity | Automatic inside the Jupyter workbench and browser IDE, through their preset `MLAIOPS_URL` | The workspace owner. On the local stack, the local `admin` account. |
-| Internal service token | `Authorization: Bearer <MLAIOPS_INTERNAL_TOKEN>` | The `service` role, for Kionga's own services |
+| Workspace identity | Automatic inside the Jupyter workbench and browser IDE, through their preset `KIONGA_URL` | The workspace owner. On the local stack, the local `admin` account. |
+| Internal service token | `Authorization: Bearer <KIONGA_INTERNAL_TOKEN>` | The `service` role, for Kionga's own services |
 
 To call the API with curl on the local stack, sign in once and reuse the cookie:
 
 ```bash
 curl -fsS -o /dev/null -c kionga.cookies \
-  --data-urlencode username=admin --data-urlencode password=mlaiops-local \
-  "$MLAIOPS_URL/auth/local/login"
-curl -s -b kionga.cookies "$MLAIOPS_URL/api/v1/me"
+  --data-urlencode username=admin --data-urlencode password=kionga-local \
+  "$KIONGA_URL/auth/local/login"
+curl -s -b kionga.cookies "$KIONGA_URL/api/v1/me"
 ```
 
-With a personal API key, send `-H "Authorization: Bearer $MLAIOPS_TOKEN"` instead.
+With a personal API key, send `-H "Authorization: Bearer $KIONGA_TOKEN"` instead.
 Examples on other pages often leave the credential out for brevity.
 
 ### Sign-in routes
@@ -152,7 +152,7 @@ Request and response bodies are in
 Create a project with explicit framework, accelerator and profile:
 
 ```bash
-curl -s -X POST "$MLAIOPS_URL/api/v1/projects" \
+curl -s -X POST "$KIONGA_URL/api/v1/projects" \
   -H 'Content-Type: application/json' \
   -d '{
     "name":"vision-foundation-eval",
@@ -377,5 +377,5 @@ use it. See [Engineering blog](../guides/engineering-blog.md).
 
 Changes are attributed to the authenticated caller: the email when known,
 otherwise the subject. Kionga's own services are recorded as `internal-service`.
-The `X-MLAIOps-Actor` header that the SDK and CLI can send is used only when the
+The `X-Kionga-Actor` header that the SDK and CLI can send is used only when the
 request has no authenticated identity.

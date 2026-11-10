@@ -14,9 +14,9 @@ The processor ships with three demos:
 
 | Demo | Input topic | Output topic | What it does |
 | --- | --- | --- | --- |
-| `fraud` | `mlaiops.transactions` | `mlaiops.fraud.alerts` | Adds 5-minute transaction statistics, scores the transaction, and flags scores of `0.5` or more |
-| `callcenter` | `mlaiops.callcenter.transcripts` | `mlaiops.callcenter.insights` | Summarizes sentiment and intent with an agent, or with keyword sentiment |
-| `recommendations` | `mlaiops.user.activity` | `mlaiops.recs.results` | Looks up profile features and returns a catalog ranked for the user's plan |
+| `fraud` | `kionga.transactions` | `kionga.fraud.alerts` | Adds 5-minute transaction statistics, scores the transaction, and flags scores of `0.5` or more |
+| `callcenter` | `kionga.callcenter.transcripts` | `kionga.callcenter.insights` | Summarizes sentiment and intent with an agent, or with keyword sentiment |
+| `recommendations` | `kionga.user.activity` | `kionga.recs.results` | Looks up profile features and returns a catalog ranked for the user's plan |
 
 ## Before you begin
 
@@ -57,8 +57,8 @@ the same commands under **Produce demo events**.
 === "API"
 
     ```bash
-    curl -s -H "Authorization: Bearer $MLAIOPS_TOKEN" \
-      "$MLAIOPS_URL/api/v1/realtime" | python -m json.tool
+    curl -s -H "Authorization: Bearer $KIONGA_TOKEN" \
+      "$KIONGA_URL/api/v1/realtime" | python -m json.tool
     ```
 
     ```json
@@ -92,7 +92,7 @@ components:
 2. Add them to `deploy/.env`:
 
     ```bash
-    FRAUD_MODEL_ENDPOINT=http://mlaiops-serve-fraud-scorer:5001   # the model's endpoint_url
+    FRAUD_MODEL_ENDPOINT=http://kionga-serve-fraud-scorer:5001   # the model's endpoint_url
     CALLCENTER_AGENT_ID=agt-...                                   # the agent's ID
     ```
 

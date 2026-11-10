@@ -26,7 +26,7 @@ change it here in the same pull request.
 | Apache Kafka | `apache/kafka:3.9.1` (`KRaft`) | Audit and lifecycle events, LLM traces, real-time topics |
 | Kafka REST proxy | Karapace `ghcr.io/aiven-open/karapace:6.1.4` | Apache-licensed, Confluent v2 compatible HTTP access to Kafka, so Python services need only an HTTP client |
 | RustFS | `rustfs/rustfs:1.0.1`, pinned by digest | S3-compatible object storage under Apache-2.0 ([decision 0003](../decisions/0003-object-store.md)) |
-| MLflow | `mlflow==3.16.1`; the `mlaiops-mlflow` image is built from `deploy/mlflow/Dockerfile` on `ghcr.io/mlflow/mlflow:v3.16.1` | Experiment tracking and model registry; also the fallback serving image |
+| MLflow | `mlflow==3.16.1`; the `kionga-mlflow` image is built from `deploy/mlflow/Dockerfile` on `ghcr.io/mlflow/mlflow:v3.16.1` | Experiment tracking and model registry; also the fallback serving image |
 
 ## Orchestration and serving
 

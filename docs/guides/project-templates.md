@@ -25,8 +25,8 @@ Creating a project stores its record only. No files are written until you
   needs the `git` service.
 - To use the SDK or the API from outside a Kionga workspace, create a personal
   API key in **Settings > Personal API keys** with the `projects` scope, and
-  export it as `MLAIOPS_TOKEN` together with the gateway address in
-  `MLAIOPS_URL`. Inside Jupyter or the browser IDE, the SDK needs no key.
+  export it as `KIONGA_TOKEN` together with the gateway address in
+  `KIONGA_URL`. Inside Jupyter or the browser IDE, the SDK needs no key.
 
 ## Template catalog
 
@@ -61,9 +61,9 @@ Use the catalog to compare templates before you create a project.
 === "SDK"
 
     ```python
-    from mlaiops_sdk import MLAIOpsClient
+    from kionga import KiongaClient
 
-    with MLAIOpsClient() as client:
+    with KiongaClient() as client:
         for template in client.list_project_templates():
             print(template.id, template.frameworks, template.accelerators)
         print(client.get_project_template("distributed-training").required_services)
@@ -72,10 +72,10 @@ Use the catalog to compare templates before you create a project.
 === "API"
 
     ```bash
-    curl -s -H "Authorization: Bearer $MLAIOPS_TOKEN" \
-      "$MLAIOPS_URL/api/v1/project-templates" | python -m json.tool
-    curl -s -H "Authorization: Bearer $MLAIOPS_TOKEN" \
-      "$MLAIOPS_URL/api/v1/project-templates/production-agent" | python -m json.tool
+    curl -s -H "Authorization: Bearer $KIONGA_TOKEN" \
+      "$KIONGA_URL/api/v1/project-templates" | python -m json.tool
+    curl -s -H "Authorization: Bearer $KIONGA_TOKEN" \
+      "$KIONGA_URL/api/v1/project-templates/production-agent" | python -m json.tool
     ```
 
 === "Workspace terminal"
@@ -104,9 +104,9 @@ Use the catalog to compare templates before you create a project.
 === "SDK"
 
     ```python
-    from mlaiops_sdk import MLAIOpsClient
+    from kionga import KiongaClient
 
-    with MLAIOpsClient() as client:
+    with KiongaClient() as client:
         project = client.create_project(
             "churn-model",
             template="production-ml",
@@ -121,8 +121,8 @@ Use the catalog to compare templates before you create a project.
 === "API"
 
     ```bash
-    curl -s -X POST "$MLAIOPS_URL/api/v1/projects" \
-      -H "Authorization: Bearer $MLAIOPS_TOKEN" \
+    curl -s -X POST "$KIONGA_URL/api/v1/projects" \
+      -H "Authorization: Bearer $KIONGA_TOKEN" \
       -H 'Content-Type: application/json' \
       -d '{"name": "churn-model", "template": "production-ml",
            "framework": "xgboost", "accelerator": "cpu",

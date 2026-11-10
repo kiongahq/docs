@@ -183,11 +183,11 @@ Kionga's full end-to-end smoke test on those hosts.
     ```text
     Kionga is ready.
       Console:  http://localhost:8080
-      Login:    admin / mlaiops-local
+      Login:    admin / kionga-local
     ```
 
 2. Open the console address and sign in as `admin` with password
-   `mlaiops-local`.
+   `kionga-local`.
 
 ## Verify
 
@@ -196,7 +196,7 @@ Check service state and the gateway health endpoint:
 ```bash
 make -C deploy local-status
 export GATEWAY="${GATEWAY:-http://localhost:8080}"
-curl -s "$GATEWAY/api/v1/health"   # {"service":"mlaiops-gateway","status":"ok",...}
+curl -s "$GATEWAY/api/v1/health"   # {"service":"kionga-gateway","status":"ok",...}
 curl -s "$GATEWAY/api/v1/ready"    # {"status":"ready"} once PostgreSQL answers
 ```
 
@@ -360,11 +360,11 @@ see [Troubleshooting](troubleshooting.md#mlflow-returns-403-invalid-host-header)
 
 ## Preview the console as another role
 
-The local `admin` account takes its role from `MLAIOPS_LOCAL_ROLE` (default
+The local `admin` account takes its role from `KIONGA_LOCAL_ROLE` (default
 `admin`). To see the console as a viewer:
 
 ```bash
-MLAIOPS_LOCAL_ROLE=viewer bash deploy/scripts/container.sh compose -f deploy/compose.yaml up -d gateway
+KIONGA_LOCAL_ROLE=viewer bash deploy/scripts/container.sh compose -f deploy/compose.yaml up -d gateway
 # ... then restore the default:
 bash deploy/scripts/container.sh compose -f deploy/compose.yaml up -d gateway
 ```
@@ -401,7 +401,7 @@ annotations. Connectors and scale to zero stay in OpenFaaS's own configuration.
 ## Back up local data
 
 The local stack keeps its state in these named volumes. The Compose project is
-`mlaiops`, so the engine shows each volume as `mlaiops_<name>`.
+`kionga`, so the engine shows each volume as `kionga_<name>`.
 
 | Volume | Contents | Backup |
 | --- | --- | --- |
@@ -425,7 +425,7 @@ so you can check the restore:
 ```bash
 GATEWAY=http://localhost:8080   # the console URL that local-up printed
 curl -fsS -o /dev/null -c kionga.cookies \
-  --data-urlencode username=admin --data-urlencode password=mlaiops-local \
+  --data-urlencode username=admin --data-urlencode password=kionga-local \
   "$GATEWAY/auth/local/login"
 curl -fsS -b kionga.cookies "$GATEWAY/api/v1/projects" | python3 -c 'import json,sys; print(len(json.load(sys.stdin)), "projects")'
 ```
@@ -435,10 +435,10 @@ Dump PostgreSQL, stop the stack, archive the file volumes and start again:
 ```bash
 mkdir -p kionga-backup
 bash deploy/scripts/container.sh compose -f deploy/compose.yaml exec -T postgres \
-  pg_dumpall -U mlaiops --clean --if-exists > kionga-backup/postgres.sql
+  pg_dumpall -U kionga --clean --if-exists > kionga-backup/postgres.sql
 make -C deploy local-down
 for volume in objectstore-data jupyter-data prefect-data redis-data workspace-codex workspace-claude langflow-data; do
-  bash deploy/scripts/container.sh run --rm -v "mlaiops_$volume:/data:ro" -v "$PWD/kionga-backup:/backup" alpine \
+  bash deploy/scripts/container.sh run --rm -v "kionga_$volume:/data:ro" -v "$PWD/kionga-backup:/backup" alpine \
     tar czf "/backup/$volume.tgz" -C /data .
 done
 make -C deploy local-up
@@ -456,17 +456,17 @@ rest of the stack starts, so the gateway's migrations run against your data:
 
 ```bash
 for volume in objectstore-data jupyter-data prefect-data redis-data workspace-codex workspace-claude langflow-data; do
-  bash deploy/scripts/container.sh run --rm -v "mlaiops_$volume:/data" -v "$PWD/kionga-backup:/backup:ro" alpine \
+  bash deploy/scripts/container.sh run --rm -v "kionga_$volume:/data" -v "$PWD/kionga-backup:/backup:ro" alpine \
     tar xzf "/backup/$volume.tgz" -C /data
 done
 bash deploy/scripts/container.sh compose -f deploy/compose.yaml up -d --wait postgres
 bash deploy/scripts/container.sh compose -f deploy/compose.yaml exec -T postgres \
-  psql -q -U mlaiops -d postgres < kionga-backup/postgres.sql
+  psql -q -U kionga -d postgres < kionga-backup/postgres.sql
 make -C deploy local-up
 ```
 
 The restore prints two expected errors, `current user cannot be dropped` and
-`role "mlaiops" already exists`, because the restoring user already exists. Any
+`role "kionga" already exists`, because the restoring user already exists. Any
 other error means the restore is incomplete. Compose may also warn that volumes
 it did not create already exist; it uses them as they are.
 
@@ -474,7 +474,7 @@ Sign in again and compare the project count with the one you recorded:
 
 ```bash
 curl -fsS -o /dev/null -c kionga.cookies \
-  --data-urlencode username=admin --data-urlencode password=mlaiops-local \
+  --data-urlencode username=admin --data-urlencode password=kionga-local \
   "$GATEWAY/auth/local/login"
 curl -fsS -b kionga.cookies "$GATEWAY/api/v1/projects" | python3 -c 'import json,sys; print(len(json.load(sys.stdin)), "projects")'
 ```

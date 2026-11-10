@@ -27,7 +27,7 @@ the supported production path.
 
 The overlay reads `deploy/.env`. It refuses to start until every setting in
 [Compose public overlay](reference/configuration.md#compose-public-overlay) is
-set and no credential equals a local default such as `mlaiops-local`. The start
+set and no credential equals a local default such as `kionga-local`. The start
 script and a preflight service inside Compose run the same check, so starting
 the overlay with `docker compose` directly fails the same way. Generate each
 credential with `openssl rand -hex 24`; `deploy/.env.example` lists them.
@@ -37,7 +37,7 @@ volume keeps that password. Change it before you set `POSTGRES_PASSWORD`:
 
 ```bash
 docker compose -f deploy/compose.yaml -f deploy/compose.public.yaml exec postgres \
-  psql -U mlaiops -c "ALTER ROLE mlaiops PASSWORD '<new password>'"
+  psql -U kionga -c "ALTER ROLE kionga PASSWORD '<new password>'"
 ```
 
 | Task | Command |

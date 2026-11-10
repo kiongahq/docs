@@ -37,7 +37,7 @@ orchestrates every downstream engine. It:
   extended-resource names; for normal users, every owned agent's maximum-replica CPU,
   memory and GPU plus per-pod trace-sidecar overhead must fit the aggregate grant;
 - **routes live agents**: derives the Kubernetes Service from the immutable agent ID and
-  `MLAIOPS_AGENT_NAMESPACE` (or uses the Compose `AGENT_RUNTIME_URL`), enriches list
+  `KIONGA_AGENT_NAMESPACE` (or uses the Compose `AGENT_RUNTIME_URL`), enriches list
   results with bounded health probes, and rejects invocation with
   `503 agent_not_ready` before forwarding to an unhealthy runtime;
 - **authenticates and authorizes**: sign-in through single sign-on or local accounts,
@@ -77,10 +77,10 @@ not configured engine reports `configured: false`.
 ### Configuration
 
 The essentials: `DATABASE_URL`, `KAFKA_REST_URL`, `PREFECT_API_URL`,
-`SERVING_MANAGER_URL`, `AGENT_RUNTIME_URL` (Compose) or `MLAIOPS_AGENT_NAMESPACE`
-(Kubernetes), `STORAGE_PROXY_URL`, `LANGFUSE_*`, `MLAIOPS_LOCAL_ROLE`,
-`MLAIOPS_INTERNAL_TOKEN`, `OIDC_*`, `KIONGA_SSO_*`, `KIONGA_SIGNUP`,
-`KIONGA_CREDENTIAL_KEY`, `MLAIOPS_ALLOWED_ORIGIN`, and `KIONGA_ENVIRONMENT=production`
+`SERVING_MANAGER_URL`, `AGENT_RUNTIME_URL` (Compose) or `KIONGA_AGENT_NAMESPACE`
+(Kubernetes), `STORAGE_PROXY_URL`, `LANGFUSE_*`, `KIONGA_LOCAL_ROLE`,
+`KIONGA_INTERNAL_TOKEN`, `OIDC_*`, `KIONGA_SSO_*`, `KIONGA_SIGNUP`,
+`KIONGA_CREDENTIAL_KEY`, `KIONGA_ALLOWED_ORIGIN`, and `KIONGA_ENVIRONMENT=production`
 for the startup checks. See the
 [configuration reference](https://kiongahq.github.io/docs/reference/configuration/) and
 [configuration and secrets](../architecture/08-crosscutting-concepts.md#configuration-and-secrets).
@@ -189,7 +189,7 @@ KFP for their reconcilers, metrics-server for agent autoscaling.
 
 ### Configuration
 
-`MLAIOPS_TARGET_NAMESPACE`, `MLAIOPS_CONTROL_NAMESPACE`, `MLFLOW_URL`, `KFP_URL`,
+`KIONGA_TARGET_NAMESPACE`, `KIONGA_CONTROL_NAMESPACE`, `MLFLOW_URL`, `KFP_URL`,
 `KFP_EXPERIMENT_ID`, `WORKBENCH_IMAGE`, `IDE_IMAGE`, `TRACE_PROXY_IMAGE`,
 `WORKSPACE_STORAGE_CLASS`, `WORKSPACE_ALLOWED_STORAGE_CLASSES`, the `WORKSPACE_*_URL`
 endpoints injected into workspaces, and `KIONGA_IMAGE_PULL_SECRETS`
@@ -222,12 +222,12 @@ at-least-once delivery; ID-keyed create-or-update reconciliation makes replay ha
 
 ### Interfaces
 
-Consumes the `mlaiops.*.commands` topics through Kafka REST; writes custom resources
+Consumes the `kionga.*.commands` topics through Kafka REST; writes custom resources
 through the Kubernetes API; health on port 8086 (`/healthz`, `/readyz`).
 
 ### Configuration
 
-`KAFKA_REST_URL`, `KAFKA_REST_TOKEN`, `MLAIOPS_TARGET_NAMESPACE`.
+`KAFKA_REST_URL`, `KAFKA_REST_TOKEN`, `KIONGA_TARGET_NAMESPACE`.
 
 ### Code map
 
@@ -255,7 +255,7 @@ HTTP on port 9090 (`PORT`). Deployed by `deploy/config/deploy/platform-services.
 
 ### Configuration
 
-`MLAIOPS_URL`, `MLAIOPS_TOKEN`, `MLAIOPS_METRICS_TARGETS` (components to scrape).
+`KIONGA_URL`, `KIONGA_TOKEN`, `KIONGA_METRICS_TARGETS` (components to scrape).
 
 ### Code map and tests
 
@@ -272,7 +272,7 @@ protocol fakes only. See [log export](https://kiongahq.github.io/docs/operations
 
 ## `cli`
 
-Single-binary operator and engineer CLI (`mlaiops`), built from
-`platform/go/cmd/cli`. It reads `MLAIOPS_URL` and `MLAIOPS_TOKEN` and includes pipeline
+Single-binary operator and engineer CLI (`kionga`), built from
+`platform/go/cmd/cli`. It reads `KIONGA_URL` and `KIONGA_TOKEN` and includes pipeline
 export, validate and apply for Git-reviewed definitions. See the
 [CLI reference](https://kiongahq.github.io/docs/reference/cli/).

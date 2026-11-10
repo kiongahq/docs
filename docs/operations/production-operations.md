@@ -27,13 +27,13 @@ mounted files:
 
 The gateway, operator, integration worker, feature gateway, storage proxy,
 serving manager and trace proxy read secret files for these names:
-`DATABASE_URL`, `OIDC_CLIENT_SECRET`, `MLAIOPS_INTERNAL_TOKEN`,
+`DATABASE_URL`, `OIDC_CLIENT_SECRET`, `KIONGA_INTERNAL_TOKEN`,
 `KIONGA_CREDENTIAL_KEY`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `AWS_ACCESS_KEY_ID`,
 `AWS_SECRET_ACCESS_KEY`, `REDIS_URL`, `KAFKA_REST_TOKEN`, `KFP_TOKEN`,
 `MLFLOW_TOKEN`, `OPENFAAS_PASSWORD`, `LANGFUSE_SECRET_KEY`, `OPENAI_API_KEY`,
 `ANTHROPIC_API_KEY`, `LLM_UPSTREAM_API_KEY`, `KIONGA_JUPYTER_TOKEN`,
 `KIONGA_IDE_PASSWORD` and `TRACE_SINK_TOKEN`. The gateway also reads
-`MLAIOPS_LOCAL_PASSWORD`. This is not a general loader: Python services and
+`KIONGA_LOCAL_PASSWORD`. This is not a general loader: Python services and
 third-party images read their own configuration.
 
 Services read secret files once, at startup. After you rotate a secret,
@@ -46,20 +46,20 @@ gateway refuses to start unless:
 
 - `DATABASE_URL`, `OIDC_ISSUER`, `OIDC_JWKS_URL`, `OIDC_AUDIENCE`,
   `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_AUTH_URL`, `OIDC_TOKEN_URL`,
-  `OIDC_REDIRECT_URL`, `MLAIOPS_INTERNAL_TOKEN`, `KIONGA_CREDENTIAL_KEY` and
-  `MLAIOPS_ALLOWED_ORIGIN` are all set.
-- The OIDC endpoints and `MLAIOPS_ALLOWED_ORIGIN` are HTTPS URLs without
+  `OIDC_REDIRECT_URL`, `KIONGA_INTERNAL_TOKEN`, `KIONGA_CREDENTIAL_KEY` and
+  `KIONGA_ALLOWED_ORIGIN` are all set.
+- The OIDC endpoints and `KIONGA_ALLOWED_ORIGIN` are HTTPS URLs without
   embedded credentials.
-- `OIDC_REDIRECT_URL` is on the same host as `MLAIOPS_ALLOWED_ORIGIN`, with the
+- `OIDC_REDIRECT_URL` is on the same host as `KIONGA_ALLOWED_ORIGIN`, with the
   path `/auth/callback`.
 - `DATABASE_URL` is a PostgreSQL URI with `sslmode=verify-full`.
-- `OIDC_CLIENT_SECRET` and `MLAIOPS_INTERNAL_TOKEN` have at least 24 characters
+- `OIDC_CLIENT_SECRET` and `KIONGA_INTERNAL_TOKEN` have at least 24 characters
   and contain neither `local` nor `change-me`.
 - `KIONGA_CREDENTIAL_KEY` is the base64 encoding of exactly 32 bytes.
 - When `KIONGA_LOCAL_LOGIN=true` (break-glass sign-in next to single sign-on),
-  `MLAIOPS_LOCAL_PASSWORD` has at least 16 characters and contains none of
+  `KIONGA_LOCAL_PASSWORD` has at least 16 characters and contains none of
   `local`, `change-me` or `password`. It can come from
-  `MLAIOPS_LOCAL_PASSWORD_FILE`.
+  `KIONGA_LOCAL_PASSWORD_FILE`.
 - When `KIONGA_WORKSPACE_BASE_DOMAIN` is set, it is a DNS name distinct from
   the console host but on the same registrable domain, Kubernetes workspace
   discovery is configured, and `KIONGA_TRUSTED_WORKSPACE_PROXY` is not `true`.
@@ -68,8 +68,8 @@ gateway refuses to start unless:
 
 With `KIONGA_ENVIRONMENT=production`, the agent runtime requires the gateway's
 bearer token on `/invoke` and `/stream`, and refuses to start unless
-`MLAIOPS_INTERNAL_TOKEN` is set to at least 16 characters. Give every agent
-runtime the same `MLAIOPS_INTERNAL_TOKEN` as the gateway.
+`KIONGA_INTERNAL_TOKEN` is set to at least 16 characters. Give every agent
+runtime the same `KIONGA_INTERNAL_TOKEN` as the gateway.
 
 ## Security boundaries
 
@@ -77,7 +77,7 @@ runtime the same `MLAIOPS_INTERNAL_TOKEN` as the gateway.
   and environment. Mounted files do not protect against a compromised
   process. Never put secrets in ConfigMaps, Helm values, deployment JSON,
   traces or CI logs.
-- **Internal token.** `MLAIOPS_INTERNAL_TOKEN` is one shared credential for
+- **Internal token.** `KIONGA_INTERNAL_TOKEN` is one shared credential for
   platform services, not a per-workload identity. Rotate it across every
   consumer at once.
 - **Credential encryption key.** `KIONGA_CREDENTIAL_KEY` encrypts users' stored

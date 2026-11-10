@@ -72,7 +72,7 @@ For details, see [Work in the Jupyter workbench](workbench.md) and
 
 ## Create a personal API key
 
-Use a personal API key for the SDK, the `mlaiops` CLI or automation that runs
+Use a personal API key for the SDK, the `kionga` CLI or automation that runs
 outside Kionga. JupyterLab and the browser IDE do not need one.
 
 1. Open **Settings > Personal API keys** and click **＋ Create key**.
@@ -84,12 +84,12 @@ outside Kionga. JupyterLab and the browser IDE do not need one.
 4. Export it where your tool runs:
 
     ```bash
-    export MLAIOPS_URL=https://kionga.example.com
-    export MLAIOPS_TOKEN="your-key"
-    mlaiops project list
+    export KIONGA_URL=https://kionga.example.com
+    export KIONGA_TOKEN="your-key"
+    kionga-cli project list
     ```
 
-**Verify:** `mlaiops project list` prints the projects the key's scopes allow.
+**Verify:** `kionga-cli project list` prints the projects the key's scopes allow.
 
 Personal API keys cannot open workspaces, run scaffold jobs, change personal
 settings or use the editorial workspace. Store keys in a secret manager or your

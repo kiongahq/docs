@@ -28,9 +28,9 @@ watching a run, and rolling back.
   runner; function flows need OpenFaaS (see
   [Deploy a function](distributed-workspaces.md#deploy-a-function)). If no engine
   is configured, Kionga refuses the run and tells you why.
-- **For the API and CLI:** export `MLAIOPS_URL`, and either sign in with a
+- **For the API and CLI:** export `KIONGA_URL`, and either sign in with a
   session cookie or export a personal API key with the `pipelines` scope as
-  `MLAIOPS_TOKEN`. See [Authentication](../reference/api.md#authentication).
+  `KIONGA_TOKEN`. See [Authentication](../reference/api.md#authentication).
 
 ## Define a flow
 
@@ -94,20 +94,20 @@ to your repository.
 1. Export the current definition:
 
     ```bash
-    mlaiops pipeline export <definition-id> > pipelines/churn.kionga.yaml
+    kionga-cli pipeline export <definition-id> > pipelines/churn.kionga.yaml
     ```
 
 2. In CI, validate the file. The command prints each issue with its line number
    and exits with status 1 when the file is invalid:
 
     ```bash
-    mlaiops pipeline validate pipelines/churn.kionga.yaml
+    kionga-cli pipeline validate pipelines/churn.kionga.yaml
     ```
 
 3. After the change merges, apply it with a change note:
 
     ```bash
-    mlaiops pipeline apply pipelines/churn.kionga.yaml <definition-id> "PR #42"
+    kionga-cli pipeline apply pipelines/churn.kionga.yaml <definition-id> "PR #42"
     ```
 
     Omit the definition ID to create a new flow. Applying unchanged YAML creates
@@ -128,12 +128,12 @@ History is never rewritten, and every run still points at the revision it
 executed. The same operations are available through the API:
 
 ```bash
-curl -s -H "Authorization: Bearer $MLAIOPS_TOKEN" \
-  "$MLAIOPS_URL/api/v1/pipelines/definitions/<id>/revisions"
-curl -s -H "Authorization: Bearer $MLAIOPS_TOKEN" \
-  "$MLAIOPS_URL/api/v1/pipelines/definitions/<id>/yaml"
-curl -s -X POST -H "Authorization: Bearer $MLAIOPS_TOKEN" \
-  "$MLAIOPS_URL/api/v1/pipelines/definitions/<id>/revisions/<revision>/rollback"
+curl -s -H "Authorization: Bearer $KIONGA_TOKEN" \
+  "$KIONGA_URL/api/v1/pipelines/definitions/<id>/revisions"
+curl -s -H "Authorization: Bearer $KIONGA_TOKEN" \
+  "$KIONGA_URL/api/v1/pipelines/definitions/<id>/yaml"
+curl -s -X POST -H "Authorization: Bearer $KIONGA_TOKEN" \
+  "$KIONGA_URL/api/v1/pipelines/definitions/<id>/revisions/<revision>/rollback"
 ```
 
 **Verify:** the revision list shows a new revision at the top with the old
@@ -184,7 +184,7 @@ Scheduled runs behave predictably:
 To run a flow from a script, use the CLI or the SDK:
 
 ```bash
-mlaiops pipeline submit <project-id> <definition-id>
+kionga-cli pipeline submit <project-id> <definition-id>
 ```
 
 ```python

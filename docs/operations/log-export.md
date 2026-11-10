@@ -54,7 +54,7 @@ Helm chart does not include it.
     | `KIONGA_LOG_EXPORT_USERNAME`, `KIONGA_LOG_EXPORT_PASSWORD_FILE` | Basic authentication; the password is read from a file |
     | `KIONGA_LOG_EXPORT_CA_FILE` | PEM bundle for a private CA |
     | `KIONGA_LOG_EXPORT_ANONYMOUS` | `true` allows an unauthenticated test cluster |
-    | `MLAIOPS_TENANT` | Tenant to export (default `default`); run one exporter per tenant |
+    | `KIONGA_TENANT` | Tenant to export (default `default`); run one exporter per tenant |
     | `KIONGA_LOG_EXPORT_BATCH` | Documents per bulk request (default 500). Set in `deploy/.env` |
     | `KIONGA_LOG_EXPORT_INSECURE_TLS` | `true` turns off certificate checks, for testing only. Set in `deploy/.env` |
 
@@ -140,6 +140,6 @@ docker compose -f deploy/compose.yaml --profile log-export-es --profile log-expo
 ## Related
 
 - Audit events are not exported by this service. They are published to the
-  Kafka topic `mlaiops.audit.operations`, which the Kafka integrations of
+  Kafka topic `kionga.audit.operations`, which the Kafka integrations of
   Elastic and OpenSearch can consume.
 - [Logs and events](../guides/logs.md)

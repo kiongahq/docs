@@ -8,13 +8,13 @@ checks each one against those checkouts:
   make     `make <target>` and `make -C <repo> <target>` against the Makefiles
   path     backticked paths into a sibling repository (`deploy/compose.yaml`,
            `go/cmd/gateway/web`, ...)
-  env      environment variable names (KIONGA_*, MLAIOPS_*, OIDC_*, *_PORT,
+  env      environment variable names (KIONGA_*, KIONGA_*, OIDC_*, *_PORT,
            *_URL, ...) against every non-Markdown file in the siblings
   route    /api/v1/..., /auth/..., /internal/v1/... routes against the routes
            the Go control plane registers
-  cli      `mlaiops <command> <subcommand>` against platform/go/cmd/cli and
+  cli      `kionga-cli <command> <subcommand>` against platform/go/cmd/cli and
            `kionga <command>` against the workspace CLI (workspace/workspace/kionga.py)
-  sdk      mlaiops_sdk modules, exports, and MLAIOpsClient methods
+  sdk      kionga modules, exports, and KiongaClient methods
   style    house style in prose: no em dashes and no banned filler words
 
 Usage:
@@ -341,10 +341,10 @@ def load_facts(root: Path, docs_repo: Path = DOCS_REPO) -> Facts:
     if kionga.is_file():
         facts.kionga = argparse_commands(kionga.read_text())
 
-    sdk = root / "sdk-python" / "mlaiops_sdk"
+    sdk = root / "sdk-python" / "kionga"
     if sdk.is_dir():
         for path in sorted(sdk.glob("*.py")):
-            dotted = "mlaiops_sdk" if path.stem == "__init__" else f"mlaiops_sdk.{path.stem}"
+            dotted = "kionga" if path.stem == "__init__" else f"kionga.{path.stem}"
             facts.sdk[dotted] = parse_sdk_module(path)
     return facts
 
@@ -553,7 +553,7 @@ def check_routes(page: list[Segment], facts: Facts, rel: str) -> list[Finding]:
                     continue  # another service's API
                 raw = "/" + raw.split("/", 3)[3]
             elif raw.startswith("$"):
-                raw = raw[raw.index("/"):]  # "$MLAIOPS_URL/api/v1/..." names the gateway
+                raw = raw[raw.index("/"):]  # "$KIONGA_URL/api/v1/..." names the gateway
             for route in expand_optional(re.split(r"[?#]", raw)[0].rstrip(".:;")):
                 finding = check_route(method, route, facts, rel, seg.line)
                 if finding:
@@ -563,16 +563,16 @@ def check_routes(page: list[Segment], facts: Facts, rel: str) -> list[Finding]:
 
 CLI_LINE = re.compile(
     r"^(?:\$\s+)?(?:[A-Z_][A-Z0-9_]*=\S*\s+)*"
-    r"(?:\./)?(bin/mlaiops-cli|mlaiops-cli|mlaiops|go run \./cmd/cli|go run \./go/cmd/cli|kionga)"
+    r"(?:\./)?(bin/kionga-cli|kionga-cli|go run \./cmd/cli|go run \./go/cmd/cli|kionga)"
     r"(?:\s+(.*))?$"
 )
 
 
 def check_cli(page: list[Segment], facts: Facts, rel: str) -> list[Finding]:
-    """`mlaiops ...` against platform/go/cmd/cli; `kionga ...` against the
+    """`kionga-cli ...` against platform/go/cmd/cli; `kionga ...` against the
     workspace CLI's argparse tree."""
     found = []
-    mlaiops = {c for c, _ in facts.cli}
+    go_commands = {c for c, _ in facts.cli}
     for seg in code_segments(page):
         if seg.kind == "block" and seg.lang not in ("", "bash", "sh", "shell", "console", "text"):
             continue
@@ -595,26 +595,26 @@ def check_cli(page: list[Segment], facts: Facts, rel: str) -> list[Finding]:
                 found.append(Finding(rel, seg.line, "cli", f"kionga {command} {sub}",
                                      "no such subcommand in workspace/workspace/kionga.py"))
             continue
-        if command not in mlaiops:
-            found.append(Finding(rel, seg.line, "cli", f"mlaiops {command}",
+        if command not in go_commands:
+            found.append(Finding(rel, seg.line, "cli", f"kionga-cli {command}",
                                  "no such command in platform/go/cmd/cli"))
         elif sub and (command, sub) not in facts.cli:
-            found.append(Finding(rel, seg.line, "cli", f"mlaiops {command} {sub}",
+            found.append(Finding(rel, seg.line, "cli", f"kionga-cli {command} {sub}",
                                  "no such subcommand in platform/go/cmd/cli"))
     return found
 
 
-SDK_DOTTED = re.compile(r"\bmlaiops_sdk(?:\.\w+)+")
-SDK_FROM = re.compile(r"\bfrom\s+(mlaiops_sdk(?:\.\w+)*)\s+import\s+(\([^)]*\)|[^\n]+)")
-# By convention the docs call an MLAIOpsClient instance `client`, sometimes in
+SDK_DOTTED = re.compile(r"\bkionga(?:\.\w+)+")
+SDK_FROM = re.compile(r"\bfrom\s+(kionga(?:\.\w+)*)\s+import\s+(\([^)]*\)|[^\n]+)")
+# By convention the docs call an KiongaClient instance `client`, sometimes in
 # a later block than the one that constructs it.
-DEFAULT_INSTANCES = {"client": "MLAIOpsClient"}
+DEFAULT_INSTANCES = {"client": "KiongaClient"}
 
 
 def resolve_sdk(dotted: str, facts: Facts) -> str | None:
     """Return None when the dotted name exists, else a reason."""
     parts = dotted.split(".")
-    module = "mlaiops_sdk"
+    module = "kionga"
     i = 1
     while i < len(parts) and f"{module}.{parts[i]}" in facts.sdk:
         module, i = f"{module}.{parts[i]}", i + 1
@@ -678,7 +678,7 @@ def check_python_ast(tree: ast.Module, index: SDKIndex, instances: dict[str, str
             if isinstance(func, ast.Name) and func.id in index.classes:
                 return func.id
             if isinstance(func, ast.Attribute):
-                if func.attr in index.classes and ast.unparse(func.value).startswith("mlaiops_sdk"):
+                if func.attr in index.classes and ast.unparse(func.value).startswith("kionga"):
                     return func.attr
                 owner = class_of(func.value) if not isinstance(func.value, ast.Name) \
                     else instances.get(func.value.id, "")
@@ -729,6 +729,14 @@ def check_python_ast(tree: ast.Module, index: SDKIndex, instances: dict[str, str
     return problems
 
 
+def names_sdk(dotted: str, facts: Facts) -> bool:
+    """True when the first part after `kionga.` is an SDK module or export, or is
+    capitalized like an SDK class. Topics, domains and trace attributes are lowercase."""
+    first = dotted.split(".")[1]
+    top = facts.sdk.get("kionga")
+    return first[:1].isupper() or f"kionga.{first}" in facts.sdk or bool(top and first in top.names)
+
+
 def check_sdk(page: list[Segment], facts: Facts, rel: str) -> list[Finding]:
     if not facts.sdk:
         return []
@@ -751,6 +759,10 @@ def check_sdk(page: list[Segment], facts: Facts, rel: str) -> list[Finding]:
             return unit[min(text.count("\n", 0, offset), len(unit) - 1)].line
 
         for match in SDK_DOTTED.finditer(text):
+            # Inline `kionga.x` is also a topic, domain, file or trace attribute; only
+            # check it when x names part of the SDK. Python blocks are checked in full.
+            if unit[0].kind == "inline" and not names_sdk(match.group(0), facts):
+                continue
             reason = resolve_sdk(match.group(0), facts)
             if reason:
                 found.append(Finding(rel, line_of(match.start()), "sdk", match.group(0), reason))

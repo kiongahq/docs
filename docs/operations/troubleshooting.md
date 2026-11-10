@@ -114,7 +114,7 @@ what the check sees, probe from a throwaway container on the stack's network
 (the gateway image has no shell):
 
 ```bash
-docker run --rm --network mlaiops_default curlimages/curl:8.10.1 -fsS http://mlflow:5000/health
+docker run --rm --network kionga_default curlimages/curl:8.10.1 -fsS http://mlflow:5000/health
 ```
 
 See [Service endpoints](../reference/service-endpoints.md) for the right
@@ -182,7 +182,7 @@ gateway handles the prefix for you.
 **Cause.** The default LLM backend is `mock`, so the stack runs without API
 keys.
 
-**Fix.** Set `MLAIOPS_LLM_BACKEND`, `MLAIOPS_LLM_MODEL` and the provider key in
+**Fix.** Set `KIONGA_LLM_BACKEND`, `KIONGA_LLM_MODEL` and the provider key in
 `deploy/.env`, then recreate the agent runtime:
 
 ```bash
@@ -301,7 +301,7 @@ instead of a digest.
 
 ### `Deployment failed: config public origin must match the deployment domain`
 
-**Cause.** `MLAIOPS_ALLOWED_ORIGIN` in the application configuration is not
+**Cause.** `KIONGA_ALLOWED_ORIGIN` in the application configuration is not
 exactly `https://` followed by `domain`.
 
 **Fix.** Make them match, with no trailing slash or port.
@@ -352,7 +352,7 @@ Then look up the gateway message below. The installer does not roll back data.
 | `OIDC_REDIRECT_URL must match the public origin and /auth/callback` | Set it to `https://<domain>/auth/callback` |
 | `production DATABASE_URL must use PostgreSQL with sslmode=verify-full` | Add `sslmode=verify-full` to the URI and make sure the server certificate verifies |
 | `production <NAME> must be a strong non-development credential` | Use at least 24 random characters without `local` or `change-me` |
-| `production MLAIOPS_LOCAL_PASSWORD (break-glass sign-in) must be at least 16 characters and not a development default` | Use a longer password without `local`, `change-me` or `password`, or turn off `KIONGA_LOCAL_LOGIN` |
+| `production KIONGA_LOCAL_PASSWORD (break-glass sign-in) must be at least 16 characters and not a development default` | Use a longer password without `local`, `change-me` or `password`, or turn off `KIONGA_LOCAL_LOGIN` |
 | `KIONGA_CREDENTIAL_KEY must encode 32 bytes` | Generate it with `openssl rand -base64 32` |
 | `config key <NAME> is invalid or must be supplied separately as a secret` | Move the value out of the JSON file into a secret file |
 | `KIONGA_CONFIG_FILE must be a JSON object of string values` | Quote every value, including `true`, `false` and numbers |

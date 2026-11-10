@@ -5,8 +5,8 @@ description: The Python SDK and the workload modules in the agent-runtime and pi
 # Python SDK and workload modules
 
 Python owns the ML-facing surface: a typed SDK, the agent runtime, pipeline flows,
-feature definitions, and the real-time demos. The package is `mlaiops-sdk`
-(`sdk-python/pyproject.toml`), importable as `mlaiops_sdk`, with optional extras for the
+feature definitions, and the real-time demos. The package is `kionga`
+(`sdk-python/pyproject.toml`), importable as `kionga`, with optional extras for the
 heavier agent/runtime dependencies.
 
 ```bash
@@ -15,22 +15,22 @@ pip install -e "./sdk-python[agents]"       # + LangGraph/LangChain/Langfuse/psy
 pip install -e "./sdk-python[runtime]"      # + FastAPI/Uvicorn (agent runtime)
 ```
 
-## `mlaiops_sdk`: the client SDK
+## `kionga`: the client SDK
 
 A small, typed entry point to the control plane. Core imports are light; heavy agent
 dependencies load lazily only when used.
 
-### `client.py`: `MLAIOpsClient`
+### `client.py`: `KiongaClient`
 
-The typed REST client. `MLAIOpsClient(base_url=None, *, token=None, actor=None,
-timeout=10.0)` reads `MLAIOPS_URL` (default `http://localhost:8080`) and
-`MLAIOPS_TOKEN` from the environment when the arguments are omitted, sends the
+The typed REST client. `KiongaClient(base_url=None, *, token=None, actor=None,
+timeout=10.0)` reads `KIONGA_URL` (default `http://localhost:8080`) and
+`KIONGA_TOKEN` from the environment when the arguments are omitted, sends the
 token as a bearer credential, and works as a context manager.
 
 ```python
-from mlaiops_sdk import MLAIOpsClient
+from kionga import KiongaClient
 
-with MLAIOpsClient() as c:
+with KiongaClient() as c:
     project = c.create_project("churn", template="production-ml",
                                framework="xgboost", accelerator="cpu")
     run = c.submit_pipeline(project.id)
@@ -51,8 +51,8 @@ with MLAIOpsClient() as c:
 | Connections | `list_connections()`, `create_connection()`, `test_connection()` |
 | Audit | `audit_events()` |
 
-Inside Kionga's Jupyter or browser IDE workspace, `MLAIOPS_URL` is already set and
-`MLAIOpsClient()` needs no personal key. Set `MLAIOPS_TOKEN` to a scoped personal
+Inside Kionga's Jupyter or browser IDE workspace, `KIONGA_URL` is already set and
+`KiongaClient()` needs no personal key. Set `KIONGA_TOKEN` to a scoped personal
 key when calling a hosted platform from your own machine. The gateway applies
 the same current project/service grants to in-workspace SDK calls as to the console.
 
@@ -70,7 +70,7 @@ memory quantities, GPU count, and GPU resource type. It sends the canonical nest
 ### `agents.py`: agent memory and checkpoints
 
 - `get_langgraph_checkpointer()`: an `AsyncPostgresSaver` from
-  `MLAIOPS_CHECKPOINT_DSN`/`DATABASE_URL` for durable session state.
+  `KIONGA_CHECKPOINT_DSN`/`DATABASE_URL` for durable session state.
 - `AgentMemoryClient`: pgvector-backed long-term memory (`remember` / `recall`)
   plus `get_entity_features` via the feature gateway. Uses a deterministic
   `HashingEmbedder` so tests need no network.
@@ -80,8 +80,8 @@ memory quantities, GPU count, and GPU resource type. It sends the canonical nest
 - `build_chat_model(backend, model, *, base_url, api_key, temperature)`: returns
   a LangChain chat model for `openai`, `anthropic`, `openai-compatible`
   (alias `self-hosted`), or `mock`. The backend defaults to
-  `MLAIOPS_LLM_BACKEND` (else `openai`). OpenAI-protocol backends use
-  `MLAIOPS_LLM_BASE_URL`, which Compose points at the trace proxy; `anthropic`
+  `KIONGA_LLM_BACKEND` (else `openai`). OpenAI-protocol backends use
+  `KIONGA_LLM_BASE_URL`, which Compose points at the trace proxy; `anthropic`
   calls Anthropic directly.
 - `MockChatModel`: a deterministic mock backend (supports scripted tool calls) so
   gate tests run offline and free.
@@ -140,7 +140,7 @@ The FastAPI service that serves LangGraph agents and framework-neutral adapters 
 
 | Module | Role |
 | --- | --- |
-| `app.py` | FastAPI app: `POST /invoke`, `POST /stream` (SSE), `GET /healthz`; wires checkpointer + memory + tracing; prefers per-request `X-MLAIOps-Agent-*` headers |
+| `app.py` | FastAPI app: `POST /invoke`, `POST /stream` (SSE), `GET /healthz`; wires checkpointer + memory + tracing; prefers per-request `X-Kionga-Agent-*` headers |
 | `graphs.py` | `build_graph(spec, *, model, checkpointer)` handles compiled graphs, `StateGraph`, or factory callable objects |
 | `reporting.py` | `Usage` (measured tokens → cost), `usage_from_messages`, `report_session` back to the gateway |
 | `__main__.py` | Entrypoint |
@@ -150,7 +150,7 @@ The FastAPI service that serves LangGraph agents and framework-neutral adapters 
 `agents.customer_support.graph:build` is a LangGraph `StateGraph`
 (reason → tools → respond) with registered tools `feature_store_lookup` (feature
 gateway, with a demo fallback) and `kb_search`. The Compose agent runtime serves
-it by default (`MLAIOPS_GRAPH_MODULE`); register an agent record that points at it
+it by default (`KIONGA_GRAPH_MODULE`); register an agent record that points at it
 to chat with it. `agents/framework_examples.py` holds the Agno, NOOA, and custom
 adapter examples.
 
@@ -186,5 +186,5 @@ adapter examples.
 Each repository has its own `tests/` (`sdk-python`, `agent-runtime`,
 `pipeline-runner`, `workspace`, `contracts`), and its CI runs `ruff check` and
 `pytest -q`. Gate tests use the mock LLM and deterministic embedding function: fast, free,
-no network. The paid evaluation lane (LLM-as-judge) runs only when `MLAIOPS_RUN_EVALS=1`
+no network. The paid evaluation lane (LLM-as-judge) runs only when `KIONGA_RUN_EVALS=1`
 with a real provider key.

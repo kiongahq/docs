@@ -12,8 +12,8 @@
         "prerelease": false,
         "body": "**Full Changelog**: https://github.com/kiongahq/sdk-python/commits/v0.2.0",
         "assets": [
-          "mlaiops_sdk-0.2.0-py3-none-any.whl",
-          "mlaiops_sdk-0.2.0.tar.gz"
+          "kionga-0.2.0-py3-none-any.whl",
+          "kionga-0.2.0.tar.gz"
         ]
       }
     ],

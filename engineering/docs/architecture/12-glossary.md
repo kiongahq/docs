@@ -24,10 +24,10 @@ description: arc42 section 12. Terms that have a specific meaning in Kionga's co
 | IAM policy | A versioned set of allow and deny statements over actions and `kionga:` resources, attached to users or groups. |
 | In-stack hostname | A Compose service name such as `objectstore` or `mlflow`, reachable only from inside the Compose network. |
 | Integration worker | The Kubernetes process that consumes lifecycle commands from Kafka and creates or updates Kionga custom resources. |
-| Internal service token | The shared bearer token (`MLAIOPS_INTERNAL_TOKEN`) that in-platform services use to report to the gateway as the `service` role. |
-| Kionga custom resource | One of `KiongaAgent`, `KiongaPipelineRun`, `KiongaTool`, `KiongaConnection`, `KiongaModelPromotion`, `KiongaWorkspace` in API group `mlaiops.io/v1alpha1`. |
+| Internal service token | The shared bearer token (`KIONGA_INTERNAL_TOKEN`) that in-platform services use to report to the gateway as the `service` role. |
+| Kionga custom resource | One of `KiongaAgent`, `KiongaPipelineRun`, `KiongaTool`, `KiongaConnection`, `KiongaModelPromotion`, `KiongaWorkspace` in API group `kionga.dev/v1alpha1`. |
 | Lease | A row-locked document that lets exactly one gateway replica run a singleton loop, such as the scheduler or the editorial publisher. |
-| Lifecycle command | An outbox event on a `mlaiops.<kind>.commands` topic that describes a change the Kubernetes path must reconcile. |
+| Lifecycle command | An outbox event on a `kionga.<kind>.commands` topic that describes a change the Kubernetes path must reconcile. |
 | Outbox | The `outbox_events` table. Rows are written in the mutation's transaction and published to Kafka by a background worker. |
 | Personal API key | A user-created bearer credential with the `nxs_` prefix, scoped to a subset of the creator's services and projects. |
 | Preflight | The server-side check before a manual run: parameters, image pins and allowlist, quotas, concurrency, and resources. |
@@ -40,7 +40,7 @@ description: arc42 section 12. Terms that have a specific meaning in Kionga's co
 | Serving image | The container image used for a deployed model; the model's `serving_image`, or `SERVE_IMAGE` as a fallback. |
 | Service role | The machine role (`service`) for in-platform reporting; it may read and post to reporting paths only. |
 | Sidecar (workspace) | The loopback helper inside the Jupyter and IDE containers that runs structured scaffold jobs for the gateway. |
-| Tenant | The isolation unit for stored data, one per gateway process (`MLAIOPS_TENANT`), enforced with PostgreSQL row-level security. |
+| Tenant | The isolation unit for stored data, one per gateway process (`KIONGA_TENANT`), enforced with PostgreSQL row-level security. |
 | Trace proxy | The OpenAI-compatible HTTP proxy that forwards LLM calls and publishes one event per call. |
 | Trusted Compose profile | The single-operator local or single-host stack in which the Docker socket is mounted into engine-control services. |
 | Two DNS worlds | Services reach each other by Compose service name inside the stack and by `localhost` ports from the host; health checks run inside the gateway. |

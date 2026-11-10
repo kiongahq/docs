@@ -35,9 +35,9 @@ them**. This is where real training happens.
 | **Build** | `pipeline-runner/Dockerfile` (Python 3.11) |
 | **Entrypoint** | `python -m pipelines.serve` |
 | **Pins** | `mlflow==3.16.1`, `scikit-learn==1.7.0` in `pipeline-runner/requirements.txt`, identical to the serving image |
-| **Config** | `PREFECT_API_URL`, `MLAIOPS_URL`, `MLFLOW_TRACKING_URI`, `MLFLOW_S3_ENDPOINT_URL`, `AWS_*` |
+| **Config** | `PREFECT_API_URL`, `KIONGA_URL`, `MLFLOW_TRACKING_URI`, `MLFLOW_S3_ENDPOINT_URL`, `AWS_*` |
 
-The bundled `training_pipeline` flow (deployment `training-pipeline/mlaiops`) runs
+The bundled `training_pipeline` flow (deployment `training-pipeline/kionga`) runs
 `validate → train → evaluate → register`:
 it trains a deterministic scikit-learn classifier, logs the run and model to MLflow,
 and registers the model version with the control plane against the submitting
@@ -91,9 +91,9 @@ proxy predictions to `/invocations`.
 
 | Config | Purpose |
 | --- | --- |
-| `SERVE_IMAGE` | Fallback image when a model has no `serving_image` (`mlaiops-mlflow`) |
+| `SERVE_IMAGE` | Fallback image when a model has no `serving_image` (`kionga-mlflow`) |
 | `SERVE_PIDS_LIMIT` | Per-container process/thread limit (`256`, capped at `4096`) |
-| `PLATFORM_NETWORK` | Network to attach containers to (`mlaiops_default`) |
+| `PLATFORM_NETWORK` | Network to attach containers to (`kionga_default`) |
 | `DOCKER_API_VERSION` | Pin the Docker API version if the daemon rejects the negotiated one |
 
 ### The deploy → predict flow

@@ -65,7 +65,7 @@ flowchart LR
 ## The console and API
 
 Everything in Kionga goes through one API under `/api/v1`. The web console is a
-client of that same API, and so are the Python SDK, the `mlaiops` CLI, and your
+client of that same API, and so are the Python SDK, the `kionga` CLI, and your
 own scripts. Anything you can do in the console you can automate. See the
 [REST API reference](../reference/api.md).
 

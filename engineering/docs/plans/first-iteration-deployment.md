@@ -192,7 +192,7 @@ workspaceIngress:
   baseDomain: workspaces.example.com
   tlsSecretName: kionga-workspace-tls
 config:
-  MLAIOPS_ALLOWED_ORIGIN: https://console.example.com
+  KIONGA_ALLOWED_ORIGIN: https://console.example.com
   OIDC_REDIRECT_URL: https://console.example.com/auth/callback
   OIDC_ISSUER: https://identity.example.com/realms/kionga
   OIDC_AUDIENCE: REPLACE
@@ -213,7 +213,7 @@ provider's discovery document; the paths above are placeholders, not universal
 OIDC endpoints. The EKS provider overlay selects the StorageClass.
 
 The gateway needs `DATABASE_URL` with PostgreSQL `sslmode=verify-full`,
-`OIDC_CLIENT_SECRET`, `MLAIOPS_INTERNAL_TOKEN`, and a stable 32-byte
+`OIDC_CLIENT_SECRET`, `KIONGA_INTERNAL_TOKEN`, and a stable 32-byte
 base64 `KIONGA_CREDENTIAL_KEY`. Feature and storage gateways need their own
 listed keys. Secret files are read at process startup: rotate by updating the
 secret and rolling out consumers deliberately. The internal token is shared

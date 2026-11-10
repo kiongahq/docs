@@ -28,8 +28,8 @@ container port.
 | `kafka` | Events, LLM traces and real-time streams | `apache/kafka:3.9.1` | 9092 (`KAFKA_PORT`) |
 | `kafka-rest` | HTTP access to Kafka (Karapace, Confluent-compatible) | `ghcr.io/aiven-open/karapace:6.1.4` | 8082 (`KAFKA_REST_PORT`) |
 | `objectstore` | S3-compatible object storage (RustFS) and its web console | `rustfs/rustfs:1.0.1` | 9000 (`OBJECTSTORE_PORT`), 9001 (`OBJECTSTORE_CONSOLE_PORT`) |
-| `objectstore-init` | Creates the storage buckets, then exits | `mlaiops-mlflow`, built from `deploy/mlflow` | None |
-| `mlflow` | Experiment tracking and model registry | `mlaiops-mlflow`, built from `deploy/mlflow` | 15000 (`MLFLOW_PORT`); container port 5000 |
+| `objectstore-init` | Creates the storage buckets, then exits | `kionga-mlflow`, built from `deploy/mlflow` | None |
+| `mlflow` | Experiment tracking and model registry | `kionga-mlflow`, built from `deploy/mlflow` | 15000 (`MLFLOW_PORT`); container port 5000 |
 | `feature-gateway` | Online feature lookups | Built from `platform` | 8083 (`FEATURE_GATEWAY_PORT`) |
 | `storage-proxy` | Object storage browsing and signed URLs | Built from `platform` | 8084 (`STORAGE_PROXY_PORT`) |
 | `prefect-server` | Pipeline engine | `prefecthq/prefect:3-latest` | 4200 (`PREFECT_PORT`) |

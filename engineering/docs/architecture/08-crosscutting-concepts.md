@@ -15,7 +15,7 @@ Kionga recognizes four kinds of credential. The gateway resolves them in this or
 | Credential | Presented as | Principal |
 | --- | --- | --- |
 | Personal API key | `Authorization: Bearer nxs_...` | Role `user` limited to the key's services and projects; the key's scope can never exceed the creator's grants. Stored only as a SHA-256 digest. |
-| Internal service token | `Authorization: Bearer <MLAIOPS_INTERNAL_TOKEN>` | `internal-service` with role `service`; compared in constant time |
+| Internal service token | `Authorization: Bearer <KIONGA_INTERNAL_TOKEN>` | `internal-service` with role `service`; compared in constant time |
 | OIDC bearer token | `Authorization: Bearer <JWT>` | Subject, email, groups and roles from the verified token |
 | Browser session | `kionga_local_session` (local account) or `kionga_session` (single sign-on) cookie | The signed-in subject |
 
@@ -38,7 +38,7 @@ sign-up policy (`KIONGA_SIGNUP`: `approval`, `open` or `off`). See
 
 **Local accounts.** Without an issuer, local accounts are the development default.
 Next to single sign-on they are break-glass access and require
-`KIONGA_LOCAL_LOGIN=true` plus an explicit `MLAIOPS_LOCAL_PASSWORD`. Passwords for
+`KIONGA_LOCAL_LOGIN=true` plus an explicit `KIONGA_LOCAL_PASSWORD`. Passwords for
 provisioned local accounts are `bcrypt` hashes; verification of an unknown account still
 runs a `bcrypt` comparison so timing does not reveal which accounts exist. After five
 failures for one account, each attempt waits a doubling delay capped at one minute.
@@ -49,7 +49,7 @@ edge shares the proxy's address.
 `Secure` over HTTPS. Every response carries `X-Content-Type-Options: nosniff` and
 `Referrer-Policy: strict-origin-when-cross-origin`; every response outside
 `/workspaces/` also carries `X-Frame-Options: SAMEORIGIN`. CORS reflects
-`MLAIOPS_ALLOWED_ORIGIN`, which production requires. Return-to targets pass through
+`KIONGA_ALLOWED_ORIGIN`, which production requires. Return-to targets pass through
 `safeReturnTo`, so a login cannot redirect off-site.
 
 **Workspace origins.** On Kubernetes with `KIONGA_WORKSPACE_BASE_DOMAIN`, each
@@ -106,7 +106,7 @@ Kionga isolates at three levels.
 
 | Level | Mechanism | Limit |
 | --- | --- | --- |
-| Tenant | One tenant per gateway process (`MLAIOPS_TENANT`, default `default`). Every connection sets `app.tenant_id`; every table has a `tenant_id` column and a forced row-level security policy on it. | PostgreSQL superusers and roles with `BYPASSRLS` skip row-level security, so the gateway must connect as an ordinary role for the policy to isolate anything |
+| Tenant | One tenant per gateway process (`KIONGA_TENANT`, default `default`). Every connection sets `app.tenant_id`; every table has a `tenant_id` column and a forced row-level security policy on it. | PostgreSQL superusers and roles with `BYPASSRLS` skip row-level security, so the gateway must connect as an ordinary role for the policy to isolate anything |
 | Project | Resources belong to a project. Normal users see their owned and assigned projects; reads outside them return `404`, and the SSE digest counts only visible objects. | Administrators and operators see everything in the tenant |
 | Workload | On Kubernetes, one `KiongaWorkspace` per access grant with its own PVC, credentials and resource limits, in a namespace with a ResourceQuota and default-deny network policies; agents get their own Deployments | Compose shares one workbench and one agent runtime; it is not a multi-user boundary |
 
@@ -140,7 +140,7 @@ refuses to start unless:
 - every OIDC URL and the allowed origin are HTTPS without user information;
 - `OIDC_REDIRECT_URL` is the allowed origin's host plus `/auth/callback`;
 - `DATABASE_URL` uses `sslmode=verify-full`;
-- `OIDC_CLIENT_SECRET` and `MLAIOPS_INTERNAL_TOKEN` are at least 24 characters and do
+- `OIDC_CLIENT_SECRET` and `KIONGA_INTERNAL_TOKEN` are at least 24 characters and do
   not contain `local` or `change-me`;
 - a break-glass password, when enabled, is at least 16 characters and not a
   development default;
@@ -156,12 +156,12 @@ files (`vm/up.py`, or the chart's `/run/secrets` mount with `<NAME>_FILE`).
 
 | Signal | Where it comes from | Where it goes |
 | --- | --- | --- |
-| Audit events | Every mutation, in the same transaction as the change | `audit_events` table; `GET /api/v1/audit`; the `mlaiops.audit.operations` topic |
+| Audit events | Every mutation, in the same transaction as the change | `audit_events` table; `GET /api/v1/audit`; the `kionga.audit.operations` topic |
 | Structured logs | Pipeline runner streaming, platform step events, Kubernetes Job events | `log_entries` (row-level security, cursor pagination, retention by `KIONGA_LOG_RETENTION_DAYS`); the Logs page and an SSE tail; optional export to Elasticsearch or OpenSearch |
 | Secret redaction | `platform/go/internal/redact` masks known credential patterns and the exact values of secret environment variables | Applied before logs are stored or exported |
 | Gateway metrics | `kionga_gateway_requests_total` and `kionga_gateway_request_duration_seconds`, by bounded route category | Separate listener on `METRICS_PORT` |
 | Platform metrics | Metrics collector (pipeline outcomes, agent usage, real-time statistics, component health) | Prometheus; ServiceMonitors in the Helm chart |
-| LLM traces | Trace proxy event per call; agent runtime session report with measured tokens and cost; Langfuse callbacks | `mlaiops.llm.traces`; agent sessions and traces in the gateway; Langfuse |
+| LLM traces | Trace proxy event per call; agent runtime session report with measured tokens and cost; Langfuse callbacks | `kionga.llm.traces`; agent sessions and traces in the gateway; Langfuse |
 | Component health | Bounded active checks of connections and engines | `/api/v1/components`, the Platform page |
 | Live updates | `GET /api/v1/events` sends a per-caller digest of visible state every three seconds | The console reloads the active view only when the digest changes |
 
@@ -199,11 +199,11 @@ A mutation calls `writeTx`, which in one transaction:
 
 1. upserts the resource;
 2. inserts the audit event;
-3. inserts an outbox row for `mlaiops.audit.operations`;
+3. inserts an outbox row for `kionga.audit.operations`;
 4. for lifecycle actions, inserts a command row for the matching topic
-   (`mlaiops.pipeline.commands`, `mlaiops.model.commands`, `mlaiops.agent.commands`,
-   `mlaiops.tool.commands`, `mlaiops.connection.commands`,
-   `mlaiops.workspace.commands`).
+   (`kionga.pipeline.commands`, `kionga.model.commands`, `kionga.agent.commands`,
+   `kionga.tool.commands`, `kionga.connection.commands`,
+   `kionga.workspace.commands`).
 
 Either everything commits or nothing does, so there is no published event without a
 stored change and no change without its audit record.
@@ -223,7 +223,7 @@ dispatch or commit still fails, the worker exits before polling again and restar
 from the last committed offset. Dispatch is an ID-keyed create-or-update of the
 matching custom resource, so redelivery is harmless.
 
-Without `DATABASE_URL` the gateway uses a local JSON file (`MLAIOPS_DATA_PATH`, default
+Without `DATABASE_URL` the gateway uses a local JSON file (`KIONGA_DATA_PATH`, default
 `data/platform.json`). That mode has no outbox and no row-level security and exists
 only for lightweight development and tests.
 

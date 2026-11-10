@@ -54,7 +54,7 @@ can drive in that store:
     [Authentication](../reference/api.md#authentication)):
 
     ```bash
-    curl -s -b kionga.cookies -X POST "$MLAIOPS_URL/api/v1/admin/feature-stores" \
+    curl -s -b kionga.cookies -X POST "$KIONGA_URL/api/v1/admin/feature-stores" \
       -H 'Content-Type: application/json' \
       -d '{"provider": "feast", "name": "team-feast",
            "config": {"url": "http://feast-feature-server:6566",
@@ -62,7 +62,7 @@ can drive in that store:
            "secret_ref": "env:FEAST_TOKEN",
            "allowed_projects": ["prj-123"]}'
     curl -s -b kionga.cookies -X POST \
-      "$MLAIOPS_URL/api/v1/admin/feature-stores/<store-id>/test"
+      "$KIONGA_URL/api/v1/admin/feature-stores/<store-id>/test"
     ```
 
 Kionga validates the connection before saving it:
@@ -97,7 +97,7 @@ there you remove the store and connect it again.
 
     ```bash
     curl -s -b kionga.cookies -X PUT \
-      "$MLAIOPS_URL/api/v1/admin/feature-stores/<store-id>" \
+      "$KIONGA_URL/api/v1/admin/feature-stores/<store-id>" \
       -H 'Content-Type: application/json' \
       -d '{"provider": "feast", "name": "team-feast",
            "config": {"url": "http://feast-feature-server:6566"},
@@ -114,8 +114,8 @@ Project members see a store only when it is shared with one of their projects
 or in the response of:
 
 ```bash
-curl -s -H "Authorization: Bearer $MLAIOPS_TOKEN" \
-  "$MLAIOPS_URL/api/v1/features/stores"
+curl -s -H "Authorization: Bearer $KIONGA_TOKEN" \
+  "$KIONGA_URL/api/v1/features/stores"
 ```
 
 ## Serve online lookups from Feast
@@ -135,7 +135,7 @@ With `FEAST_URL` set, the gateway forwards every lookup to Feast and its
 **Verify:** a lookup returns the values that Feast serves:
 
 ```bash
-curl -s -X POST "$MLAIOPS_FEATURE_GATEWAY_URL/get-online-features" \
+curl -s -X POST "$KIONGA_FEATURE_GATEWAY_URL/get-online-features" \
   -H 'Content-Type: application/json' \
   -d '{"feature_service": "customer_profile", "entities": [{"entity_id": "u123"}]}'
 ```
@@ -145,7 +145,7 @@ curl -s -X POST "$MLAIOPS_FEATURE_GATEWAY_URL/get-online-features" \
 Click **Remove** on the store under **Feature stores and object storage**, or
 call `DELETE /api/v1/admin/feature-stores/<store-id>`. The built-in store, with
 the ID `internal`, cannot be edited or removed; its addresses come from
-`MLAIOPS_FEATURE_GATEWAY_URL` and `KIONGA_FEATURE_OFFLINE_URI` on the gateway.
+`KIONGA_FEATURE_GATEWAY_URL` and `KIONGA_FEATURE_OFFLINE_URI` on the gateway.
 
 ## Next steps
 

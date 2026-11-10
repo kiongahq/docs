@@ -91,7 +91,7 @@ that contain credentials.
 === "CLI"
 
     ```bash
-    mlaiops project connect prj-123 https://github.com/acme/risk-app.git main
+    kionga-cli project connect prj-123 https://github.com/acme/risk-app.git main
     ```
 
 === "SDK"
@@ -123,8 +123,8 @@ workspace, or fast-forwards an existing clone.
    personal API key with the `projects` scope first:
 
     ```bash
-    export MLAIOPS_URL=https://kionga.example.com
-    export MLAIOPS_TOKEN='<personal API key>'
+    export KIONGA_URL=https://kionga.example.com
+    export KIONGA_TOKEN='<personal API key>'
     ```
 
 An existing clone is updated with `git fetch`, a checkout of the default branch,
@@ -177,7 +177,7 @@ gateway on a single server. Until `OPENFAAS_URL` is set, deploys return
     === "CLI"
 
         ```bash
-        mlaiops function deploy prj-123 score-events ghcr.io/acme/score-events:1.4.0
+        kionga-cli function deploy prj-123 score-events ghcr.io/acme/score-events:1.4.0
         ```
 
     === "SDK"
@@ -191,9 +191,9 @@ gateway on a single server. Until `OPENFAAS_URL` is set, deploys return
 3. Invoke it:
 
     ```bash
-    export MLAIOPS_FUNCTION_PAYLOAD='{"customer_id":"c-42"}'
-    mlaiops function invoke score-events
-    mlaiops function invoke-async score-events
+    export KIONGA_FUNCTION_PAYLOAD='{"customer_id":"c-42"}'
+    kionga-cli function invoke score-events
+    kionga-cli function invoke-async score-events
     ```
 
 Cron and Kafka triggers depend on OpenFaaS connectors that you install and
@@ -224,7 +224,7 @@ spec:
 ```
 
 Save it from **Pipelines > ＋ Define flow** with **Execution** set to
-**Functions · OpenFaaS**, or with `mlaiops pipeline apply`. Kionga rejects a
+**Functions · OpenFaaS**, or with `kionga-cli pipeline apply`. Kionga rejects a
 flow that references a function that is not deployed in the same project. See
 [Define and run pipelines](pipelines.md).
 

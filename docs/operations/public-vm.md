@@ -61,7 +61,7 @@ arguments):
 | --- | --- | --- |
 | `DATABASE_URL` | PostgreSQL connection URI | `postgres://` or `postgresql://` with `sslmode=verify-full` |
 | `OIDC_CLIENT_SECRET` | The identity provider's client secret | At least 24 characters, not a development value |
-| `MLAIOPS_INTERNAL_TOKEN` | Shared token for platform services | At least 24 characters, not a development value; generate with `openssl rand -hex 24` |
+| `KIONGA_INTERNAL_TOKEN` | Shared token for platform services | At least 24 characters, not a development value; generate with `openssl rand -hex 24` |
 | `KIONGA_CREDENTIAL_KEY` | Key that encrypts users' stored personal credentials | Base64 encoding of exactly 32 bytes; generate with `openssl rand -base64 32` |
 
 Back up `KIONGA_CREDENTIAL_KEY` with your recovery plan. Replacing it makes
@@ -110,7 +110,7 @@ previously stored personal credentials unreadable.
    `deploy/vm/config.example.json` to the `config_file` path and set your
    values. Every value must be a JSON string.
 
-    - `MLAIOPS_ALLOWED_ORIGIN`: `https://<your-domain>`. It must match
+    - `KIONGA_ALLOWED_ORIGIN`: `https://<your-domain>`. It must match
       `domain`.
     - `OIDC_ISSUER`, `OIDC_JWKS_URL`, `OIDC_AUTH_URL`, `OIDC_TOKEN_URL`: your
       identity provider's HTTPS endpoints.
@@ -209,13 +209,13 @@ By default the server accepts only single sign-on. To keep a local `admin`
 account for when the identity provider is unavailable:
 
 1. Add `"KIONGA_LOCAL_LOGIN": "true"` to the application configuration.
-2. Deliver the password as a fifth secret file, `MLAIOPS_LOCAL_PASSWORD`. In
+2. Deliver the password as a fifth secret file, `KIONGA_LOCAL_PASSWORD`. In
    production the gateway refuses to start unless the password has at least
    16 characters and contains none of `local`, `change-me` or `password`.
 3. The installer mounts only the four standard secrets. Add the file to the
    gateway's `secrets` list in `deploy/vm/compose.yaml`, with a matching entry
    under the top-level `secrets` key, and set
-   `MLAIOPS_LOCAL_PASSWORD_FILE: /run/secrets/MLAIOPS_LOCAL_PASSWORD` in the
+   `KIONGA_LOCAL_PASSWORD_FILE: /run/secrets/KIONGA_LOCAL_PASSWORD` in the
    gateway's `environment`.
 4. Run the start command again.
 
@@ -232,7 +232,7 @@ Expect a short outage: there is one gateway.
 
 **Rotate secrets.** Have your secret agent write the new file contents, then
 run the start command again. The gateway reads secret files only at startup.
-When you rotate `MLAIOPS_INTERNAL_TOKEN`, update every service that uses it at
+When you rotate `KIONGA_INTERNAL_TOKEN`, update every service that uses it at
 the same time.
 
 **Roll back.** Restore the previous digests and configuration, then run the

@@ -19,19 +19,19 @@ Go modules in their own repositories; they are described at the end of this page
 
 ## Commands (`platform/go/cmd`)
 
-Each builds to a `mlaiops-<name>` binary in `platform/bin/` (`make -C platform build`)
+Each builds to a `kionga-<name>` binary in `platform/bin/` (`make -C platform build`)
 and to a container image via `platform/go/Dockerfile` (`--build-arg SERVICE=<name>`).
 
 | Command | Binary | Role |
 | --- | --- | --- |
-| `gateway` | `mlaiops-gateway` | REST API + embedded console |
-| `operator` | `mlaiops-operator` | Kubernetes reconcilers (scale path) |
-| `integration-worker` | `mlaiops-integration-worker` | Kafka → CRD lifecycle worker (scale path) |
-| `feature-gateway` | `mlaiops-feature-gateway` | Online feature retrieval |
-| `storage-proxy` | `mlaiops-storage-proxy` | SigV4 S3 URLs + browse |
-| `metrics-collector` | `mlaiops-metrics-collector` | Prometheus platform metrics |
-| `log-exporter` | `mlaiops-log-exporter` | Log export to Elasticsearch or OpenSearch |
-| `cli` | `mlaiops-cli` | Operator/engineer CLI (`mlaiops`) |
+| `gateway` | `kionga-gateway` | REST API + embedded console |
+| `operator` | `kionga-operator` | Kubernetes reconcilers (scale path) |
+| `integration-worker` | `kionga-integration-worker` | Kafka → CRD lifecycle worker (scale path) |
+| `feature-gateway` | `kionga-feature-gateway` | Online feature retrieval |
+| `storage-proxy` | `kionga-storage-proxy` | SigV4 S3 URLs + browse |
+| `metrics-collector` | `kionga-metrics-collector` | Prometheus platform metrics |
+| `log-exporter` | `kionga-log-exporter` | Log export to Elasticsearch or OpenSearch |
+| `cli` | `kionga-cli` | Operator/engineer CLI (`kionga`) |
 
 ## Internal packages (`platform/go/internal`)
 

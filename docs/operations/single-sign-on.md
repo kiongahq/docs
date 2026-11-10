@@ -41,7 +41,7 @@ example when the directory is down.
 | **Company directory** (LDAP through Dex, GLAuth test directory) | Password `kionga-sso-dev` for every user below |
 | **Demo account (local only)** (Dex's no-credentials OAuth round trip) | One click; the first sign-in signs up as a demo user |
 | **GitHub, Google, GitLab, Microsoft** | Appear once their client id and secret are set (below) |
-| Local form | `admin` / `mlaiops-local` (break-glass) |
+| Local form | `admin` / `kionga-local` (break-glass) |
 
 | Directory user | Group | Result |
 | --- | --- | --- |
@@ -154,21 +154,21 @@ KIONGA_SSO_PROVIDERS='[{"id":"ldap","name":"Company directory","type":"ldap"},{"
 # or KIONGA_SSO_PROVIDERS_FILE=/path/providers.json, re-read when it changes
 KIONGA_SSO_GROUP_ROLES='{"ml-admins":"admin","data-team":"engineer","analysts":"viewer"}'
 KIONGA_SSO_SINGLE_TENANT=true     # Dex tokens carry no tenant claim
-KIONGA_LOCAL_LOGIN=true           # optional break-glass; needs MLAIOPS_LOCAL_PASSWORD
+KIONGA_LOCAL_LOGIN=true           # optional break-glass; needs KIONGA_LOCAL_PASSWORD
 KIONGA_SIGNUP=approval            # approval | open | off
 KIONGA_SIGNUP_EMAIL_DOMAINS=example.com
 ```
 
-`compose.public.yaml` runs the same Dex at `https://$MLAIOPS_DOMAIN/dex` with the
+`compose.public.yaml` runs the same Dex at `https://$KIONGA_DOMAIN/dex` with the
 test directory and demo account off, Dex's own email and password admin
 (`DEX_ADMIN_EMAIL`, `DEX_ADMIN_PASSWORD_HASH`) on, and requires
-`MLAIOPS_LOCAL_PASSWORD`. Register OAuth apps with callback
-`https://$MLAIOPS_DOMAIN/dex/callback`.
+`KIONGA_LOCAL_PASSWORD`. Register OAuth apps with callback
+`https://$KIONGA_DOMAIN/dex/callback`.
 
 With GitHub, group names are `org:team` (for example `your-org:ml-admins`); map
 those names in `KIONGA_SSO_GROUP_ROLES`.
 
-**Verify:** `curl $MLAIOPS_URL/auth/providers` lists your providers, and signing in through one lands you in the console.
+**Verify:** `curl $KIONGA_URL/auth/providers` lists your providers, and signing in through one lands you in the console.
 
 ## Choose how first-time users get access {#sign-up}
 
@@ -238,8 +238,8 @@ and `/api/v1/me` reports `connector` and the latest `access_request` status.
 - Keep secrets (`OIDC_CLIENT_SECRET`, bind passwords, connector client secrets) in
   your secret manager and pass them to Dex as environment variables.
 - Decide whether local break-glass login stays on. If it does, use a long random
-  `MLAIOPS_LOCAL_PASSWORD`, keep it in a vault, and deliver it as a file with
-  `MLAIOPS_LOCAL_PASSWORD_FILE` like the other secrets. With
+  `KIONGA_LOCAL_PASSWORD`, keep it in a vault, and deliver it as a file with
+  `KIONGA_LOCAL_PASSWORD_FILE` like the other secrets. With
   `KIONGA_ENVIRONMENT=production` the gateway refuses to start when that password
   is shorter than 16 characters or contains `local`, `change-me`, or `password`.
   Failed local sign-ins are throttled per account (a doubling delay after 5
@@ -253,15 +253,15 @@ and `/api/v1/me` reports `connector` and the latest `access_request` status.
 
 | Symptom | Check |
 | --- | --- |
-| Login page shows no SSO button | `curl $MLAIOPS_URL/auth/providers`; `KIONGA_SSO_PROVIDERS` (or the file) must be valid JSON and `OIDC_ISSUER` set |
+| Login page shows no SSO button | `curl $KIONGA_URL/auth/providers`; `KIONGA_SSO_PROVIDERS` (or the file) must be valid JSON and `OIDC_ISSUER` set |
 | An OAuth button is missing after editing `.env` | `make -C deploy sso-reload`; `docker compose logs dex` lists each `config connector` |
 | `invalid login state` on `/auth/callback` | The login cookies did not come back: the browser blocks cookies for this site, the login took over 10 minutes, or `OIDC_REDIRECT_URL` names a host the browser cannot reach as the same site |
 | A first sign-in created no access request | `KIONGA_SIGNUP` is `off`, the email is outside `KIONGA_SIGNUP_EMAIL_DOMAINS` or unverified, or a directory group already grants a role; the gateway logs `sign-up for ...` |
 | `unknown sign-in provider` | The button id is not in `KIONGA_SSO_PROVIDERS`, or does not match a Dex connector id |
 | Dex says "Invalid username or password" | Dex logs: bind DN and password, `userSearch` filter and `username` attribute |
 | Signed in but no access | Waiting for approval (the console banner says so), or the user's groups are not in `KIONGA_SSO_GROUP_ROLES`; Dex logs list the groups it found at login |
-| `identity token validation failed` | `OIDC_ISSUER` must equal Dex's `issuer` exactly; `OIDC_AUDIENCE` must be the client id; with `MLAIOPS_TENANT` set, enable `KIONGA_SSO_SINGLE_TENANT` |
-| Gateway exits with `requires MLAIOPS_LOCAL_PASSWORD` | `KIONGA_LOCAL_LOGIN=true` next to SSO needs an explicit break-glass password |
-| Gateway exits with `must be at least 16 characters and not a development default` | Production mode rejects a short or default break-glass password; set a long random `MLAIOPS_LOCAL_PASSWORD` (or `MLAIOPS_LOCAL_PASSWORD_FILE`) |
+| `identity token validation failed` | `OIDC_ISSUER` must equal Dex's `issuer` exactly; `OIDC_AUDIENCE` must be the client id; with `KIONGA_TENANT` set, enable `KIONGA_SSO_SINGLE_TENANT` |
+| Gateway exits with `requires KIONGA_LOCAL_PASSWORD` | `KIONGA_LOCAL_LOGIN=true` next to SSO needs an explicit break-glass password |
+| Gateway exits with `must be at least 16 characters and not a development default` | Production mode rejects a short or default break-glass password; set a long random `KIONGA_LOCAL_PASSWORD` (or `KIONGA_LOCAL_PASSWORD_FILE`) |
 | Local form says "Too many failed attempts for this account" | After 5 failures each attempt waits up to 60 s; wait, then use the correct password. Failures reset after 15 minutes or on success |
 | SSO works on this machine but not from another | Ports bind to `127.0.0.1` by default, and the browser is sent to `localhost`. Set `KIONGA_BIND_ADDRESS`, `KIONGA_GATEWAY_URL`, and `DEX_ISSUER` as in [Network exposure](local.md#network-exposure) |

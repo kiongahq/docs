@@ -24,7 +24,7 @@ in the product documentation: [run locally](https://kiongahq.github.io/docs/oper
 ```mermaid
 flowchart TB
     subgraph host["Docker host (developer machine)"]
-        subgraph net["Compose network mlaiops_default"]
+        subgraph net["Compose network kionga_default"]
             gw["gateway"]
             dex["dex + glauth"]
             pg[("postgres")]
@@ -97,8 +97,8 @@ flowchart LR
 
 - the gateway and Caddy images are pinned by `sha256` digest;
 - the domain is a real DNS hostname (not `example.com`) and an ACME email is set;
-- the non-secret config file's `MLAIOPS_ALLOWED_ORIGIN` equals `https://<domain>`;
-- the required secrets (`DATABASE_URL`, `OIDC_CLIENT_SECRET`, `MLAIOPS_INTERNAL_TOKEN`,
+- the non-secret config file's `KIONGA_ALLOWED_ORIGIN` equals `https://<domain>`;
+- the required secrets (`DATABASE_URL`, `OIDC_CLIENT_SECRET`, `KIONGA_INTERNAL_TOKEN`,
   `KIONGA_CREDENTIAL_KEY`) exist as files.
 
 Only Caddy publishes ports (80 and 443). The gateway runs with
@@ -178,7 +178,7 @@ operator and worker changes before a cloud staging run.
 | Deployment | Endpoint the gateway calls |
 | --- | --- |
 | Compose | `AGENT_RUNTIME_URL` (`http://agent-runtime:9000`), one runtime for every agent, identity in request headers |
-| Kubernetes | `http://<agent-dns-name>.<MLAIOPS_AGENT_NAMESPACE>.svc`, where the name is a hash-suffixed DNS label derived from the immutable agent ID; the operator uses the same name for the Deployment and Service |
+| Kubernetes | `http://<agent-dns-name>.<KIONGA_AGENT_NAMESPACE>.svc`, where the name is a hash-suffixed DNS label derived from the immutable agent ID; the operator uses the same name for the Deployment and Service |
 
 The [first-iteration deployment plan](../plans/first-iteration-deployment.md) describes
 the proposed EKS rollout for a small invited team.

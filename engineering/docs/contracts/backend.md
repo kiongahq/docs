@@ -104,7 +104,7 @@ Deployment and Service, applies resource requirements and health probes, and own
 CPU-target HorizontalPodAutoscaler when maximum exceeds minimum; equal bounds are
 fixed-size. It leaves `Deployment.spec.replicas` to the HPA after initial creation
 and reports Ready only when at least the minimum replicas are available. The gateway
-uses the same name under `MLAIOPS_AGENT_NAMESPACE`; Compose instead sets the static
+uses the same name under `KIONGA_AGENT_NAMESPACE`; Compose instead sets the static
 `AGENT_RUNTIME_URL` shared-runtime override.
 
 Agent list responses enrich persisted desired state with bounded live probes and an
@@ -140,7 +140,7 @@ Stable platform interfaces:
 - OCI workload images;
 - Git repository and commit lineage;
 - Kafka events and OpenAI-compatible LLM egress;
-- `mlaiops.io/v1alpha1` Kionga resource APIs.
+- `kionga.dev/v1alpha1` Kionga resource APIs.
 
 Deployment adapters:
 

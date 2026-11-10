@@ -119,9 +119,9 @@ browser IDE do not need a key. A key:
   open workspaces, and cannot widen its own scope.
 
 ```bash
-export MLAIOPS_TOKEN='nxs_...'
-curl -H "Authorization: Bearer $MLAIOPS_TOKEN" \
-  "${MLAIOPS_URL:-http://localhost:8080}/api/v1/projects"
+export KIONGA_TOKEN='nxs_...'
+curl -H "Authorization: Bearer $KIONGA_TOKEN" \
+  "${KIONGA_URL:-http://localhost:8080}/api/v1/projects"
 ```
 
 Keep keys in a secret manager or your OS keychain, never in source control.
@@ -133,7 +133,7 @@ published blog posts and the `/auth/*` sign-in routes) needs a credential. Kiong
 checks credentials in this order:
 
 1. **Personal API key**: a bearer token that starts with `nxs_`.
-2. **Bearer token**: the internal service token (`MLAIOPS_INTERNAL_TOKEN`) gives
+2. **Bearer token**: the internal service token (`KIONGA_INTERNAL_TOKEN`) gives
    the `service` role. Otherwise, when `OIDC_ISSUER` is set, the token must be a
    valid RS256 JWT from that issuer (signature from `OIDC_JWKS_URL`, issuer,
    audience and expiry checked). An invalid bearer token is rejected; Kionga does
@@ -141,7 +141,7 @@ checks credentials in this order:
 3. **Local session**: the `kionga_local_session` cookie from `/auth/local/login`,
    when local sign-in is enabled (no `OIDC_ISSUER`, or `KIONGA_LOCAL_LOGIN=true`
    next to single sign-on). The configured local username gets
-   `MLAIOPS_LOCAL_ROLE` (default `admin`); other local accounts are `user`.
+   `KIONGA_LOCAL_ROLE` (default `admin`); other local accounts are `user`.
 4. **Single sign-on session**: the `kionga_session` cookie set after sign-in
    through the identity provider.
 
@@ -238,19 +238,19 @@ provisioned or suspended.
 Give the local account the `viewer` role to see the read-only console:
 
 ```bash
-export MLAIOPS_URL="${MLAIOPS_URL:-http://localhost:8080}"
-MLAIOPS_LOCAL_ROLE=viewer docker compose -f deploy/compose.yaml up -d gateway
+export KIONGA_URL="${KIONGA_URL:-http://localhost:8080}"
+KIONGA_LOCAL_ROLE=viewer docker compose -f deploy/compose.yaml up -d gateway
 curl -fsS -o /dev/null -c kionga.cookies \
-  --data-urlencode username=admin --data-urlencode password=mlaiops-local \
-  "$MLAIOPS_URL/auth/local/login"
+  --data-urlencode username=admin --data-urlencode password=kionga-local \
+  "$KIONGA_URL/auth/local/login"
 ```
 
 A write is denied and a read succeeds:
 
 ```bash
-curl -s -b kionga.cookies -o /dev/null -w "%{http_code}\n" -X POST "$MLAIOPS_URL/api/v1/projects" \
+curl -s -b kionga.cookies -o /dev/null -w "%{http_code}\n" -X POST "$KIONGA_URL/api/v1/projects" \
   -H 'Content-Type: application/json' -d '{"name":"x","template":"blank"}'   # 403
-curl -s -b kionga.cookies -o /dev/null -w "%{http_code}\n" "$MLAIOPS_URL/api/v1/projects"  # 200
+curl -s -b kionga.cookies -o /dev/null -w "%{http_code}\n" "$KIONGA_URL/api/v1/projects"  # 200
 ```
 
 To restore `admin`, recreate the gateway without the variable
@@ -259,7 +259,7 @@ To restore `admin`, recreate the gateway without the variable
 ## The internal service token
 
 Kionga's own services (the agent runtime, pipeline runner, feature materializer
-and real-time processor) authenticate with `MLAIOPS_INTERNAL_TOKEN` and get the
+and real-time processor) authenticate with `KIONGA_INTERNAL_TOKEN` and get the
 `service` role: enough to report status, and nothing more. The local stack uses
 the development value `kionga-local-service-token`. Anywhere else, generate a new
 value, for example with `openssl rand -hex 24`. With
@@ -274,7 +274,7 @@ than 24 characters or one that contains `local` or `change-me`.
 | Sign-in | Local account and single sign-on through the bundled Dex | Single sign-on through your OIDC provider; optional break-glass local account |
 | Session cookies | `HttpOnly`, `SameSite=Lax` | Also `Secure`: the local session cookie when the request arrives over HTTPS (directly or with `X-Forwarded-Proto: https`), the single sign-on cookie when `OIDC_REDIRECT_URL` is HTTPS |
 | Response headers | `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, and `X-Frame-Options: SAMEORIGIN` (except workspace pages served through Kionga) | Same |
-| CORS | `*` | Your origin, from `MLAIOPS_ALLOWED_ORIGIN` |
+| CORS | `*` | Your origin, from `KIONGA_ALLOWED_ORIGIN` |
 | Network | Ports bind to `127.0.0.1` unless `KIONGA_BIND_ADDRESS` widens them | Single server: only ports 80 and 443. Kubernetes: default-deny network policies (`deploy/config/network/`) and optional strict mTLS (`deploy/config/network-istio/strict-mtls.yaml`). |
 | Secrets | Development defaults | Mounted secret files; connections store only a reference to an environment variable |
 | LLM provider keys | Environment only | Environment only; never written to traces, logs or Kionga's records |

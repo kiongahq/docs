@@ -29,8 +29,8 @@ stable managed endpoint. The [Langflow guide](langflow.md) covers that workflow.
   `engineer`, `operator` or `admin` role.
 - **Capacity:** for a normal user, every agent counts against the compute grant
   at its maximum replicas (see [Deploy an agent](#deploy-an-agent)).
-- **For the API and SDK examples:** export `MLAIOPS_URL` and a personal API key
-  with the needed scopes as `MLAIOPS_TOKEN`. See
+- **For the API and SDK examples:** export `KIONGA_URL` and a personal API key
+  with the needed scopes as `KIONGA_TOKEN`. See
   [Authentication](../reference/api.md#authentication).
 
 ## Register the agent's tools
@@ -52,8 +52,8 @@ an agent that references an unregistered tool.
 === "API"
 
     ```bash
-    curl -s -X POST "$MLAIOPS_URL/api/v1/tools" \
-      -H "Authorization: Bearer $MLAIOPS_TOKEN" \
+    curl -s -X POST "$KIONGA_URL/api/v1/tools" \
+      -H "Authorization: Bearer $KIONGA_TOKEN" \
       -H 'Content-Type: application/json' \
       -d '{"name": "kb_search", "version": "1.0.0",
            "description": "Search the support knowledge base",
@@ -66,7 +66,7 @@ an agent that references an unregistered tool.
 The console lists registered tools under **Catalog > Tools**, but you register
 them through the API or the SDK.
 
-**Verify:** `mlaiops tool list` includes the tool.
+**Verify:** `kionga-cli tool list` includes the tool.
 
 ## Deploy an agent
 
@@ -91,8 +91,8 @@ them through the API or the SDK.
 === "API"
 
     ```bash
-    curl -s -X POST "$MLAIOPS_URL/api/v1/agents" \
-      -H "Authorization: Bearer $MLAIOPS_TOKEN" \
+    curl -s -X POST "$KIONGA_URL/api/v1/agents" \
+      -H "Authorization: Bearer $KIONGA_TOKEN" \
       -H 'Content-Type: application/json' \
       -d '{
         "project_id": "prj-123",
@@ -160,8 +160,8 @@ it as a ready runtime.
 === "API"
 
     ```bash
-    curl -s -X POST "$MLAIOPS_URL/api/v1/agents/<agent-id>/invoke" \
-      -H "Authorization: Bearer $MLAIOPS_TOKEN" \
+    curl -s -X POST "$KIONGA_URL/api/v1/agents/<agent-id>/invoke" \
+      -H "Authorization: Bearer $KIONGA_TOKEN" \
       -H 'Content-Type: application/json' \
       -d '{"message": "When are invoices issued?", "session_id": "", "user_id": "console"}'
     ```
@@ -189,14 +189,14 @@ and needs no key. To use a real provider on Compose:
 
     ```bash
     # OpenAI, or any OpenAI-compatible server behind LLM_UPSTREAM_URL
-    MLAIOPS_LLM_BACKEND=openai             # or openai-compatible
-    MLAIOPS_LLM_MODEL=gpt-4o
+    KIONGA_LLM_BACKEND=openai             # or openai-compatible
+    KIONGA_LLM_MODEL=gpt-4o
     LLM_UPSTREAM_API_KEY=sk-...                 # the provider key; the trace proxy holds it
     # LLM_UPSTREAM_URL=https://api.openai.com   # where the trace proxy forwards
 
     # or Anthropic
-    # MLAIOPS_LLM_BACKEND=anthropic
-    # MLAIOPS_LLM_MODEL=claude-sonnet-4-5
+    # KIONGA_LLM_BACKEND=anthropic
+    # KIONGA_LLM_MODEL=claude-sonnet-4-5
     # ANTHROPIC_API_KEY=sk-ant-...
     ```
 
@@ -210,7 +210,7 @@ and needs no key. To use a real provider on Compose:
 With `openai` and `openai-compatible`, every call goes through the trace proxy,
 which forwards it to the provider and publishes a trace record (agent, version,
 session, status code and duration, not the prompt or response) to the Kafka
-topic `mlaiops.llm.traces`. With `anthropic`, the runtime calls Anthropic directly, so
+topic `kionga.llm.traces`. With `anthropic`, the runtime calls Anthropic directly, so
 the trace proxy does not capture the call; Langfuse tracing and measured token
 usage still work. Keys stay in the environment and are never written to traces,
 logs or the store.
@@ -268,8 +268,8 @@ See [Trace proxy](../reference/configuration.md#trace-proxy) for every setting.
     | `GET /api/v1/agents/{id}/usage` | Total tokens, cost and active sessions |
 
 Token counts come from the model's usage metadata; Kionga never estimates them.
-Cost uses the per-1,000-token rates in `MLAIOPS_COST_PER_1K_INPUT` and
-`MLAIOPS_COST_PER_1K_OUTPUT`.
+Cost uses the per-1,000-token rates in `KIONGA_COST_PER_1K_INPUT` and
+`KIONGA_COST_PER_1K_OUTPUT`.
 
 ## Shift canary traffic {#shift-canary-traffic}
 
@@ -280,8 +280,8 @@ Cost uses the per-1,000-token rates in `MLAIOPS_COST_PER_1K_INPUT` and
 Or call the API:
 
 ```bash
-curl -s -X PUT "$MLAIOPS_URL/api/v1/agents/<agent-id>/traffic" \
-  -H "Authorization: Bearer $MLAIOPS_TOKEN" \
+curl -s -X PUT "$KIONGA_URL/api/v1/agents/<agent-id>/traffic" \
+  -H "Authorization: Bearer $KIONGA_TOKEN" \
   -H 'Content-Type: application/json' \
   -d '{"canary_weight": 10}'
 ```
@@ -313,7 +313,7 @@ starter runs before you change it.
    or `--agent custom` to let a coding agent extend the generated folder.
 3. Write your graph. The entry point must be a `build(model, checkpointer)`
    compatible callable that returns a compiled graph, a `StateGraph` or a
-   factory. Define tools in code with `mlaiops_sdk.register_tool` and pass them
+   factory. Define tools in code with `kionga.register_tool` and pass them
    to LangGraph with `langchain_tools([...])`. Register the same tools with Kionga
    (see [Register the agent's tools](#register-the-agents-tools)).
 4. Build and push an image, pinned by digest, and
@@ -327,7 +327,7 @@ starter runs before you change it.
 Short-term checkpoints and long-term memory are separate:
 
 - **Checkpoints** keep one conversation's state across turns. They use the
-  PostgreSQL URL in `MLAIOPS_CHECKPOINT_DSN`, or `DATABASE_URL` when that is not
+  PostgreSQL URL in `KIONGA_CHECKPOINT_DSN`, or `DATABASE_URL` when that is not
   set.
 - **Long-term memory** uses `AgentMemoryClient`, with `remember`, `recall` and
   `forget` over a pgvector table in the same PostgreSQL, isolated per user (pass
