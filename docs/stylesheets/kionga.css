@@ -81,4 +81,7 @@ body, .md-typeset { font-family: var(--kg-body); }
 @media (prefers-reduced-motion: reduce) { *,*::before,*::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }
 @media print { .kg-wayfinding, .kg-assistant-launch, .kg-assistant { display: none; } }
 
-.kg-release-notes { white-space: pre-wrap; overflow-wrap: anywhere; font-family: inherit; }
+.kg-release-notes { overflow-wrap: anywhere; }
+.kg-release-meta { color: var(--kg-muted); font-size: .75rem; margin-top: 0; }
+.md-typeset .kg-release-notes h4 { font-size: .8rem; margin: 1rem 0 .3rem; text-transform: uppercase; letter-spacing: .04em; color: var(--kg-muted); }
+.md-typeset .kg-release-notes ul { margin-top: 0; }

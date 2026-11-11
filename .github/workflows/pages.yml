@@ -8,7 +8,7 @@ on:
   pull_request:
   workflow_dispatch:
   schedule:
-    - cron: '23 */6 * * *'
+    - cron: '23 * * * *'  # hourly, so new component releases appear on the changelog
   release:
     types: [published]
 

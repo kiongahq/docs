@@ -11,31 +11,106 @@ MARKER = "<!-- release-notes -->"
 COMPONENT_MARKER = "<!-- component-releases -->"
 
 
+# Sections a reader of the public changelog cares about, in display order.
+# Maintenance, automation, dependency bumps and refactors stay on GitHub.
+SIGNIFICANT = {
+    "breaking changes": "Breaking changes", "features": "New features", "new features": "New features",
+    "fixes": "Fixes", "bug fixes": "Fixes", "performance": "Performance", "reverts": "Reverts",
+}
+SECTION_ORDER = ["Breaking changes", "New features", "Fixes", "Performance", "Reverts"]
+OUR_LINK = re.compile(r"https://github\.com/kiongahq/[A-Za-z0-9._/#?=&%-]+")
+INLINE = re.compile(r"\*\*(?P<bold>[^*\n]+)\*\*|`(?P<code>[^`\n]+)`|\[(?P<label>[^\]\n]+)\]\((?P<url>[^)\s]+)\)")
+COMMIT = re.compile(r",?\s*\(\[[0-9a-f]{7,40}\]\(https://github\.com/kiongahq/[^)]+/commit/[0-9a-f]+\)\)")
+
+
+def inline(text):
+    """Escape everything, then allow bold, code and links to kiongahq on GitHub."""
+    out, last = [], 0
+    for match in INLINE.finditer(text):
+        out.append(html.escape(text[last:match.start()]))
+        if match["bold"]:
+            out.append(f"<strong>{html.escape(match['bold'])}</strong>")
+        elif match["code"]:
+            out.append(f"<code>{html.escape(match['code'])}</code>")
+        elif OUR_LINK.fullmatch(match["url"]):
+            out.append(f'<a href="{html.escape(match["url"])}">{html.escape(match["label"])}</a>')
+        else:
+            out.append(html.escape(match["label"]))
+        last = match.end()
+    out.append(html.escape(text[last:]))
+    return "".join(out)
+
+
+def significant_changes(body, repository):
+    """Group release-please notes into the sections that matter, as HTML lists.
+
+    Returns None when the notes aren't in release-please form, so the caller can
+    fall back to plain paragraphs.
+    """
+    sections, current, structured = {}, None, False
+    wanted = dict(SIGNIFICANT, **({"documentation": "Documentation"} if repository == "docs" else {}))
+    for line in body.splitlines():
+        heading = re.match(r"^#{3,4}\s+(?:\W+\s*)?(.+?)\s*$", line)
+        if heading:
+            structured = True
+            current = wanted.get(heading.group(1).strip().lower())
+            continue
+        item = re.match(r"^\s*[*-]\s+(.+)$", line)
+        if item and current:
+            sections.setdefault(current, []).append(COMMIT.sub("", item.group(1)).strip())
+    if not structured:
+        return None
+    order = SECTION_ORDER + ["Documentation"]
+    return "".join(
+        f'<h4>{name}</h4>\n<ul>\n' + "".join(f"<li>{inline(text)}</li>\n" for text in sections[name]) + "</ul>\n"
+        for name in order if name in sections
+    )
+
+
+def plain_notes(body):
+    paragraphs = [p.strip() for p in re.split(r"\n\s*\n", body) if p.strip()]
+    paragraphs = [p for p in paragraphs if not re.match(r"^#{1,2}\s", p)]
+    return "".join(f"<p>{inline(p)}</p>\n" for p in paragraphs) or "<p>See the release page for details.</p>\n"
+
+
 def component_releases(data):
-    """Render release text as escaped content, never executable Markdown or HTML."""
+    """One timeline of every component's releases, newest first, with formatted notes.
+
+    Release text is escaped before the few allowed constructs are turned into
+    HTML, so a release body can't inject markup or links outside kiongahq.
+    """
     if data.get("schema_version") != 1:
         raise ValueError("Unsupported release snapshot schema")
-    sections = [f"Last refreshed: {html.escape(data['updated_at'][:10])}.\n"]
+    timeline = []
     for repository, releases in data["repositories"].items():
         if not re.fullmatch(r"[a-z0-9.-]+", repository):
             raise ValueError("Invalid repository name")
+        timeline.extend((release["published_at"], repository, release) for release in releases)
+    sections = [f"Last refreshed: {html.escape(data['updated_at'][:10])}.\n"]
+    if not timeline:
+        sections.append("No published release yet. Development commits and tags are not release announcements.\n")
+    for published, repository, release in sorted(timeline, key=lambda item: item[0], reverse=True):
         url = f"https://github.com/kiongahq/{repository}/releases"
-        sections.append(f"## {repository}\n\n[All releases]({url})\n")
-        if not releases:
-            sections.append("No published release yet. Development commits and tags are not release announcements.\n")
-        for release in releases:
-            title = html.escape(release["name"])
-            link = url + "/tag/" + quote(release["tag"], safe="")
-            date = html.escape(release["published_at"][:10])
-            status = "Preview" if release["prerelease"] else "Release"
-            notes = html.escape(release["body"] or "See the release page for details.")
-            assets = ", ".join(html.escape(name) for name in release["assets"])
-            sections.append(
-                f'<section class="kg-release">\n<h3><a href="{link}">{title}</a></h3>\n'
-                f'<p>{status} · {date}</p>\n<pre class="kg-release-notes">{notes}</pre>\n'
-                f'<p>Attached files: {assets or "None; check the publishing workflow before installing."}</p>\n'
-                '</section>\n'
-            )
+        link = url + "/tag/" + quote(release["tag"], safe="")
+        status = "Preview" if release["prerelease"] else "Release"
+        notes = significant_changes(release["body"], repository)
+        if notes is None:
+            notes = plain_notes(release["body"])
+        elif not notes:
+            notes = "<p>Maintenance only: no user-facing changes.</p>\n"
+        assets = ", ".join(html.escape(name) for name in release["assets"])
+        # A Markdown heading, so the release is in the page's table of contents.
+        # Only the repository (validated above) and a tag reduced to safe characters reach it.
+        safe_tag = re.sub(r"[^A-Za-z0-9.+-]", "-", release["tag"])
+        sections.append(
+            f"## {repository} {safe_tag} {{#{repository}-{safe_tag} .kg-release-title}}\n\n"
+            f'<div class="kg-release" markdown="0">\n'
+            f'<p class="kg-release-meta">{status} · {html.escape(published[:10])} · '
+            f'<a href="{link}">Release page</a>' + (f" · Files: {assets}" if assets else "") + "</p>\n"
+            f'<div class="kg-release-notes">\n{notes}</div>\n</div>\n'
+        )
+    links = " · ".join(f"[{name}](https://github.com/kiongahq/{name}/releases)" for name in data["repositories"])
+    sections.append(f"## All releases by component\n\n{links}\n")
     return "\n".join(sections)
 
 
