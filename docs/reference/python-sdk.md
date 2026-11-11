@@ -369,6 +369,7 @@ or `limits`.
 | `resume_team_run(run_id)` | `TeamRun` | `POST /api/v1/team-runs/{id}/resume` |
 | `team_run_events(run_id, *, after=0, follow=False, poll_interval=1.0)` | iterator of `TeamEvent` | `GET /api/v1/team-runs/{id}/events?after=` |
 | `wait_for_team_run(run_id, *, timeout=3600.0, poll_interval=2.0)` | `TeamRun` | `GET /api/v1/team-runs/{id}`, repeated |
+| `stream_team_run_events(run_id, *, after=0)` | iterator of `TeamEvent` | `GET /api/v1/team-runs/{id}/events/stream` |
 
 - **Saving:** `update_agent_definition` and `update_agent_team` send the revision you
   read. If someone saved after you, they raise `ConflictError` with code
@@ -380,11 +381,49 @@ or `limits`.
   `PermissionDeniedError`.
 - **Events:** `team_run_events` reads every page. With `follow=True` it keeps polling
   until the log is complete, so it never misses `run.finished`.
+- **Streaming:** `stream_team_run_events` follows events over server-sent events and
+  stops at the gateway's `end` event. The gateway closes the stream after five
+  minutes, so the SDK reopens it from the last event, without gaps or repeats.
 - **Waiting:** `wait_for_team_run` returns when the run succeeds, fails or is
   cancelled, and otherwise raises `TeamRunTimeout`, whose `run` is the last state.
 
 The team models keep fields the SDK doesn't name, so nothing the gateway returns is
 lost.
+
+### Features, storage and logs
+
+| Method | Returns | Gateway call |
+| --- | --- | --- |
+| `list_features()` | `list[FeatureView]` | `GET /api/v1/features` |
+| `feature_views()` | `list[dict]` | `GET /api/v1/features/views` |
+| `feature_stores()` | `list[dict]` | `GET /api/v1/features/stores` |
+| `feature_versions(name)` | `list[FeatureView]` | `GET /api/v1/features/{name}/versions` |
+| `feature_lineage(name)` | `list[FeatureMaterialization]` | `GET /api/v1/features/{name}/lineage` |
+| `apply_feature_view(name, *, entity, fields, source, tags=None, ttl_seconds=0)` | `FeatureView` | `POST /api/v1/features` |
+| `list_buckets()` | `list` | `GET /api/v1/storage/buckets` |
+| `list_storage_objects(bucket, *, prefix="")` | `dict` with `objects` and `prefixes` | `GET /api/v1/storage/objects` |
+| `walk_storage(bucket, prefix="")` | iterator of object `dict` | `GET /api/v1/storage/objects`, once per prefix |
+| `preview_storage_object(bucket, key)` | `dict` | `GET /api/v1/storage/object` |
+| `query_logs(**filters, after=0, before=0, limit=0, newest_first=False)` | `list[LogEntry]` | `GET /api/v1/logs` |
+| `iter_logs(**filters, follow=False, poll_interval=2.0, page_size=500)` | iterator of `LogEntry` | `GET /api/v1/logs`, repeated |
+| `stream_logs(**filters, after=0)` | iterator of `LogEntry` | `GET /api/v1/logs/stream` |
+
+The log `filters` are `project_id`, `run_id`, `pipeline_id`, `node`, `sources` (any of
+`runner`, `engine`, `platform`, `k8s` and `audit`), `severities` (any of `debug`,
+`info`, `warn` and `error`), `text`, and `since` and `until`, which must be
+timezone-aware `datetime` values. The SDK raises `ValueError` for anything else,
+before sending, because the gateway would ignore it and return more than you asked for.
+
+- **Paging:** `iter_logs` reads oldest first. It stops on an empty page, so a short
+  page never ends the read early. `page_size` must be 1 to 1000, because the
+  gateway resets a larger limit to 200.
+- **Following:** `iter_logs(follow=True)` polls for new lines. `stream_logs` uses
+  server-sent events instead, and reconnects from the last entry if the connection
+  drops.
+- **Stream errors:** if the gateway reports a failed query inside the stream,
+  `stream_logs` raises `StreamError`.
+- **Feature values:** these methods manage the feature catalog. To read the values
+  an agent serves from, use `AgentMemoryClient.get_entity_features`.
 
 ### Response models
 
@@ -414,6 +453,9 @@ All methods return Pydantic models from `kionga` (also importable from
 | `TeamRun` | `id`, `team_id`, `project_id`, `status`, `usage`, `resume_count`, and `finished` (true once `succeeded`, `failed` or `cancelled`) |
 | `TeamWorker` | `id`, `status`, `role`, `agent`, `task`, `report`, `last_error` |
 | `TeamEvent` | `seq`, `type` |
+| `FeatureView` | `name`, `id`, `version`, `sha256`, `entity`, `fields`, `tags`, `source`, `ttl_seconds` |
+| `FeatureMaterialization` | `id`, `view`, `view_version`, `run_id`, `source_dataset`, `offline_uri`, `entity_count`, `status`, `created_at` |
+| `LogEntry` | `sequence`, `ts`, `source`, `severity`, `message`, `project_id`, `pipeline_id`, `run_id`, `node`, `attempt`, `context` |
 
 ## Tracing
 
