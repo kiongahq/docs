@@ -320,3 +320,32 @@ def test_inline_kionga_topics_domains_and_attributes_are_not_sdk(workspace: Path
         carry `kionga.run_id`. `kionga.Projects` is a typo, as is `kionga.nothing.x`.
         """)
     assert values(findings) == ["kionga.Projects"]
+
+
+def test_sdk_methods_from_mixins_in_private_subpackages_are_checked(workspace: Path) -> None:
+    sdk = workspace / "sdk-python" / "kionga"
+    write(sdk / "_sync" / "__init__.py", "")
+    write(sdk / "_sync" / "teams.py", """
+        class TeamsAPI:
+            def start_team_run(self, team_id, input, *, allow_side_effects=False): ...
+    """)
+    write(sdk / "_sync" / "client.py", """
+        from .teams import TeamsAPI
+        class KiongaClient(TeamsAPI):
+            def health(self): ...
+    """)
+    write(sdk / "client.py", "from ._sync.client import KiongaClient\n")
+    findings = check(workspace, """
+        ```python
+        from kionga.client import KiongaClient
+        with KiongaClient() as client:
+            client.health()
+            client.start_team_run("t", "go", allow_side_effects=True)
+            client.start_team_run("t", "go", allow_side_effect=True)
+            client.stop_team_run("t")
+        ```
+        """, sdk=None)
+    assert sorted(f.message for f in findings) == [
+        "KiongaClient has no member 'stop_team_run'",
+        "KiongaClient.start_team_run() has no parameter 'allow_side_effect'",
+    ]
