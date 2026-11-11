@@ -139,6 +139,24 @@ KiongaClient(
 | `allow_insecure_http` | `True` sends the key over plain HTTP to any host and logs a warning. `False` refuses even when `KIONGA_ALLOW_INSECURE_HTTP` is set. Defaults to that variable. |
 | `retry` | When to retry. Defaults to `RetryPolicy()`. See [Errors and retries](#errors-and-retries). |
 
+### Async client
+
+`AsyncKiongaClient` takes the same arguments and has every method of
+`KiongaClient`, as coroutines. Methods that return iterators, such as
+`team_run_events`, `iter_logs`, `walk_storage` and the `stream_` methods, return
+async iterators. It returns the same models and raises the same errors.
+
+```python
+from kionga import AsyncKiongaClient
+
+async with AsyncKiongaClient() as client:
+    run = await client.start_team_run(team_id, "Fix the failing date test")
+    async for event in client.stream_team_run_events(run.id):
+        print(event.seq, event.type)
+```
+
+Close it with `async with`, or `await client.aclose()`.
+
 ### Errors and retries {#errors-and-retries}
 
 An error response raises a subclass of `KiongaAPIError`, which also subclasses
