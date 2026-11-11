@@ -10,11 +10,11 @@ resources are scoped to a project.
 
 ## Agent definition
 
-Route: `/api/v1/agent-definitions`. IDs start with `agd-`.
+Route: `/api/v1/agent-definitions`. IDs start with `adf-`.
 
 ```json
 {
-  "id": "agd-...",
+  "id": "adf-...",
   "project_id": "p",
   "revision": 1,
   "name": "bug-fixer",
@@ -48,17 +48,17 @@ Every save increments `revision`. Kionga keeps the last 20 revisions.
 
 ## Team
 
-Route: `/api/v1/agent-teams`. IDs start with `agt-`.
+Route: `/api/v1/agent-teams`. IDs start with `atm-`.
 
 ```json
 {
-  "id": "agt-...",
+  "id": "atm-...",
   "project_id": "p",
   "revision": 1,
   "name": "code-change",
   "description": "...",
   "coordinator": {"instructions": "...", "model": "llm"},
-  "members": ["agd-..."],
+  "members": ["adf-..."],
   "brief": "Shared rules appended to every agent's system prompt.",
   "limits": {"max_workers_total": 20, "max_concurrent_workers": 5, "max_tokens": 5000000, "max_seconds": 14400}
 }

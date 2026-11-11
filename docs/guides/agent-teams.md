@@ -92,7 +92,7 @@ To start one through the API:
 curl -X POST http://localhost:8080/api/v1/team-runs \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"team_id": "agt-...", "input": "Fix the failing date test", "allow_side_effects": false}'
+  -d '{"team_id": "atm-...", "input": "Fix the failing date test", "allow_side_effects": false}'
 ```
 
 The run keeps a snapshot of the team and its member definitions, so later edits do

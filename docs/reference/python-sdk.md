@@ -124,6 +124,8 @@ KiongaClient(
     actor: str | None = None,
     timeout: float = 10.0,
     transport: httpx.BaseTransport | None = None,
+    allow_insecure_http: bool | None = None,
+    retry: RetryPolicy | None = None,
 )
 ```
 
@@ -135,6 +137,65 @@ KiongaClient(
 | `timeout` | Request timeout in seconds. `invoke_agent` has its own timeout. |
 | `transport` | A custom `httpx` transport, for example for tests. |
 | `allow_insecure_http` | `True` sends the key over plain HTTP to any host and logs a warning. `False` refuses even when `KIONGA_ALLOW_INSECURE_HTTP` is set. Defaults to that variable. |
+| `retry` | When to retry. Defaults to `RetryPolicy()`. See [Errors and retries](#errors-and-retries). |
+
+### Async client
+
+`AsyncKiongaClient` takes the same arguments and has every method of
+`KiongaClient`, as coroutines. Methods that return iterators, such as
+`team_run_events`, `iter_logs`, `walk_storage` and the `stream_` methods, return
+async iterators. It returns the same models and raises the same errors.
+
+```python
+from kionga import AsyncKiongaClient
+
+async with AsyncKiongaClient() as client:
+    run = await client.start_team_run(team_id, "Fix the failing date test")
+    async for event in client.stream_team_run_events(run.id):
+        print(event.seq, event.type)
+```
+
+Close it with `async with`, or `await client.aclose()`.
+
+### Errors and retries {#errors-and-retries}
+
+An error response raises a subclass of `KiongaAPIError`, which also subclasses
+`httpx.HTTPStatusError`, so existing `except` clauses keep working.
+
+| Error | Raised for |
+| --- | --- |
+| `BadRequestError` | 400 |
+| `AuthenticationError` | 401 |
+| `PermissionDeniedError` | 403 |
+| `NotFoundError` | 404 |
+| `ConflictError` | 409, for example `revision_conflict` |
+| `ValidationError` | 422 |
+| `RateLimitError` | 429. `retry_after` holds the wait in seconds, when the gateway sent one. |
+| `ServerError` | Any 5xx |
+| `KiongaAPIError` | Any other error status |
+| `KiongaConnectionError` | The gateway could not be reached |
+| `KiongaTimeoutError` | The gateway did not answer in time. A subclass of `KiongaConnectionError`. |
+
+Every `KiongaAPIError` has `status_code`, `code` (the gateway's machine-readable
+error), `message`, `request_id` and `response`. All errors subclass `KiongaError`.
+
+The client retries a 429, 502, 503 or 504 response, and a failed connection, with
+jittered exponential backoff. When the gateway sends `Retry-After`, it waits that
+long instead, up to `max_backoff`. It repeats a request only when doing so can't
+run the work twice:
+
+- GET, HEAD, OPTIONS, PUT and DELETE;
+- a POST or PATCH with an `Idempotency-Key` header;
+- any request whose connection failed before it was sent;
+- any request answered with 429, which the gateway sends before doing any work.
+
+A POST that timed out is not repeated, because it may have run.
+
+```python
+RetryPolicy(max_attempts=3, backoff=0.5, max_backoff=8.0, statuses=frozenset({429, 502, 503, 504}))
+```
+
+`RetryPolicy(max_attempts=1)` turns retries off.
 
 ### Plain HTTP {#plain-http}
 
@@ -296,6 +357,92 @@ Publishing requires a Kubernetes-managed runtime. See the
 agent can call it. Creating and testing connections requires the `admin` or
 `operator` role.
 
+### Agent teams
+
+See the [agent teams reference](agent-teams.md) for fields and limits. `fields`
+and `changes` are the documented content fields, such as `instructions`, `tools`
+or `limits`.
+
+| Method | Returns | Gateway call |
+| --- | --- | --- |
+| `list_agent_definitions(project_id="")` | `list[AgentDefinition]` | `GET /api/v1/agent-definitions` |
+| `get_agent_definition(definition_id)` | `AgentDefinition` | `GET /api/v1/agent-definitions/{id}` |
+| `create_agent_definition(project_id, name, **fields)` | `AgentDefinition` | `POST /api/v1/agent-definitions` |
+| `update_agent_definition(definition, **changes)` | `AgentDefinition` | `PUT /api/v1/agent-definitions/{id}` |
+| `delete_agent_definition(definition_id)` | `None` | `DELETE /api/v1/agent-definitions/{id}` |
+| `agent_definition_revisions(definition_id)` | `list[dict]` | `GET /api/v1/agent-definitions/{id}/revisions` |
+| `list_agent_teams(project_id="")` | `list[AgentTeam]` | `GET /api/v1/agent-teams` |
+| `get_agent_team(team_id)` | `AgentTeam` | `GET /api/v1/agent-teams/{id}` |
+| `create_agent_team(project_id, name, members, **fields)` | `AgentTeam` | `POST /api/v1/agent-teams` |
+| `update_agent_team(team, **changes)` | `AgentTeam` | `PUT /api/v1/agent-teams/{id}` |
+| `delete_agent_team(team_id)` | `None` | `DELETE /api/v1/agent-teams/{id}` |
+| `agent_team_revisions(team_id)` | `list[dict]` | `GET /api/v1/agent-teams/{id}/revisions` |
+| `start_team_run(team_id, input, *, allow_side_effects=False, idempotency_key="")` | `TeamRun` | `POST /api/v1/team-runs` |
+| `list_team_runs(team_id="", project_id="")` | `list[TeamRun]` | `GET /api/v1/team-runs` |
+| `get_team_run(run_id)` | `TeamRun` | `GET /api/v1/team-runs/{id}` |
+| `team_run_workers(run_id)` | `list[TeamWorker]` | `GET /api/v1/team-runs/{id}/workers` |
+| `get_team_worker(run_id, worker_id)` | `TeamWorker` | `GET /api/v1/team-runs/{id}/workers/{wid}` |
+| `send_team_message(run_id, to, text)` | `dict` | `POST /api/v1/team-runs/{id}/messages` |
+| `cancel_team_run(run_id)` | `TeamRun` | `POST /api/v1/team-runs/{id}/cancel` |
+| `resume_team_run(run_id)` | `TeamRun` | `POST /api/v1/team-runs/{id}/resume` |
+| `team_run_events(run_id, *, after=0, follow=False, poll_interval=1.0)` | iterator of `TeamEvent` | `GET /api/v1/team-runs/{id}/events?after=` |
+| `wait_for_team_run(run_id, *, timeout=3600.0, poll_interval=2.0)` | `TeamRun` | `GET /api/v1/team-runs/{id}`, repeated |
+| `stream_team_run_events(run_id, *, after=0)` | iterator of `TeamEvent` | `GET /api/v1/team-runs/{id}/events/stream` |
+
+- **Saving:** `update_agent_definition` and `update_agent_team` send the revision you
+  read. If someone saved after you, they raise `ConflictError` with code
+  `revision_conflict`, and `error.response.json()["latest"]` holds the current version.
+- **Starting a run:** `start_team_run` always sends an idempotency key, so a retried
+  start returns the same run. Pass your own key to deduplicate across processes.
+- **Who can start a run:** only people. A personal API key works. The workspace
+  credential that a Kionga notebook uses, and an agent run's credential, get
+  `PermissionDeniedError`.
+- **Events:** `team_run_events` reads every page. With `follow=True` it keeps polling
+  until the log is complete, so it never misses `run.finished`.
+- **Streaming:** `stream_team_run_events` follows events over server-sent events and
+  stops at the gateway's `end` event. The gateway closes the stream after five
+  minutes, so the SDK reopens it from the last event, without gaps or repeats.
+- **Waiting:** `wait_for_team_run` returns when the run succeeds, fails or is
+  cancelled, and otherwise raises `TeamRunTimeout`, whose `run` is the last state.
+
+The team models keep fields the SDK doesn't name, so nothing the gateway returns is
+lost.
+
+### Features, storage and logs
+
+| Method | Returns | Gateway call |
+| --- | --- | --- |
+| `list_features()` | `list[FeatureView]` | `GET /api/v1/features` |
+| `feature_views()` | `list[dict]` | `GET /api/v1/features/views` |
+| `feature_stores()` | `list[dict]` | `GET /api/v1/features/stores` |
+| `feature_versions(name)` | `list[FeatureView]` | `GET /api/v1/features/{name}/versions` |
+| `feature_lineage(name)` | `list[FeatureMaterialization]` | `GET /api/v1/features/{name}/lineage` |
+| `apply_feature_view(name, *, entity, fields, source, tags=None, ttl_seconds=0)` | `FeatureView` | `POST /api/v1/features` |
+| `list_buckets()` | `list` | `GET /api/v1/storage/buckets` |
+| `list_storage_objects(bucket, *, prefix="")` | `dict` with `objects` and `prefixes` | `GET /api/v1/storage/objects` |
+| `walk_storage(bucket, prefix="")` | iterator of object `dict` | `GET /api/v1/storage/objects`, once per prefix |
+| `preview_storage_object(bucket, key)` | `dict` | `GET /api/v1/storage/object` |
+| `query_logs(**filters, after=0, before=0, limit=0, newest_first=False)` | `list[LogEntry]` | `GET /api/v1/logs` |
+| `iter_logs(**filters, follow=False, poll_interval=2.0, page_size=500)` | iterator of `LogEntry` | `GET /api/v1/logs`, repeated |
+| `stream_logs(**filters, after=0)` | iterator of `LogEntry` | `GET /api/v1/logs/stream` |
+
+The log `filters` are `project_id`, `run_id`, `pipeline_id`, `node`, `sources` (any of
+`runner`, `engine`, `platform`, `k8s` and `audit`), `severities` (any of `debug`,
+`info`, `warn` and `error`), `text`, and `since` and `until`, which must be
+timezone-aware `datetime` values. The SDK raises `ValueError` for anything else,
+before sending, because the gateway would ignore it and return more than you asked for.
+
+- **Paging:** `iter_logs` reads oldest first. It stops on an empty page, so a short
+  page never ends the read early. `page_size` must be 1 to 1000, because the
+  gateway resets a larger limit to 200.
+- **Following:** `iter_logs(follow=True)` polls for new lines. `stream_logs` uses
+  server-sent events instead, and reconnects from the last entry if the connection
+  drops.
+- **Stream errors:** if the gateway reports a failed query inside the stream,
+  `stream_logs` raises `StreamError`.
+- **Feature values:** these methods manage the feature catalog. To read the values
+  an agent serves from, use `AgentMemoryClient.get_entity_features`.
+
 ### Response models
 
 All methods return Pydantic models from `kionga` (also importable from
@@ -319,6 +466,14 @@ All methods return Pydantic models from `kionga` (also importable from
 | `Connection` | `id`, `name`, `type`, `endpoint`, `secret_ref`, `status`, `created_at`, `checked_at`, `message` |
 | `Readiness` | `percent`, `ready`, `items` (each with `key`, `label`, `status`, `description`, `action`) |
 | `AuditEvent` | `id`, `action`, `resource`, `resource_id`, `actor`, `metadata`, `created_at` |
+| `AgentDefinition` | `id`, `project_id`, `revision`, `name`, `description`, `instructions`, `model`, `tools`, `workspace`, `limits` |
+| `AgentTeam` | `id`, `project_id`, `revision`, `name`, `description`, `coordinator`, `members`, `brief`, `limits` |
+| `TeamRun` | `id`, `team_id`, `project_id`, `status`, `usage`, `resume_count`, and `finished` (true once `succeeded`, `failed` or `cancelled`) |
+| `TeamWorker` | `id`, `status`, `role`, `agent`, `task`, `report`, `last_error` |
+| `TeamEvent` | `seq`, `type` |
+| `FeatureView` | `name`, `id`, `version`, `sha256`, `entity`, `fields`, `tags`, `source`, `ttl_seconds` |
+| `FeatureMaterialization` | `id`, `view`, `view_version`, `run_id`, `source_dataset`, `offline_uri`, `entity_count`, `status`, `created_at` |
+| `LogEntry` | `sequence`, `ts`, `source`, `severity`, `message`, `project_id`, `pipeline_id`, `run_id`, `node`, `attempt`, `context` |
 
 ## Tracing
 
