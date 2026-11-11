@@ -224,6 +224,7 @@ class Module:
     classes: dict[str, set[str]]
     functions: dict[str, Signature] = field(default_factory=dict)
     methods: dict[str, dict[str, Signature]] = field(default_factory=dict)
+    bases: dict[str, set[str]] = field(default_factory=dict)
 
 
 PYDANTIC_MEMBERS = {
@@ -275,6 +276,7 @@ def parse_sdk_module(path: Path) -> Module:
                 members |= PYDANTIC_MEMBERS
             module.classes[node.name] = members
             module.methods[node.name] = methods
+            module.bases[node.name] = {b.split(".")[-1] for b in bases}
         elif isinstance(node, (ast.Import, ast.ImportFrom)):
             names.update((alias.asname or alias.name).split(".")[0] for alias in node.names)
         elif isinstance(node, ast.Assign):
@@ -343,8 +345,10 @@ def load_facts(root: Path, docs_repo: Path = DOCS_REPO) -> Facts:
 
     sdk = root / "sdk-python" / "kionga"
     if sdk.is_dir():
-        for path in sorted(sdk.glob("*.py")):
-            dotted = "kionga" if path.stem == "__init__" else f"kionga.{path.stem}"
+        for path in sorted(sdk.rglob("*.py")):
+            # The client lives in private subpackages (kionga/_async, kionga/_sync).
+            parts = path.relative_to(sdk).with_suffix("").parts
+            dotted = ".".join(("kionga", *(p for p in parts if p != "__init__")))
             facts.sdk[dotted] = parse_sdk_module(path)
     return facts
 
@@ -644,6 +648,22 @@ def sdk_index(facts: Facts) -> SDKIndex:
         index.classes.update(module.classes)
         index.methods.update(module.methods)
         index.functions.update(module.functions)
+    # A class has its bases' members: the client is assembled from mixins.
+    bases: dict[str, set[str]] = {}
+    for module in facts.sdk.values():
+        bases.update(module.bases)
+
+    def inherited(name: str, seen: frozenset[str] = frozenset()) -> tuple[set[str], dict[str, Signature]]:
+        members, methods = set(index.classes.get(name, set())), {}
+        for base in bases.get(name, set()) - seen - {name}:
+            base_members, base_methods = inherited(base, seen | {name})
+            members |= base_members
+            methods.update(base_methods)
+        methods.update(index.methods.get(name, {}))
+        return members, methods
+
+    for name in list(index.classes):
+        index.classes[name], index.methods[name] = inherited(name)
     return index
 
 
