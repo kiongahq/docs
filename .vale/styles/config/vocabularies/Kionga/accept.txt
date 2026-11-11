@@ -119,3 +119,6 @@ NOOA
 [Ss]ubflows?
 [Gg]roundedness
 gVisor
+[Ii]dempotency
+deduplicate
+jittered
