@@ -15,18 +15,23 @@ the full design, see the
 [architecture in the engineering handbook](https://kiongahq.github.io/docs/engineering-access/).
 
 ```mermaid
-flowchart LR
-    subgraph clients["You"]
+---
+config: {"flowchart":{"nodeSpacing":48,"rankSpacing":72,"padding":18,"curve":"linear","useMaxWidth":false},"sequence":{"actorMargin":56,"messageMargin":40,"boxMargin":16,"noteMargin":16,"mirrorActors":false,"useMaxWidth":false,"wrap":true,"width":180,"messageFontSize":15,"noteFontSize":14}}
+---
+flowchart TB
+    accTitle: How Kionga works
+    accDescr: System components grouped by responsibility; arrows show their dependencies.
+    subgraph clients["01 · Build and connect"]
         console["Console<br/>(browser)"]
         code["SDK, CLI,<br/>scripts"]
         ws["Jupyter workbench<br/>and browser IDE"]
     end
 
-    subgraph kionga["Kionga control plane"]
+    subgraph kionga["02 · Authorize and coordinate"]
         api["Console and API"]
     end
 
-    subgraph engines["Execution engines"]
+    subgraph engines["03 · Execute"]
         prefect["Pipelines<br/>(Prefect)"]
         serving["Model serving<br/>(MLflow model servers)"]
         agents["Agent runtime<br/>(LangGraph)"]
@@ -34,7 +39,7 @@ flowchart LR
         stream["Real-time processor<br/>(Kafka consumers)"]
     end
 
-    subgraph data["Data"]
+    subgraph data["04 · Store and observe"]
         pg[("PostgreSQL")]
         obj[("Object storage")]
         redis[("Redis<br/>online features")]
@@ -60,6 +65,14 @@ flowchart LR
     stream --> kafka
     stream --> redis
     mlflow --> obj
+    class api core
+    class kafka,mlflow,obj,pg,redis data
+    class agents,functions,prefect,serving,stream runtime
+
+    classDef core fill:#294d70,stroke:#294d70,color:#ffffff,stroke-width:2px
+    classDef data fill:#edf5f2,stroke:#739b8e,color:#234c40
+    classDef runtime fill:#f2eff6,stroke:#9a8aae,color:#514266
+    classDef external fill:#f5f7fa,stroke:#94a3b8,color:#334155,stroke-dasharray:4 3
 ```
 
 ## The console and API

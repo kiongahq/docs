@@ -71,3 +71,17 @@ site hook. `docs-test` also needs Node.js 22 for the assistant tests.
 
 The [release process](https://github.com/kiongahq/engineering-docs/blob/main/docs/contributing/releases.md) covers component
 versions, package publication, PyPI setup and the aggregated product changelog.
+
+
+## Diagram design
+
+Keep architecture diagrams as Mermaid blocks in Markdown. Use short labels,
+consistent reading direction, and subgraphs for meaningful system boundaries.
+Use `core`, `runtime`, and `data` classes to emphasize responsibilities; labels
+must convey the same meaning without color. Shared styling lives in
+`docs/stylesheets/diagrams.css` and supports both color schemes.
+
+Keep one question per diagram. Split dense views into focused diagrams rather
+than shrinking text. Sequence diagrams use numbered messages and generous
+spacing. Preserve arrow directions, optional paths, and trust boundaries when
+changing layouts. Include `accTitle` and `accDescr` for assistive technology.

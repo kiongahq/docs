@@ -1,0 +1,66 @@
+/* Architecture diagrams: quiet surfaces, readable labels, semantic emphasis. */
+.md-typeset .mermaid {
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  overflow-x: auto;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 12px;
+  background: var(--md-default-bg-color);
+}
+.md-typeset .mermaid svg { display: block; margin-inline: auto; }
+.md-typeset .mermaid .nodeLabel { line-height: 1.5; }
+.md-typeset .mermaid .cluster rect {
+  fill: var(--md-code-bg-color) !important;
+  stroke: var(--md-default-fg-color--lightest) !important;
+  rx: 10px;
+}
+.md-typeset .mermaid .cluster-label { font-weight: 650; }
+.md-typeset .mermaid .node rect { rx: 6px; }
+.md-typeset .mermaid .node.core > :is(rect, polygon, path) {
+  fill: #294d70 !important; stroke: #294d70 !important;
+}
+.md-typeset .mermaid .node.core .nodeLabel,
+.md-typeset .mermaid .node.core .nodeLabel p { color: #fff !important; }
+.md-typeset .mermaid .node.data > :is(rect, polygon, path) {
+  fill: var(--diagram-data-bg) !important; stroke: var(--diagram-data-border) !important;
+}
+.md-typeset .mermaid .node.runtime > :is(rect, polygon, path) {
+  fill: var(--diagram-runtime-bg) !important; stroke: var(--diagram-runtime-border) !important;
+}
+.md-typeset .mermaid {
+  --diagram-data-bg: #edf5f2; --diagram-data-border: #739b8e;
+  --diagram-runtime-bg: #f2eff6; --diagram-runtime-border: #9a8aae;
+}
+[data-md-color-scheme="slate"] .md-typeset .mermaid {
+  --diagram-data-bg: #233d38; --diagram-data-border: #709c8f;
+  --diagram-runtime-bg: #363044; --diagram-runtime-border: #9a8aae;
+}
+@media (max-width: 600px) {
+  .md-typeset .mermaid { padding: .75rem; }
+  .md-typeset .mermaid svg { min-width: 640px; }
+}
+@media print {
+  .md-typeset .mermaid { padding: 0; border: 0; overflow: visible; }
+  .md-typeset .mermaid svg { min-width: 0; max-width: 100%; }
+}
+
+/* Native text labels and sequence elements inherit the active documentation palette. */
+.md-typeset .mermaid .node:is(.data, .runtime, .external) .nodeLabel,
+.md-typeset .mermaid .node:is(.data, .runtime, .external) .nodeLabel p {
+  color: var(--md-default-fg-color) !important;
+}
+.md-typeset .mermaid .node.external > :is(rect, polygon, path) {
+  fill: var(--md-code-bg-color) !important;
+  stroke: var(--md-default-fg-color--light) !important;
+}
+.md-typeset .mermaid .actor { font-weight: 600; }
+.md-typeset .mermaid .actor-line { opacity: .45; }
+.md-typeset .mermaid .messageText { font-size: 15px !important; }
+.md-typeset .mermaid .noteText { font-size: 14px !important; }
+.md-typeset .mermaid .edgeLabel { font-size: 13px; }
+
+/* Preserve readable type in dense maps rather than shrinking to page width. */
+.md-typeset .mermaid svg { max-width: none !important; }
+@media print {
+  .md-typeset .mermaid svg { max-width: 100% !important; }
+}
