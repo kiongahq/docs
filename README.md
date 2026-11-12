@@ -1,13 +1,13 @@
 # Kionga documentation
 
-Source for Kionga's two documentation sites, built with
+Source for Kionga's public product documentation, built with
 [MkDocs Material](https://squidfunk.github.io/mkdocs-material/) and published from
-`main` to GitHub Pages.
+`main` to [GitHub Pages](https://kiongahq.github.io/docs/).
 
-| Site | Source | Published at | For |
-| --- | --- | --- | --- |
-| Product documentation | `docs/`, `mkdocs.yml` | <https://kiongahq.github.io/docs/> | People who install, use, administer and operate Kionga |
-| Engineering handbook | `engineering/docs/`, `engineering/mkdocs.yml` | <https://kiongahq.github.io/docs/engineering/> | People who change Kionga's code |
+The engineering handbook lives in the private
+[kiongahq/engineering-docs](https://github.com/kiongahq/engineering-docs) repository.
+It is available to Kionga organization members and is not included in this site's
+HTML, search index, or deployment artifact.
 
 Kionga is a self-hosted, open-source platform for machine learning, data and AI
 agents. Its repositories use the [MIT License](LICENCE); third-party components keep
@@ -18,8 +18,7 @@ their own licenses.
 ```bash
 make docs-install            # MkDocs and plugins from requirements-docs.txt
 make docs-serve              # product site, http://127.0.0.1:8000
-make docs-serve-engineering  # handbook, http://127.0.0.1:8001
-make docs-build              # strict build of both sites
+make docs-build              # strict product build and publication boundary check
 make docs-lint               # Vale, Google developer documentation style
 make docs-check              # references checked against the sibling checkouts
 make docs-test               # reference checker and legacy URL tests (pytest)
@@ -31,7 +30,7 @@ default). Clone them beside this one with `make -C ../deploy workspace`.
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). The full standard is the handbook's
-[documentation standard](https://kiongahq.github.io/docs/engineering/contributing/documentation/).
+[documentation standard](https://github.com/kiongahq/engineering-docs/blob/main/docs/contributing/documentation.md).
 
 ## Documentation assistant
 
@@ -63,16 +62,14 @@ back to documentation search. The site does not include or provision this servic
 
 The documentation interface is implemented in React under `ui/src/`. Run
 `make docs-ui` to build the navigation and assistant bundle before serving the
-site directly with MkDocs. `make docs-build`, `make docs-serve` and
-`make docs-serve-engineering` build the interface automatically. Public settings
+site directly with MkDocs. `make docs-build` and `make docs-serve` build the interface automatically. Public settings
 are written into the generated site by `scripts/site_hooks.py`. Presentation
-lives in `docs/stylesheets/kionga.css`; the engineering handbook shares that
-stylesheet and the self-hosted font assets. Keep both copies identical.
+lives in `docs/stylesheets/kionga.css`; the private handbook maintains its own build and assets.
 
 ## Versions and changelog
 
-The [changelog](https://kiongahq.github.io/docs/changelog/) publishes documentation
-release notes from `CHANGELOG.md`. Release Please proposes semantic version bumps
+The [release notes page](https://kiongahq.github.io/docs/changelog/) combines published component and documentation releases in one timeline.
+The header link beside GitHub opens this page; legacy release URLs redirect here. Release Please proposes semantic version bumps
 from conventional commits and creates a tag and GitHub release when the release
 pull request is merged. The header displays `version.txt`, or **Development**
 before the first release. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and

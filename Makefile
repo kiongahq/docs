@@ -1,4 +1,4 @@
-.PHONY: docs-install docs-serve docs-serve-engineering docs-build docs-check docs-lint docs-diagrams docs-test docs-ui
+.PHONY: docs-install docs-serve docs-build docs-check docs-lint docs-diagrams docs-test docs-ui
 
 # Workspace folder holding the sibling Kionga checkouts (deploy, platform, ...).
 KIONGA_SRC ?= ..
@@ -13,24 +13,20 @@ docs-install:
 docs-serve: docs-ui          ## product documentation, http://127.0.0.1:8000
 	mkdocs serve
 
-docs-serve-engineering: docs-ui ## engineering handbook, http://127.0.0.1:8001
-	mkdocs serve -f engineering/mkdocs.yml -a 127.0.0.1:8001
-
-docs-build: docs-ui          ## both sites, strict; the handbook is published under /engineering/
+docs-build: docs-ui          ## product documentation only, strict
 	mkdocs build --strict --site-dir site
-	mkdocs build --strict -f engineering/mkdocs.yml --site-dir ../site/engineering
+	python scripts/check_public_site.py site
 
 docs-check:          ## references against the code; product pages also keep code internals out
 	python scripts/check_references.py --root $(KIONGA_SRC) --product
-	python scripts/check_references.py --root $(KIONGA_SRC) --docs engineering/docs
 
 docs-lint:           ## prose: Google developer documentation style via Vale (errors fail)
 	vale sync >/dev/null
-	vale --minAlertLevel=error docs engineering/docs
+	vale --minAlertLevel=error docs
 
 docs-diagrams:       ## every mermaid diagram parses (needs Node)
 	npm install --prefix scripts --no-audit --no-fund --silent
-	node scripts/check_mermaid.mjs docs engineering/docs
+	node scripts/check_mermaid.mjs docs
 
 docs-test:           ## gate tests: reference checker and legacy URL redirects
 	python -m pytest -q tests

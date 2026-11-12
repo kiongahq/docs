@@ -9,6 +9,9 @@ repo_name: kiongahq
 repo_url: https://github.com/kiongahq
 edit_uri: https://github.com/kiongahq/docs/edit/main/docs/
 docs_dir: docs
+not_in_nav: |
+  /changelog.md
+  /engineering-access.md
 hooks:
   - scripts/site_hooks.py
 copyright: Copyright &copy; 2026 Kionga contributors. Released under the MIT License.
@@ -72,9 +75,9 @@ extra:
     - icon: fontawesome/brands/github
       link: https://github.com/kiongahq
       name: Kionga on GitHub
-    - icon: material/book-cog-outline
-      link: https://kiongahq.github.io/docs/engineering/
-      name: Engineering handbook
+    - icon: material/history
+      link: https://kiongahq.github.io/docs/changelog/
+      name: Release notes
 
 markdown_extensions:
   - abbr
@@ -113,6 +116,9 @@ plugins:
   - search
   - redirects:
       redirect_maps:
+        "release-notes.md": "changelog.md"
+        "releases/index.md": "changelog.md"
+        "engineering/index.md": "engineering-access.md"
         "getting-started/configuration.md": "reference/configuration.md"
         "connecting-services.md": "reference/service-endpoints.md"
         "services/index.md": "reference/services.md"
@@ -120,26 +126,25 @@ plugins:
         "overview/what-is-kionga.md": "concepts/what-is-kionga.md"
         "overview/concepts.md": "concepts/core-concepts.md"
         "overview/open-source.md": "concepts/open-source.md"
-        "overview/architecture.md": "https://kiongahq.github.io/docs/engineering/architecture/"
-        "overview/technology.md": "https://kiongahq.github.io/docs/engineering/architecture/technology/"
-        "overview/repositories.md": "https://kiongahq.github.io/docs/engineering/components/"
-        "services/gateway.md": "https://kiongahq.github.io/docs/engineering/components/gateway/"
-        "services/data-plane.md": "https://kiongahq.github.io/docs/engineering/components/data-plane/"
-        "services/execution.md": "https://kiongahq.github.io/docs/engineering/components/execution/"
-        "services/ai-observability.md": "https://kiongahq.github.io/docs/engineering/components/ai-observability/"
-        "modules/go-packages.md": "https://kiongahq.github.io/docs/engineering/components/go-packages/"
-        "modules/python.md": "https://kiongahq.github.io/docs/engineering/components/python-modules/"
-        "reference/backend.md": "https://kiongahq.github.io/docs/engineering/contracts/backend/"
-        "reference/implementation-status.md": "https://kiongahq.github.io/docs/engineering/status/implementation-status/"
-        "reference/kionga-migration.md": "https://kiongahq.github.io/docs/engineering/status/identifier-migration/"
-        "operations/first-iteration-deployment.md": "https://kiongahq.github.io/docs/engineering/plans/first-iteration-deployment/"
-        "reference/decisions/graph-library.md": "https://kiongahq.github.io/docs/engineering/decisions/0001-dag-layout-library/"
-        "reference/decisions/blog-editor.md": "https://kiongahq.github.io/docs/engineering/decisions/0002-blog-editor/"
-        "reference/decisions/object-store.md": "https://kiongahq.github.io/docs/engineering/decisions/0003-object-store/"
+        "overview/architecture.md": "engineering-access.md"
+        "overview/technology.md": "engineering-access.md"
+        "overview/repositories.md": "engineering-access.md"
+        "services/gateway.md": "engineering-access.md"
+        "services/data-plane.md": "engineering-access.md"
+        "services/execution.md": "engineering-access.md"
+        "services/ai-observability.md": "engineering-access.md"
+        "modules/go-packages.md": "engineering-access.md"
+        "modules/python.md": "engineering-access.md"
+        "reference/backend.md": "engineering-access.md"
+        "reference/implementation-status.md": "engineering-access.md"
+        "reference/kionga-migration.md": "engineering-access.md"
+        "operations/first-iteration-deployment.md": "engineering-access.md"
+        "reference/decisions/graph-library.md": "engineering-access.md"
+        "reference/decisions/blog-editor.md": "engineering-access.md"
+        "reference/decisions/object-store.md": "engineering-access.md"
 
 nav:
   - Overview: index.md
-  - Changelog: changelog.md
   - Get started:
       - getting-started/index.md
       - Install Kionga: getting-started/installation.md

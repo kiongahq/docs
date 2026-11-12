@@ -23,7 +23,7 @@ Kionga license does not replace them.
 
 Each repository has its own issue tracker and release cycle. To find the
 repository that owns a change, see the
-[component map in the engineering handbook](https://kiongahq.github.io/docs/engineering/components/).
+[component map in the engineering handbook](https://kiongahq.github.io/docs/engineering-access/).
 To improve this documentation, follow the
 [documentation contribution guide](https://github.com/kiongahq/docs/blob/main/CONTRIBUTING.md).
 

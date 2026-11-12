@@ -509,4 +509,4 @@ first: most problems after an update need a rebuild, not a reset.
 - [Single server](public-vm.md) or [Deploy on Kubernetes](managed-kubernetes.md)
   when other people need access.
 - To run the platform test suites or the local Kubernetes (kind) cluster, see
-  the [engineering handbook](https://kiongahq.github.io/docs/engineering/).
+  the [engineering handbook](https://kiongahq.github.io/docs/engineering-access/).

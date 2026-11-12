@@ -56,7 +56,7 @@ before you open it to a network.
 
     Read versioned documentation updates and release notes.
 
-    [Read the changelog :octicons-arrow-right-16:](changelog.md)
+    [Read release notes :octicons-arrow-right-16:](changelog.md)
 
 </div>
 

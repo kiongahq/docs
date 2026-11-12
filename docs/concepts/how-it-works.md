@@ -12,7 +12,7 @@ checks that you are allowed to do it, and drives the engine that carries it out.
 
 This page explains the parts at the level you need to use and operate Kionga. For
 the full design, see the
-[architecture in the engineering handbook](https://kiongahq.github.io/docs/engineering/architecture/).
+[architecture in the engineering handbook](https://kiongahq.github.io/docs/engineering-access/).
 
 ```mermaid
 flowchart LR

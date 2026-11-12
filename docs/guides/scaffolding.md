@@ -143,7 +143,7 @@ files.
 - **Project access applies.** A project you cannot see returns `404`.
 
 For the full design, see the gateway section of the
-[engineering handbook](https://kiongahq.github.io/docs/engineering/components/gateway/).
+[engineering handbook](https://kiongahq.github.io/docs/engineering-access/).
 
 ## Troubleshooting
 

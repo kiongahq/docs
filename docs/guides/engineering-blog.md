@@ -138,4 +138,4 @@ published page.
 ## Related
 
 - For the design of the editor and editorial identity, see the
-  [engineering handbook](https://kiongahq.github.io/docs/engineering/decisions/0002-blog-editor/).
+  [engineering handbook](https://kiongahq.github.io/docs/engineering-access/).

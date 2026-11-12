@@ -2,14 +2,14 @@
 
 Thank you for improving Kionga's documentation. The full standard (page types, style,
 checks and URL rules) is the handbook's
-[documentation standard](https://kiongahq.github.io/docs/engineering/contributing/documentation/).
+[documentation standard](https://github.com/kiongahq/engineering-docs/blob/main/docs/contributing/documentation.md).
 This page is the short version.
 
 ## Where a page goes
 
 - **Product documentation** (`docs/`): what Kionga does and how to use, deploy and
   operate it, organized by Diátaxis (tutorials, how-to guides, concepts, reference).
-- **Engineering handbook** (`engineering/docs/`): how Kionga is built. Architecture in
+- **Engineering handbook** (private `kiongahq/engineering-docs` repository): how Kionga is built. Architecture in
   arc42 sections, decisions as MADR records, one page per component, contribution
   workflow.
 
@@ -69,5 +69,5 @@ release notes in the release pull request; do not copy them into a second page.
 Run `make docs-test docs-build` before merging changes to release metadata or the
 site hook. `docs-test` also needs Node.js 22 for the assistant tests.
 
-The [release process](engineering/docs/contributing/releases.md) covers component
+The [release process](https://github.com/kiongahq/engineering-docs/blob/main/docs/contributing/releases.md) covers component
 versions, package publication, PyPI setup and the aggregated product changelog.

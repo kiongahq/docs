@@ -1,12 +1,12 @@
 ---
-title: Changelog
+title: Release notes
 description: Published Kionga component releases, changes and package downloads.
 icon: material/history
 ---
 
-# Changelog
+# Release notes
 
-Every published Kionga release, newest first, with its user-facing changes:
+The combined changelog and release notes for every published Kionga release, newest first, with its user-facing changes:
 breaking changes, new features, fixes and performance work. Components release
 independently, so a component's version doesn't imply that any other component
 has the same version. Maintenance and dependency updates are listed on each

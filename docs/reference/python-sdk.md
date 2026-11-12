@@ -20,7 +20,7 @@ with KiongaClient() as client:
 
 This page describes version `0.2.0` and later. For how the package is organized
 internally, see
-[Python modules in the engineering handbook](https://kiongahq.github.io/docs/engineering/components/python-modules/).
+[Python modules in the engineering handbook](https://kiongahq.github.io/docs/engineering-access/).
 
 ## Install
 

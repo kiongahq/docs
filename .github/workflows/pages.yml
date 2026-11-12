@@ -1,7 +1,6 @@
 name: Docs
 
-# Strict build of both sites (product documentation at /, engineering handbook
-# at /engineering/) and reference checks on every PR; publish from main.
+# Product documentation only. Engineering sources live in a private repository.
 on:
   push:
     branches: [main]
@@ -45,7 +44,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: python scripts/sync_releases.py
       - run: mkdocs build --strict --site-dir _site
-      - run: mkdocs build --strict -f engineering/mkdocs.yml --site-dir ../_site/engineering
+      - run: python scripts/check_public_site.py _site
       - name: Archive the Pages site
         if: github.event_name != 'pull_request'
         run: |
@@ -77,7 +76,7 @@ jobs:
           curl -sSL https://github.com/errata-ai/vale/releases/download/v3.23.0/vale_3.23.0_Linux_64-bit.tar.gz | tar xz -C /usr/local/bin vale
           vale --version
       - run: vale sync
-      - run: vale --minAlertLevel=error docs engineering/docs README.md CONTRIBUTING.md
+      - run: vale --minAlertLevel=error docs README.md CONTRIBUTING.md
 
   # Every mermaid diagram must parse; a syntax error publishes as raw text.
   diagrams:
@@ -89,7 +88,7 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with: {node-version: 22}
       - run: npm install --prefix scripts --no-audit --no-fund
-      - run: node scripts/check_mermaid.mjs docs engineering/docs
+      - run: node scripts/check_mermaid.mjs docs
 
   references:
     runs-on: ubuntu-latest
@@ -110,7 +109,6 @@ jobs:
       - run: python -m pip install pytest pyyaml
       - run: python -m pytest -q tests
       - run: python scripts/check_references.py --root "$KIONGA_SRC" --product
-      - run: python scripts/check_references.py --root "$KIONGA_SRC" --docs engineering/docs
 
   deploy:
     permissions:
