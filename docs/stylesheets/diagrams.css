@@ -1,66 +1,76 @@
-/* Architecture diagrams: quiet surfaces, readable labels, semantic emphasis. */
+/* Mermaid diagrams in the Kionga (Cobalt) palette.
+ *
+ * Material renders each diagram inside a closed shadow root, so selectors here never
+ * reach the SVG. The --kd-* tokens below do (custom properties inherit), and
+ * javascripts/mermaid-theme.js turns them into Mermaid themeCSS. Diagram sources
+ * only tag nodes with a role: class <ids> core | data | runtime | external.
+ * The diagram gate test enforces that contract. Keep this file identical in
+ * docs and engineering-docs. */
+
+:root, [data-md-color-scheme="default"] {
+  /* semantic node roles */
+  --kd-core-bg: oklch(52% .19 258);    --kd-core-line: oklch(46% .19 258); --kd-core-ink: oklch(98.6% .005 250);
+  --kd-data-bg: oklch(96.5% .025 178); --kd-data-line: oklch(64% .07 178); --kd-data-ink: oklch(33% .05 178);
+  --kd-run-bg: oklch(96.5% .022 295);  --kd-run-line: oklch(66% .08 295);  --kd-run-ink: oklch(36% .07 295);
+  --kd-ext-bg: oklch(96.2% .008 252);  --kd-ext-line: oklch(72% .016 254); --kd-ext-ink: oklch(45% .018 258);
+  /* neutral surfaces shared by every diagram type */
+  --kd-node-bg: oklch(99.4% .003 250); --kd-node-line: oklch(80% .016 254);
+  --kd-cluster-bg: oklch(96.2% .008 252); --kd-edge: oklch(55% .02 258); --kd-ink: oklch(21% .028 262);
+  --kd-note-bg: oklch(97% .03 85); --kd-note-line: oklch(80% .07 85);
+}
+[data-md-color-scheme="slate"] {
+  --kd-core-bg: oklch(76% .13 254);   --kd-core-line: oklch(82% .11 254); --kd-core-ink: oklch(18% .035 258);
+  --kd-data-bg: oklch(29% .04 178);   --kd-data-line: oklch(62% .07 178); --kd-data-ink: oklch(91% .03 178);
+  --kd-run-bg: oklch(29% .04 295);    --kd-run-line: oklch(66% .08 295);  --kd-run-ink: oklch(91% .03 295);
+  --kd-ext-bg: oklch(23% .02 258);    --kd-ext-line: oklch(45% .02 258);  --kd-ext-ink: oklch(78% .018 258);
+  --kd-node-bg: oklch(25% .02 258);   --kd-node-line: oklch(42% .022 258);
+  --kd-cluster-bg: oklch(22.5% .019 258); --kd-edge: oklch(68% .02 258); --kd-ink: oklch(94% .008 250);
+  --kd-note-bg: oklch(30% .035 85);   --kd-note-line: oklch(55% .06 85);
+}
+
+/* Material's Mermaid theme hooks */
+:root, [data-md-color-scheme] {
+  --md-mermaid-font-family: "IBM Plex Sans", system-ui, sans-serif;
+  --md-mermaid-edge-color: var(--kd-edge);
+  --md-mermaid-node-bg-color: var(--kd-node-bg);
+  --md-mermaid-node-fg-color: var(--kd-ink);
+  --md-mermaid-label-bg-color: var(--md-default-bg-color);
+  --md-mermaid-label-fg-color: var(--kd-ink);
+  --md-mermaid-sequence-actor-bg-color: var(--kd-node-bg);
+  --md-mermaid-sequence-actor-fg-color: var(--kd-ink);
+  --md-mermaid-sequence-actor-border-color: var(--kd-node-line);
+  --md-mermaid-sequence-actor-line-color: var(--kd-node-line);
+  --md-mermaid-sequence-actorman-bg-color: var(--kd-node-bg);
+  --md-mermaid-sequence-actorman-line-color: var(--kd-edge);
+  --md-mermaid-sequence-box-bg-color: var(--kd-cluster-bg);
+  --md-mermaid-sequence-box-fg-color: var(--kd-ink);
+  --md-mermaid-sequence-label-bg-color: var(--kd-cluster-bg);
+  --md-mermaid-sequence-label-fg-color: var(--kd-ink);
+  --md-mermaid-sequence-loop-bg-color: var(--kd-cluster-bg);
+  --md-mermaid-sequence-loop-fg-color: var(--kd-ink);
+  --md-mermaid-sequence-loop-border-color: var(--kd-node-line);
+  --md-mermaid-sequence-message-fg-color: var(--kd-ink);
+  --md-mermaid-sequence-message-line-color: var(--kd-edge);
+  --md-mermaid-sequence-note-bg-color: var(--kd-note-bg);
+  --md-mermaid-sequence-note-border-color: var(--kd-note-line);
+  --md-mermaid-sequence-note-fg-color: var(--kd-ink);
+  --md-mermaid-sequence-number-bg-color: var(--kd-core-bg);
+  --md-mermaid-sequence-number-fg-color: var(--kd-core-ink);
+}
+
+/* The figure frame lives in the light DOM, so ordinary selectors apply here. */
 .md-typeset .mermaid {
-  padding: 1.5rem;
-  margin: 1.5rem 0;
+  margin: 1.75rem 0;
+  padding: 1.25rem;
   overflow-x: auto;
-  border: 1px solid var(--md-default-fg-color--lightest);
-  border-radius: 12px;
+  border: 1px solid var(--kg-line, var(--md-default-fg-color--lightest));
+  border-radius: 10px;
   background: var(--md-default-bg-color);
-}
-.md-typeset .mermaid svg { display: block; margin-inline: auto; }
-.md-typeset .mermaid .nodeLabel { line-height: 1.5; }
-.md-typeset .mermaid .cluster rect {
-  fill: var(--md-code-bg-color) !important;
-  stroke: var(--md-default-fg-color--lightest) !important;
-  rx: 10px;
-}
-.md-typeset .mermaid .cluster-label { font-weight: 650; }
-.md-typeset .mermaid .node rect { rx: 6px; }
-.md-typeset .mermaid .node.core > :is(rect, polygon, path) {
-  fill: #294d70 !important; stroke: #294d70 !important;
-}
-.md-typeset .mermaid .node.core .nodeLabel,
-.md-typeset .mermaid .node.core .nodeLabel p { color: #fff !important; }
-.md-typeset .mermaid .node.data > :is(rect, polygon, path) {
-  fill: var(--diagram-data-bg) !important; stroke: var(--diagram-data-border) !important;
-}
-.md-typeset .mermaid .node.runtime > :is(rect, polygon, path) {
-  fill: var(--diagram-runtime-bg) !important; stroke: var(--diagram-runtime-border) !important;
-}
-.md-typeset .mermaid {
-  --diagram-data-bg: #edf5f2; --diagram-data-border: #739b8e;
-  --diagram-runtime-bg: #f2eff6; --diagram-runtime-border: #9a8aae;
-}
-[data-md-color-scheme="slate"] .md-typeset .mermaid {
-  --diagram-data-bg: #233d38; --diagram-data-border: #709c8f;
-  --diagram-runtime-bg: #363044; --diagram-runtime-border: #9a8aae;
+  text-align: center;
 }
 @media (max-width: 600px) {
-  .md-typeset .mermaid { padding: .75rem; }
-  .md-typeset .mermaid svg { min-width: 640px; }
+  .md-typeset .mermaid { padding: .5rem; margin-inline: -.8rem; border-radius: 0; border-inline: 0; }
 }
 @media print {
-  .md-typeset .mermaid { padding: 0; border: 0; overflow: visible; }
-  .md-typeset .mermaid svg { min-width: 0; max-width: 100%; }
-}
-
-/* Native text labels and sequence elements inherit the active documentation palette. */
-.md-typeset .mermaid .node:is(.data, .runtime, .external) .nodeLabel,
-.md-typeset .mermaid .node:is(.data, .runtime, .external) .nodeLabel p {
-  color: var(--md-default-fg-color) !important;
-}
-.md-typeset .mermaid .node.external > :is(rect, polygon, path) {
-  fill: var(--md-code-bg-color) !important;
-  stroke: var(--md-default-fg-color--light) !important;
-}
-.md-typeset .mermaid .actor { font-weight: 600; }
-.md-typeset .mermaid .actor-line { opacity: .45; }
-.md-typeset .mermaid .messageText { font-size: 15px !important; }
-.md-typeset .mermaid .noteText { font-size: 14px !important; }
-.md-typeset .mermaid .edgeLabel { font-size: 13px; }
-
-/* Preserve readable type in dense maps rather than shrinking to page width. */
-.md-typeset .mermaid svg { max-width: none !important; }
-@media print {
-  .md-typeset .mermaid svg { max-width: 100% !important; }
+  .md-typeset .mermaid { padding: 0; border: 0; overflow: visible; break-inside: avoid; }
 }

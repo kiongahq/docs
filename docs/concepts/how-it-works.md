@@ -15,64 +15,57 @@ the full design, see the
 [architecture in the engineering handbook](https://kiongahq.github.io/docs/engineering-access/).
 
 ```mermaid
----
-config: {"flowchart":{"nodeSpacing":48,"rankSpacing":72,"padding":18,"curve":"linear","useMaxWidth":false},"sequence":{"actorMargin":56,"messageMargin":40,"boxMargin":16,"noteMargin":16,"mirrorActors":false,"useMaxWidth":false,"wrap":true,"width":180,"messageFontSize":15,"noteFontSize":14}}
----
 flowchart TB
     accTitle: How Kionga works
-    accDescr: System components grouped by responsibility; arrows show their dependencies.
-    subgraph clients["01 · Build and connect"]
-        console["Console<br/>(browser)"]
-        code["SDK, CLI,<br/>scripts"]
-        ws["Jupyter workbench<br/>and browser IDE"]
+    accDescr: Consoles, the SDK and workspaces call one Kionga API. The API checks identity with your OIDC provider, then hands work to pipelines, model serving, agents, functions and the real-time processor, which keep their state in PostgreSQL, Kafka, Redis, MLflow and object storage.
+
+    %% 01 entry points
+    subgraph clients["Build and connect"]
+        direction LR
+        console["Console"]
+        code["SDK, CLI and scripts"]
+        ws["Jupyter and browser IDE"]
     end
 
-    subgraph kionga["02 · Authorize and coordinate"]
-        api["Console and API"]
+    %% 02 the platform core
+    api["Kionga API<br/>access, projects, audit"]
+    idp["Your identity provider<br/>OIDC"]
+
+    %% 03 engines
+    subgraph engines["Execute"]
+        direction LR
+        prefect["Pipelines<br/>Prefect"]
+        serving["Model serving<br/>MLflow servers"]
+        agents["Agent runtime<br/>LangGraph"]
+        functions["Functions<br/>OpenFaaS, optional"]
+        stream["Real-time processor"]
     end
 
-    subgraph engines["03 · Execute"]
-        prefect["Pipelines<br/>(Prefect)"]
-        serving["Model serving<br/>(MLflow model servers)"]
-        agents["Agent runtime<br/>(LangGraph)"]
-        functions["Functions<br/>(OpenFaaS, optional)"]
-        stream["Real-time processor<br/>(Kafka consumers)"]
-    end
-
-    subgraph data["04 · Store and observe"]
+    %% 04 state
+    subgraph data["Store and observe"]
+        direction LR
         pg[("PostgreSQL")]
-        obj[("Object storage")]
-        redis[("Redis<br/>online features")]
         kafka[["Kafka"]]
-        mlflow["MLflow<br/>tracking and registry"]
+        redis[("Redis<br/>online features")]
+        mlflow["MLflow<br/>tracking, registry"]
+        obj[("Object storage")]
     end
 
-    idp["Identity provider<br/>(OIDC)"]
-
-    console --> api
-    code --> api
-    ws --> api
-    api --> idp
-    api --> prefect
-    api --> serving
-    api --> agents
+    clients --> api
+    api -. sign-in .-> idp
+    api --> prefect & serving & agents & stream
     api -.-> functions
-    api --> pg
-    api --> kafka
+    api --> pg & kafka
     prefect --> mlflow
     serving --> mlflow
     agents --> pg
-    stream --> kafka
-    stream --> redis
+    stream --> kafka & redis
     mlflow --> obj
-    class api core
-    class kafka,mlflow,obj,pg,redis data
-    class agents,functions,prefect,serving,stream runtime
 
-    classDef core fill:#294d70,stroke:#294d70,color:#ffffff,stroke-width:2px
-    classDef data fill:#edf5f2,stroke:#739b8e,color:#234c40
-    classDef runtime fill:#f2eff6,stroke:#9a8aae,color:#514266
-    classDef external fill:#f5f7fa,stroke:#94a3b8,color:#334155,stroke-dasharray:4 3
+    class api core
+    class pg,kafka,redis,mlflow,obj data
+    class prefect,serving,agents,functions,stream runtime
+    class idp external
 ```
 
 ## The console and API
