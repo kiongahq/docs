@@ -3,7 +3,7 @@
 # Workspace folder holding the sibling Kionga checkouts (deploy, platform, ...).
 KIONGA_SRC ?= ..
 # Material for MkDocs prints a notice about MkDocs 2.0 on every build.
-export DISABLE_MKDOCS_2_WARNING := true
+export NO_MKDOCS_2_WARNING := 1
 
 docs-install:
 	python -m pip install -r requirements-docs.txt
