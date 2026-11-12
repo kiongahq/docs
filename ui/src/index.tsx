@@ -22,10 +22,11 @@ function Navigation({ config, host }: { config: Configuration; host: Element }) 
   const links = [
     ['Documentation', product.href, !handbook && !path.includes('/reference/api/') && !path.includes('/changelog/')],
     ['API reference', new URL('reference/api/', product).href, !handbook && path.includes('/reference/api/')],
-    ['Engineering', handbook ? base.href : new URL('engineering/', product).href, handbook],
-    ['Changelog', new URL('changelog/', product).href, !handbook && path.includes('/changelog/')],
   ];
-  return createPortal(<nav className="kg-wayfinding" aria-label="Documentation sections"><div className="kg-wayfinding-inner md-grid"><div className="kg-wayfinding-links">{links.map(([label, href, active]) => <a key={String(label)} href={String(href)} className={active ? 'kg-wayfinding-active' : undefined} aria-current={active ? 'page' : undefined}>{label}</a>)}</div>{config.version && <a className="kg-version" href={new URL('changelog/', product).href} aria-label={`Documentation version: ${config.version}`}>{config.version}</a>}</div></nav>, host);
+  return createPortal(<nav className="kg-wayfinding" aria-label="Documentation sections"><div className="kg-wayfinding-inner md-grid"><div className="kg-wayfinding-links">{links.map(([label, href, active]) => <a key={String(label)} href={String(href)} className={active ? 'kg-wayfinding-active' : undefined} aria-current={active ? 'page' : undefined}>{label}</a>)}</div>{config.version && <span className="kg-version" aria-label={`Documentation version: ${config.version}`}>{config.version}</span>}</div></nav>, host);
+}
+function ReleaseNotes({ host }: { host: Element }) {
+  return createPortal(<a className="kg-release-link" href={new URL('changelog/', base).href}><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.7" aria-hidden="true"><path d="M5 3h14v18l-3-2-4 2-4-2-3 2V3Z"/><path d="M8 7h8M8 11h8M8 15h5"/></svg><span>Release notes</span></a>, host);
 }
 function Assistant({ config }: { config: Configuration }) {
   const [open, setOpen] = useState(false);
@@ -74,6 +75,10 @@ async function mount() {
   const nav = document.createElement('div'); nav.id = 'kg-navigation-root';
   const header = document.querySelector('.md-header');
   if (header) header.insertAdjacentElement('afterend', nav); else document.body.prepend(nav);
-  createRoot(root).render(<><Navigation config={config} host={nav}/>{config.assistant_enabled && <Assistant config={config}/>}</>);
+  const releases = document.createElement('div'); releases.id = 'kg-release-navigation';
+  const github = header?.querySelector('.md-header__source');
+  if (github) github.insertAdjacentElement('beforebegin', releases);
+  else (header?.querySelector('.md-header__inner') || nav).append(releases);
+  createRoot(root).render(<><Navigation config={config} host={nav}/><ReleaseNotes host={releases}/>{config.assistant_enabled && <Assistant config={config}/>}</>);
 }
 void mount().catch(() => {});

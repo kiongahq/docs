@@ -51,6 +51,9 @@ body, .md-typeset { font-family: var(--kg-body); }
 .kg-wayfinding-active, .kg-wayfinding a:hover { color: var(--md-typeset-a-color) !important; }
 .kg-wayfinding-active { border-bottom: 1px solid currentColor; }
 .kg-version { border: 1px solid var(--kg-line); padding: .15rem .4rem; border-radius: 4px; }
+.kg-release-link { display: inline-flex; align-items: center; gap: .35rem; padding: .4rem .6rem; color: inherit; font-size: .65rem; white-space: nowrap; border-radius: 6px; }
+.kg-release-link:hover, .kg-release-link:focus-visible { background: var(--kg-surface); color: var(--md-typeset-a-color); }
+@media (max-width: 600px) { .kg-release-link { font-size: .6rem; padding-inline: .25rem; } .kg-release-link svg { display: none; } }
 .kg-release { padding: 0 0 2rem 1.4rem; margin-top: 1.6rem; border-left: 1px solid var(--kg-line); }
 .md-typeset .kg-release h2 { font-size: 1.2rem; }
 .md-typeset .kg-release h3 { font-size: .85rem; }

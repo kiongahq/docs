@@ -153,7 +153,7 @@ the ID `internal`, cannot be edited or removed; its addresses come from
   and point-in-time joins.
 - [Process real-time events](realtime.md) with online features.
 - For how adapters work and how to add one, see the
-  [engineering handbook](https://kiongahq.github.io/docs/engineering/components/go-packages/).
+  [engineering handbook](https://kiongahq.github.io/docs/engineering-access/).
 
 A saved feature store whose variable is outside this scope stops authenticating. Its health
 reads `configured` with `not permitted`. See

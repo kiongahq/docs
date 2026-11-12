@@ -69,7 +69,7 @@ def test_changelog_injection_preserves_page_intro(monkeypatch, tmp_path):
 
 def test_both_sites_use_the_react_interface_without_template_overrides():
     root = Path(__file__).resolve().parents[1]
-    for name in ("mkdocs.yml", "engineering/mkdocs.yml"):
+    for name in ("mkdocs.yml",):
         config = (root / name).read_text()
         assert "custom_dir:" not in config
         assert "javascripts/interface.js" in config

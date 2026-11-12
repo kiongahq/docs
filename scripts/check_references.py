@@ -842,7 +842,7 @@ INTERNALS = re.compile(
     r"|\b[\w/-]+\.go\b"
     r"|\bpkg/(?:api|kube)[\w./-]*"
 )
-ENGINEERING_URL = "https://kiongahq.github.io/docs/engineering/"
+ENGINEERING_URL = "https://kiongahq.github.io/docs/engineering-access/"
 
 
 def check_boundary(page: list[Segment], facts: Facts, rel: str) -> list[Finding]:
@@ -892,7 +892,7 @@ def allowed(finding: Finding, allowlist: set[tuple[str, str]]) -> bool:
 
 def run(docs: Path, root: Path, allowlist: set[tuple[str, str]] | None = None,
         checks: dict | None = None) -> list[Finding]:
-    # The docs repository holds both sites (docs/, engineering/docs/).
+    # Resolve the repository that owns this documentation tree.
     repo = next((p for p in docs.parents if (p / ".git").exists()), docs.parent)
     facts = load_facts(root, repo)
     allowlist = allowlist or set()

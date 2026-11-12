@@ -57,7 +57,13 @@ def test_redirect_sources_are_not_live_pages():
     assert not live, f"redirects shadow existing pages: {live}"
 
 
-def test_both_sites_share_one_brand():
-    for asset in ("assets/logo.svg", "assets/favicon.svg", "stylesheets/kionga.css"):
-        assert (REPO / "docs" / asset).read_bytes() == (REPO / "engineering/docs" / asset).read_bytes(), \
-            f"{asset} differs between the product site and the engineering handbook"
+def test_engineering_source_is_not_in_the_public_repository():
+    assert not (REPO / "engineering").exists()
+    workflow = (REPO / ".github/workflows/pages.yml").read_text()
+    assert "../_site/engineering" not in workflow
+    assert "check_public_site.py _site" in workflow
+
+
+def test_release_aliases_share_the_changelog():
+    for source in ("release-notes.md", "releases/index.md"):
+        assert redirects()[source] == "changelog.md"
