@@ -101,7 +101,7 @@ files and `tests/test_diagrams.py` are shared with the other documentation site;
 change them in both. Avoid sequence `box` groups; the Node parse check cannot
 evaluate their colors.
 
-Layout tips that hold up in Mermaid's dagre layout:
+Layout tips that hold up in Mermaid's Dagre layout:
 
 - Links into a subgraph make Mermaid ignore that subgraph's `direction`.
 - To stack groups as rows, chain their first nodes with invisible links
