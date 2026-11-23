@@ -410,7 +410,6 @@ Read by the operator and integration worker only:
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `KFP_URL` / `KFP_TOKEN` / `KFP_EXPERIMENT_ID` | installation-specific | Kubernetes pipeline execution |
 | `MLFLOW_URL` | in-cluster MLflow | Model lifecycle integration |
 | `WORKBENCH_IMAGE` | `ghcr.io/kiongahq/jupyter:latest` | Image for provisioned Jupyter containers |
 | `IDE_IMAGE` | `ghcr.io/kiongahq/ide:latest` | Image for provisioned IDE containers |
