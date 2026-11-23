@@ -64,8 +64,11 @@ theme:
 
 extra_css:
   - stylesheets/kionga.css
+  - stylesheets/diagrams.css
 
 extra_javascript:
+  - https://unpkg.com/mermaid@11.17.2/dist/mermaid.min.js
+  - javascripts/mermaid-theme.js
   - javascripts/interface.js
 
 extra:

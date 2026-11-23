@@ -22,7 +22,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      DISABLE_MKDOCS_2_WARNING: "true"
+      NO_MKDOCS_2_WARNING: "1"
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:

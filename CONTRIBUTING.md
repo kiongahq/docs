@@ -71,3 +71,43 @@ site hook. `docs-test` also needs Node.js 22 for the assistant tests.
 
 The [release process](https://github.com/kiongahq/engineering-docs/blob/main/docs/contributing/releases.md) covers component
 versions, package publication, PyPI setup and the aggregated product changelog.
+
+
+## Diagram design
+
+Keep architecture diagrams as Mermaid blocks in Markdown, one question per
+diagram. Use short labels, one reading direction, and subgraphs only for real
+boundaries. Split a dense view into focused diagrams rather than shrinking text.
+
+Diagram sources hold structure and meaning only. Tag nodes with one of four
+roles and let the shared theme color them in both schemes:
+
+| Role | Use for | Example |
+| --- | --- | --- |
+| `core` | the component the diagram is about | `class gw core` |
+| `runtime` | services that execute work | `class runner,sm runtime` |
+| `data` | stores, queues and registries | `class pg,kafka data` |
+| `external` | things outside Kionga (dashed) | `class idp external` |
+
+Labels must still make sense without color. Every diagram needs an `accTitle`
+and an `accDescr` that explains what the diagram shows in a sentence or two.
+
+Do not add `classDef`, `style`, `linkStyle`, hex colors, `%%{init}%%` or
+front-matter config: Material renders diagrams inside a closed shadow root, so
+those either break dark mode or silently do nothing. Theme changes go in
+`docs/stylesheets/diagrams.css` (color tokens) and
+`docs/javascripts/mermaid-theme.js` (Mermaid themeCSS and layout defaults). Both
+files and `tests/test_diagrams.py` are shared with the other documentation site;
+change them in both. Avoid sequence `box` groups; the Node parse check cannot
+evaluate their colors.
+
+Layout tips that hold up in Mermaid's Dagre layout:
+
+- Links into a subgraph make Mermaid ignore that subgraph's `direction`.
+- To stack groups as rows, chain their first nodes with invisible links
+  (`a ~~~ b ~~~ c`).
+- A longer arrow (`--->`, `---->`) pushes its target one or two ranks further,
+  which turns side-by-side groups into columns.
+
+Check a change with `tests/test_diagrams.py`, the Mermaid parse check, and a look
+at the built page in both color schemes.
