@@ -50,6 +50,10 @@ cluster administrators or hostile code; see
     Complete the [production readiness checklist](production-operations.md)
     before you admit users.
 
+On Kubernetes, the Enterprise plan can have Kionga's team install and operate the
+same chart in your cloud; see [Managed operations](managed-operations.md). A
+Kionga-hosted service is on the [roadmap](../roadmap.md).
+
 A fourth path, the [Compose public overlay](../hosting.md), exposes the local
 stack through Caddy. It is a legacy demo path and is not supported for
 production.

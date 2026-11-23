@@ -242,7 +242,9 @@ the image digest it ran.
 ## Run container nodes as Kubernetes Jobs {#kubernetes}
 
 On Kubernetes, the gateway can run container nodes as Kubernetes Jobs instead of
-sending them to the Compose pipeline runner.
+sending them to the Compose pipeline runner. The Jobs executor is the one pipeline
+engine on Kubernetes: Kionga does not run pipelines on Kubeflow there. Compose
+keeps Prefect.
 
 1. Create a dedicated namespace for pipeline jobs, with your NetworkPolicy and
    ResourceQuota.

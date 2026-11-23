@@ -157,6 +157,7 @@ nav:
       - What is Kionga: concepts/what-is-kionga.md
       - Core concepts: concepts/core-concepts.md
       - How Kionga works: concepts/how-it-works.md
+      - Self-healing and autoscaling: concepts/self-healing-and-autoscaling.md
       - Open source and licensing: concepts/open-source.md
   - Guides:
       - guides/index.md
@@ -170,10 +171,14 @@ nav:
       - Machine learning and data:
           - Pipelines: guides/pipelines.md
           - Models and serving: guides/models-serving.md
+          - Models on Kubernetes: guides/models-kubernetes.md
           - Hugging Face models: guides/huggingface.md
           - Features: guides/features.md
           - Feature store integrations: guides/feature-stores.md
           - Real-time processing: guides/realtime.md
+      - Applications and functions:
+          - Deploy applications: guides/applications.md
+          - Run functions on Kubernetes: guides/functions.md
       - AI agents:
           - Build agents: guides/agents.md
           - Agent Designer: guides/agent-designer.md
@@ -193,6 +198,8 @@ nav:
       - Compose public overlay (legacy): hosting.md
       - Kubernetes:
           - Deploy on Kubernetes: operations/managed-kubernetes.md
+          - Kubernetes prerequisites: operations/kubernetes-prerequisites.md
+          - Managed operations: operations/managed-operations.md
           - Amazon EKS: operations/providers/aws-eks.md
           - Google GKE: operations/providers/gcp-gke.md
           - Azure AKS: operations/providers/azure-aks.md
@@ -203,6 +210,7 @@ nav:
       - Updates and rollback: operations/updates.md
       - Production readiness: operations/production-operations.md
       - Troubleshooting: operations/troubleshooting.md
+  - Roadmap: roadmap.md
   - Reference:
       - reference/index.md
       - REST API: reference/api.md

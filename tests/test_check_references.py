@@ -81,6 +81,14 @@ def workspace(tmp_path: Path) -> Path:
                 "sync", help="clone or update"
             )
     """)
+    write(root / "sdk-python" / "kionga" / "cli.py", """
+        def parser():
+            root = argparse.ArgumentParser(prog="kionga")
+            commands = root.add_subparsers(dest="command", required=True)
+            apps = commands.add_parser("apps", help="applications")
+            app_commands = apps.add_subparsers(dest="apps_command", required=True)
+            deploy = app_commands.add_parser("deploy", help="deploy")
+    """)
     write(root / "sdk-python" / "kionga" / "__init__.py", """
         from .client import KiongaClient
         from .models import Project
@@ -203,10 +211,13 @@ def test_cli_commands(workspace: Path) -> None:
         kionga project sync prj-1
         kionga project clone prj-1
         kionga deploy
+        kionga apps deploy billing --project p-1
+        kionga apps explode billing
         ```
     """, cli=True)
     assert values(findings) == [
         "kionga-cli project delete", "kionga widget", "kionga project clone", "kionga deploy",
+        "kionga apps explode",
     ]
 
 

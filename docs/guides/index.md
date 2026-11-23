@@ -24,7 +24,10 @@ with a way to check the result. For exact routes, commands and settings, see the
 
 - [Define and run pipelines](pipelines.md).
 - [Register, deploy and serve models](models-serving.md), or
-  [import a Hugging Face model](huggingface.md).
+  [import a Hugging Face model](huggingface.md). On Kubernetes, see
+  [Deploy and canary models](models-kubernetes.md).
+- [Deploy your own applications](applications.md) and
+  [run functions](functions.md) on Kubernetes.
 - [Use the built-in feature store](features.md) or
   [connect an external feature store](feature-stores.md).
 - [Process real-time events](realtime.md).
@@ -46,5 +49,5 @@ with a way to check the result. For exact routes, commands and settings, see the
 - [Set up single sign-on](../operations/single-sign-on.md).
 
 Some guides use engines that your deployment provides, such as OpenFaaS for
-functions or a GPU node pool for distributed training. Each guide's **Before you
+functions on Compose, or a GPU node pool for distributed training. Each guide's **Before you
 begin** section names them.

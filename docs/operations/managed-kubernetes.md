@@ -8,14 +8,15 @@ description: Install Kionga on a managed Kubernetes cluster with the Helm chart,
 This guide shows you how to install Kionga on a managed Kubernetes cluster with
 the Helm chart in `deploy/helm/kionga`. It is the deployment for teams: it runs
 the control plane with multiple replicas and provisions per-user notebooks,
-IDE workspaces and agents in a separate namespace.
+IDE workspaces, agents, applications, functions and model endpoints in a separate
+namespace.
 
 The chart installs Kionga's own components:
 
 | Component | Replicas | Role |
 | --- | --- | --- |
 | Gateway | 3, autoscaled up to 10 | Console, API and workspace routing |
-| Operator | 2, with leader election | Creates workspace and agent pods |
+| Operator | 2, with leader election | Creates workspace, agent, application, function and model endpoint workloads, and scales them |
 | Integration worker | 2 | Consumes platform events from Kafka |
 | Feature gateway | 2 | Online feature lookups |
 | Storage proxy | 2 | Object storage access for workspaces |
@@ -43,13 +44,18 @@ For provider-specific steps, see [Amazon EKS](providers/aws-eks.md),
   [External Secrets Operator](https://external-secrets.io/) with the
   `external-secrets.io/v1` API, installed separately.
 - For `monitoring.enabled`: the Prometheus Operator and kube-state-metrics.
+- For applications, functions, request-based autoscaling and model endpoints:
+  cert-manager, KEDA with its HTTP add-on, KServe and wildcard DNS. See
+  [Kubernetes prerequisites](kubernetes-prerequisites.md).
 
 **Dependencies you operate**
 
 - PostgreSQL (with TLS) and Redis, both redundant and private.
 - S3-compatible object storage.
 - Kafka and Kafka REST.
-- The engines you offer, such as MLflow and Prefect.
+- The engines you offer, such as MLflow and Prefect. Functions, applications and
+  pipelines on Kubernetes need no separate engine: Kionga runs functions and
+  applications itself, and container pipeline steps run as Kubernetes Jobs.
 
 The chart does not install databases or engines, and it does not install GPU
 drivers, GPU node pools or cloud IAM.
@@ -110,6 +116,13 @@ credentials.
     yourself, and do not share it between releases. Helm keeps it when you
     uninstall, so user workloads are never deleted silently; keeping it is not a
     backup.
+
+    The base files in `deploy/config/crd/` cover workspaces and agents. Applications,
+    functions and model deployments also need their resource definitions, which each
+    platform release ships in its `config/crd` folder.
+    A later chart release installs them for you. Source builds for applications
+    can't run in a namespace that enforces the `restricted` level; see
+    [Pod Security for builds](kubernetes-prerequisites.md#pod-security-for-builds).
 
 2. **Create the registry pull Secret** in the release namespace (platform pods)
    and in the workload namespace (workspace and agent pods):
@@ -328,6 +341,11 @@ secret values with `helm --set`: Helm stores release values.
 
 ## Next steps
 
+- [Kubernetes prerequisites](kubernetes-prerequisites.md) for applications,
+  functions and model endpoints.
+- [Deploy applications](../guides/applications.md).
+- [Managed operations](managed-operations.md): let Kionga's team run the
+  install for you (Enterprise plan).
 - [Production readiness](production-operations.md): monitoring, backups,
   release controls and the acceptance checklist.
 - [Single sign-on](single-sign-on.md) and [Permissions](../reference/rbac.md):

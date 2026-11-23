@@ -26,7 +26,7 @@ To manage users, groups and policies, see
 | --- | --- |
 | `admin` | Everything, including users, policies, connections and every project. Not subject to quotas. |
 | `operator` | The same as `admin`. |
-| `engineer` | Read everything; create and change projects, pipelines, models, agents, tools, features and functions; open workspaces. Cannot manage connections, users or policies. Limited to assigned projects when the access profile lists any. |
+| `engineer` | Read everything; create and change projects, pipelines, models, agents, tools, features, functions and applications; open workspaces. Cannot manage connections, users or policies. Limited to assigned projects when the access profile lists any. |
 | `user` | Only the services and projects in their access profile, within its quotas. Without an access profile, only their identity, access requests and personal settings. |
 | `viewer` | Read only. Cannot open workspaces. Limited to assigned projects when the access profile lists any. |
 | `service` | Kionga's own services. Reads, and reports runs, steps, logs, traces, materializations and real-time statistics. Not for people. |
@@ -50,6 +50,7 @@ limited to the services it names.
 | `catalog` | Shared catalog, tools and prompts |
 | `platform` | Connections, component health and log export status (read) |
 | `functions` | Serverless functions |
+| `applications` | Applications on Kubernetes |
 | `workbench` | Opening the Jupyter workbench |
 | `ide` | Opening the browser IDE |
 

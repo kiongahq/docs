@@ -50,3 +50,7 @@ env KIONGA_CONNECTION_SECRET_SUPPORT
 
 # Kafka topic for LLM traces; it shares its first part with the kionga.llm module.
 sdk kionga.llm.traces
+
+# Documented as a later-release setting: the blog authoring opt-in is not in a released
+# version yet. Remove this entry when the platform release that adds it ships.
+env KIONGA_BLOG_AUTHORING_ENABLED

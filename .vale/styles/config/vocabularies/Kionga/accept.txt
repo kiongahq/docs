@@ -124,3 +124,5 @@ deduplicate
 jittered
 [Cc]oroutines?
 [Ss]ubgraph('s|s)?
+(?i)seccomp
+(?i)apparmor
