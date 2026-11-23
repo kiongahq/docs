@@ -171,6 +171,7 @@ nav:
       - Machine learning and data:
           - Pipelines: guides/pipelines.md
           - Models and serving: guides/models-serving.md
+          - Models on Kubernetes: guides/models-kubernetes.md
           - Hugging Face models: guides/huggingface.md
           - Features: guides/features.md
           - Feature store integrations: guides/feature-stores.md

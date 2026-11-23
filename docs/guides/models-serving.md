@@ -16,7 +16,9 @@ roll back when you need to.
   see models but cannot change them.
 - The model is logged to MLflow, or stored at an artifact URI that the serving
   image can load.
-- Deployment needs the serving manager, which the Compose stack runs for you.
+- Deployment needs the serving manager, which the Compose stack runs for you. On
+  Kubernetes, deployment uses KServe instead; see
+  [Deploy and canary models on Kubernetes](models-kubernetes.md).
 - For the API examples, export `KIONGA_URL` and a personal API key with the
   `models` scope as `KIONGA_TOKEN`. See
   [Authentication](../reference/api.md#authentication).
@@ -125,6 +127,8 @@ reason.
 
 `canary_weight` (0 to 100) is recorded on the model. The bundled serving path
 runs one container per model name and does not split traffic between versions.
+On Kubernetes, a canary does split traffic; see
+[Deploy and canary models on Kubernetes](models-kubernetes.md#send-a-share-of-traffic-to-a-canary).
 Agents have their own [canary traffic control](agents.md#shift-canary-traffic).
 
 **Verify:** the model card shows a **● live** tag and a **Test** button.
