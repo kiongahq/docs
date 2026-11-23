@@ -23,8 +23,11 @@ application. It covers four tasks:
 | Sync a project into a workspace | Anyone who can open a workspace and see the project |
 | Deploy or invoke a function | `admin`, `operator` or `engineer`, or a normal user with the `functions` service and access to the project |
 
-Functions also need an OpenFaaS gateway that an operator connects to Kionga
-(see [Deploy a function](#deploy-a-function)).
+On Compose and single-server installs, functions also need an OpenFaaS or faasd
+gateway that an operator connects to Kionga (see
+[Deploy a function](#deploy-a-function)). On Kubernetes, functions are
+Kionga-native and need no OpenFaaS; see
+[Run functions on Kubernetes](functions.md).
 
 ## Provision a teammate's workspace
 
@@ -146,13 +149,18 @@ See [Scaffold a project](scaffolding.md).
 
 ## Deploy a function
 
-A function is any OCI image that serves HTTP. Kionga deploys it to OpenFaaS
-with the CPU and memory you set, checks it against your function quota, and
-records its owner and project.
+A function is any OCI image that serves HTTP. On Compose and single-server
+installs, Kionga deploys it to OpenFaaS with the CPU and memory you set, checks
+it against your function quota, and records its owner and project.
+
+!!! note "Kubernetes installs"
+    On a Kubernetes install, Kionga runs functions itself, scales them to zero and
+    ignores `OPENFAAS_URL`. Cron and Kafka triggers aren't available there. See
+    [Run functions on Kubernetes](functions.md).
 
 **Operator setup:** set `OPENFAAS_URL`, `OPENFAAS_USER` and `OPENFAAS_PASSWORD`
-on the gateway. Kionga works with a Kubernetes OpenFaaS gateway or a `faasd`
-gateway on a single server. Until `OPENFAAS_URL` is set, deploys return
+on the gateway. Kionga works with a `faasd` gateway on a single server or an
+OpenFaaS gateway you provide. Until `OPENFAAS_URL` is set, deploys return
 `OPENFAAS_URL is not configured`.
 
 1. Build and push your image, preferably pinned by digest.

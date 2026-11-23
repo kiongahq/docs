@@ -8,8 +8,9 @@ description: How Kionga keeps applications, functions and agents running on Kube
 On Kubernetes, every application, function and agent that Kionga runs is a pod
 that Kionga keeps healthy and sizes for you. This page explains what happens
 behind the scenes, so you can pick sensible settings and read what you see when
-something goes wrong. It applies to [applications](../guides/applications.md), functions and
-[agents](../guides/agents.md).
+something goes wrong. It applies to [applications](../guides/applications.md),
+[functions](../guides/functions.md) and
+[agents](../guides/agents.md#autoscale-agents).
 
 Compose and single-server installs do not run these controllers. There, a
 container runtime restarts a container that exits, and nothing scales it.
@@ -168,4 +169,6 @@ that far.
 ## Where to go next
 
 - [Deploy an application](../guides/applications.md).
+- [Run functions on Kubernetes](../guides/functions.md).
+- [Autoscale agents](../guides/agents.md#autoscale-agents).
 - [Deploy on Kubernetes](../operations/managed-kubernetes.md).

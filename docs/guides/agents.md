@@ -342,10 +342,64 @@ Keep artifacts and large context in object storage, not in prompts or queues.
 Kionga derives one DNS name per agent ID, so different agents can reuse a human
 name without overwriting each other. The operator creates the agent's
 Deployment and Service, and reports the agent ready when at least
-`min_replicas` pods are available. When `max_replicas` is above `min_replicas`,
-it also creates a HorizontalPodAutoscaler that targets 70% average CPU, which
-needs a working Kubernetes metrics API. On Compose, `AGENT_RUNTIME_URL` points
+`min_replicas` pods are available. On Compose, `AGENT_RUNTIME_URL` points
 every agent at the shared runtime, so autoscaling does not apply.
+
+## Autoscale agents {#autoscale-agents}
+
+On Kubernetes, an agent runs between `min_replicas` and `max_replicas` pods.
+Choose what drives the scaling with `scaling`:
+
+| Trigger | `scaling` | What it does |
+| --- | --- | --- |
+| Requests (default) | `{"metric": "requests", "target": 100}` | Adds pods when the average number of in-flight requests per pod goes above the target. The target is 1 to 10000. Needs the KEDA HTTP add-on. |
+| CPU | `{"metric": "cpu", "target": 70}` | Adds pods when average CPU use goes above the target percent of the pod's CPU request. The target is 1 to 100. Needs the Kubernetes metrics API. |
+
+Requests scaling suits agents, because an agent spends most of a request waiting
+on a language model and uses little CPU, so CPU stays low while requests pile up.
+Use CPU scaling for an agent that does heavy work in the process, or on a cluster
+without KEDA. If the KEDA HTTP add-on isn't installed, a request-scaled agent runs
+on CPU scaling instead, and its `ScalingReady` condition reports why.
+
+Agents never scale to zero: `min_replicas` is at least 1. See
+[Self-healing and autoscaling](../concepts/self-healing-and-autoscaling.md).
+
+=== "API"
+
+    ```bash
+    curl -s -X POST "$KIONGA_URL/api/v1/agents" \
+      -H "Authorization: Bearer $KIONGA_TOKEN" \
+      -H 'Content-Type: application/json' \
+      -d '{"project_id": "prj-123", "name": "incident-response",
+           "version": "1.0.0",
+           "image": "ghcr.io/acme/incident-response@sha256:<digest>",
+           "graph_module": "incident_response_agent.graph:build",
+           "autoscaling": {"min_replicas": 2, "max_replicas": 6},
+           "scaling": {"metric": "requests", "target": 20}}'
+    ```
+
+=== "SDK"
+
+    ```python
+    client.deploy_agent(
+        "prj-123", "incident-response", "1.0.0",
+        "ghcr.io/acme/incident-response@sha256:<digest>",
+        "incident_response_agent.graph:build",
+        replicas=2, max_replicas=6,
+        scaling={"metric": "requests", "target": 20},
+    )
+    ```
+
+The same `scaling` field works when you deploy a published Agent Designer
+version through the API.
+
+!!! info "Available in a later release"
+    Request scaling counts requests that pass through the KEDA interceptor, so
+    callers must use the address the operator reports for the agent. The gateway
+    change that does this, and the `scaling` argument of the SDK's
+    `deploy_agent_version`, are not in a released version yet. Until then, an
+    agent scaled on requests may not see its traffic. Choose CPU scaling if you
+    need autoscaling today.
 
 ## Release checklist
 

@@ -177,6 +177,7 @@ nav:
           - Real-time processing: guides/realtime.md
       - Applications and functions:
           - Deploy applications: guides/applications.md
+          - Run functions on Kubernetes: guides/functions.md
       - AI agents:
           - Build agents: guides/agents.md
           - Agent Designer: guides/agent-designer.md
