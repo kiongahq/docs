@@ -30,7 +30,8 @@ storage, Redis, Kafka and MLflow. See [How Kionga works](how-it-works.md#where-d
 | **Agent session** | One conversation with an agent: turns, the current graph node, token usage and cost. |
 | **Tool** | A registered capability that agents can call, with a name, version, description and input schema. |
 | **Feature view** | A named group of features for an entity, with a schema, a time to live, and online materialization status. |
-| **Function** | A project-owned container workload with CPU and memory limits and HTTP, asynchronous, scheduled or Kafka trigger settings. It runs on an OpenFaaS gateway when one is configured. |
+| **Function** | A project-owned container workload with CPU and memory limits and HTTP, asynchronous, scheduled or Kafka trigger settings. On Kubernetes, Kionga runs it itself and scales it to zero. On Compose, it runs on an OpenFaaS gateway when one is configured. |
+| **Application** | A service you deploy from an image or a public Git repository, served at `<name>.<your domain>` on Kubernetes, with health checks, autoscaling and sign-in or public access. See [Deploy applications](../guides/applications.md). |
 | **Connection** | A registered external service that Kionga health-checks. It stores a credential reference (`none` or `env:VARIABLE`), never the credential itself. |
 | **Access profile** | What an administrator grants a person: role, services, projects, storage buckets, compute and run quotas, and a suspension switch. |
 | **Access request** | A person's request for services, with a reason, reviewed in the administrator approval queue. |
@@ -110,9 +111,12 @@ recent scored events. See [Real-time processing](../guides/realtime.md).
 ## Serverless functions
 
 Kionga manages functions end to end: the registry, quotas, triggers, invocation,
-audit, the console, and their use as pipeline steps. Functions run on an OpenFaaS
-gateway (or faasd on a single server) that an administrator provides and
-connects with `OPENFAAS_URL`. Until then, functions show as not configured.
+audit, the console, and their use as pipeline steps. On Kubernetes, Kionga runs
+functions itself and scales them to zero when idle; see
+[Run functions on Kubernetes](../guides/functions.md). On Compose and
+single-server installs, functions run on an OpenFaaS gateway (or faasd) that an
+administrator provides and connects with `OPENFAAS_URL`. Until then, functions
+show as not configured.
 
 ## Roles
 

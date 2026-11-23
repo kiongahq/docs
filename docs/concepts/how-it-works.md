@@ -37,7 +37,7 @@ flowchart TB
         prefect["Pipelines<br/>Prefect"]
         serving["Model serving<br/>MLflow servers"]
         agents["Agent runtime<br/>LangGraph"]
-        functions["Functions<br/>OpenFaaS, optional"]
+        functions["Functions<br/>Kionga-native on Kubernetes,<br/>faasd on Compose"]
         stream["Real-time processor"]
     end
 
@@ -112,16 +112,18 @@ Kionga orchestrates proven open-source engines rather than replacing them.
 
 | Work | Engine | What Kionga adds |
 | --- | --- | --- |
-| Pipelines | Prefect runs flows; container steps run as isolated containers | Versioned flow definitions, validated dependency graphs, schedules, run history, step logs, resource admission |
+| Pipelines | Prefect runs flows on Compose; on Kubernetes, container steps run as Kubernetes Jobs, and that is the only engine | Versioned flow definitions, validated dependency graphs, schedules, run history, step logs, resource admission |
 | Experiment tracking and registry | MLflow | Project ownership, quality gates, promotion stages, audit |
 | Model serving | One MLflow model server per deployed model version | Deploy, test, roll back, and a live endpoint per model |
 | Agents | The agent runtime runs LangGraph graphs over HTTP | Agent registry, sessions, turn and token accounting, traces, capacity checks |
 | LLM calls | Your provider (OpenAI, Anthropic, or any OpenAI-compatible server) | A trace proxy that records OpenAI-protocol calls; a `mock` model that needs no provider key |
-| Functions | OpenFaaS or faasd, which you provide | Function registry, quotas, triggers, invocation, use as pipeline steps |
+| Functions | Kionga itself on Kubernetes (scale to zero through KEDA). faasd or OpenFaaS on Compose, which you provide | Function registry, quotas, triggers, invocation, use as pipeline steps |
+| Applications | Kionga itself, on Kubernetes only | Deploy from an image or Git, a host name per application, health checks, autoscaling, logs |
 | Real-time | Kafka consumers | Enrichment with online features and scoring with models or agents |
 
 An engine that is not configured shows as **not configured** in the console. For
-example, functions stay unavailable until an administrator sets `OPENFAAS_URL`.
+example, functions on Compose stay unavailable until an administrator sets
+`OPENFAAS_URL`.
 
 ## Where data lives
 

@@ -5,14 +5,25 @@ description: Write, review, schedule and publish posts on the Kionga engineering
 
 # Write and publish on the engineering blog
 
-Kionga includes a public engineering blog and a separate **editorial workspace**
+Kionga includes a public article API and a separate **editorial workspace**
 for writing, reviewing and publishing posts. Readers use `/blog` (with
 search, a tag filter and author pages at `/blog?author=<name>`) and
-`/blog/read?slug=<slug>`; the landing page shows the three newest posts. Writers
-and editors work at `/studio`.
+`/blog/read?slug=<slug>` on the Kionga website, which is a separate site and not
+part of an install. An install serves no landing page or reader pages. Its
+console links to the website when an administrator sets `KIONGA_WEBSITE_URL`, and
+the public article API (`GET /api/v1/blogs`) serves published posts. Writers and
+editors work at `/studio`.
 
 This guide covers writing a post, reviewing and publishing it, setting up the
 editorial team, and configuring media storage.
+
+!!! info "Available in a later release"
+    Blog authoring is becoming an opt-in console feature. In that release, the
+    editorial workspace stays off until an administrator sets
+    `KIONGA_BLOG_AUTHORING_ENABLED` to `true`. The setting defaults to off, so an
+    install that doesn't write posts shows no blog authoring. This setting is not
+    in a released version yet. Until it ships, the editorial workspace works as
+    this guide describes.
 
 ## Editorial roles {#roles}
 
@@ -86,7 +97,7 @@ revisions.
 To take a post down, click **Unpublish** (back to draft) or **Archive** (hidden).
 **Restore from archive** brings an archived post back as a draft.
 
-**Verify:** the post appears on `/blog`.
+**Verify:** the post appears in `GET /api/v1/blogs` and on the website's `/blog`.
 
 ## Set up the editorial team
 

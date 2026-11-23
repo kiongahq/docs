@@ -258,6 +258,8 @@ while run.status not in ("succeeded", "failed", "cancelled"):
 | `register_model(project_id, name, version, artifact_uri, *, metrics=None, serving_image=None)` | `Model` | `POST /api/v1/models` |
 | `promote_model(model_id, stage)` | `Model` | `POST /api/v1/models/{id}/promote` |
 | `deploy_model(model_id, *, canary_weight=0)` | `Model` | `POST /api/v1/models/{id}/deploy` |
+| `model_deployment(model_id)` | `ModelDeployment` | `GET /api/v1/models/{id}/deployment` |
+| `wait_for_model_deployment(model_id, *, timeout=600.0, poll_interval=3.0)` | `ModelDeployment` | polls `GET /api/v1/models/{id}/deployment` |
 | `rollback_model(model_id)` | `Model` | `POST /api/v1/models/{id}/rollback` |
 | `search_huggingface_models(search="", *, task="")` | `list[dict]` | `GET /api/v1/models/huggingface` |
 | `import_huggingface_model(project_id, repo_id, *, revision="main")` | `Model` | `POST /api/v1/models/huggingface/import` |
@@ -266,14 +268,16 @@ while run.status not in ("succeeded", "failed", "cancelled"):
 and can be deployed only when its quality gate is `passed`; see
 [Quality gates and promotion](../concepts/core-concepts.md#quality-gates-and-promotion).
 To request a prediction, call `POST /api/v1/models/{id}/predict` through the
-[REST API](api.md#models).
+[REST API](api.md#models). On Kubernetes, `deploy_model` answers when the deployment
+is recorded, and `wait_for_model_deployment` waits for `serving`; see
+[Deploy and canary models on Kubernetes](../guides/models-kubernetes.md).
 
 ### Agents
 
 | Method | Returns | API call |
 | --- | --- | --- |
 | `list_agents()` | `list[Agent]` | `GET /api/v1/agents` |
-| `deploy_agent(project_id, name, version, image, graph_module, *, llm_backend="mock", replicas=1, max_replicas=None, cpu="500m", memory="1Gi", gpu=0, gpu_type="nvidia.com/gpu", tools=None)` | `Agent` | `POST /api/v1/agents` |
+| `deploy_agent(project_id, name, version, image, graph_module, *, llm_backend="mock", replicas=1, max_replicas=None, cpu="500m", memory="1Gi", gpu=0, gpu_type="nvidia.com/gpu", tools=None, scaling=None)` | `Agent` | `POST /api/v1/agents` |
 | `invoke_agent(agent_id, message, *, session_id="", user_id="", timeout=120.0)` | `dict` | `POST /api/v1/agents/{id}/invoke` |
 | `set_agent_traffic(agent_id, canary_weight)` | `Agent` | `PUT /api/v1/agents/{id}/traffic` |
 | `agent_sessions(agent_id)` | `list[AgentSession]` | `GET /api/v1/agents/{id}/sessions` |
@@ -341,7 +345,7 @@ Publishing requires a Kubernetes-managed runtime. See the
 | `list_tools()` | `list[Tool]` | `GET /api/v1/tools` |
 | `register_tool(name, version, description, input_schema, *, tags=None)` | `Tool` | `POST /api/v1/tools` |
 | `list_functions()` | `list[Function]` | `GET /api/v1/functions` |
-| `deploy_function(project_id, name, image, *, cpu="500m", memory="512Mi", env_vars=None, annotations=None)` | `Function` | `POST /api/v1/functions` |
+| `deploy_function(project_id, name, image, *, cpu="500m", memory="512Mi", env_vars=None, annotations=None, min_replicas=None, max_replicas=None, scaling=None)` | `Function` | `POST /api/v1/functions` |
 | `invoke_function(name, payload)` | `dict` | `POST /api/v1/functions/{name}/invoke` |
 | `invoke_function_async(name, payload)` | `dict` | `POST /api/v1/functions/{name}/invoke-async` |
 | `delete_function(name)` | `None` | `DELETE /api/v1/functions/{name}` |
@@ -356,6 +360,30 @@ Publishing requires a Kubernetes-managed runtime. See the
 [`register_tool` decorator](#tools) registers a Python function locally so an
 agent can call it. Creating and testing connections requires the `admin` or
 `operator` role.
+
+### Applications
+
+Applications run on Kubernetes installs only. Every method raises
+`ApplicationsNotConfiguredError` on an install without them. See
+[Deploy applications](../guides/applications.md).
+
+| Method | Returns | API call |
+| --- | --- | --- |
+| `create_application(project_id, name, *, image=None, source=None, port=None, env=None, secret_refs=None, cpu=None, memory=None, min_replicas=None, max_replicas=None, scaling=None, health_path=None, visibility=None)` | `Application` | `POST /api/v1/applications` |
+| `list_applications(project_id="")` | `list[Application]` | `GET /api/v1/applications` |
+| `get_application(name)` | `Application` | `GET /api/v1/applications/{name}` |
+| `update_application(name, *, ...)` | `Application` | `PUT /api/v1/applications/{name}` |
+| `delete_application(name)` | `None` | `DELETE /api/v1/applications/{name}` |
+| `redeploy_application(name)` | `Application` | `POST /api/v1/applications/{name}/redeploy` |
+| `application_events(name)` | `list[ApplicationEvent]` | `GET /api/v1/applications/{name}/events` |
+| `application_logs(name, *, tail=None, container="")` | `list[ApplicationPodLogs]` | `GET /api/v1/applications/{name}/logs` |
+| `wait_until_ready(name, *, timeout=600.0, poll_interval=3.0, generation=None)` | `Application` | polls `GET /api/v1/applications/{name}` |
+
+`wait_until_ready` raises `ApplicationFailed` with the reason as soon as the
+application fails, and `ApplicationTimeout` when it is still starting after
+`timeout`. Pass the `generation` that `create_application`, `update_application` or
+`redeploy_application` returned, so a status from the previous rollout isn't taken
+as ready.
 
 ### Agent teams
 

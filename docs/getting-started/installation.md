@@ -77,8 +77,8 @@ The port in the console URL differs when the default port was busy. `make -C dep
 
 ## Step 3: Sign in
 
-Open <http://localhost:8080> for the landing page, or go straight to the console
-at <http://localhost:8080/console>. Sign in with the local account `admin` and
+Open <http://localhost:8080>, which redirects to the console at
+<http://localhost:8080/console>. Kionga installs include no landing page. Sign in with the local account `admin` and
 password `kionga-local`, or with one of the single sign-on test accounts described in
 [Single sign-on](../operations/single-sign-on.md#try-it-locally).
 
@@ -111,7 +111,7 @@ GATEWAY=http://localhost:18080 ./deploy/scripts/demo-smoke.sh
 
 | Service | URL | Sign-in (local defaults) |
 | --- | --- | --- |
-| Landing page | <http://localhost:8080> | None |
+| Console redirect | <http://localhost:8080> | None |
 | Console and API | <http://localhost:8080/console> | `admin` / `kionga-local`, or single sign-on |
 | Jupyter workbench | <http://localhost:8080/workspace?tool=workbench> | Your console session |
 | Browser IDE | <http://localhost:8080/workspace?tool=ide> | Your console session. Start it first with `make -C deploy ide-up`. |

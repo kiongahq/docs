@@ -39,7 +39,7 @@ enable it; see [Turn applications on](#enable).
 - The install runs on Kubernetes with applications turned on and a wildcard DNS
   record for the application domain. An administrator sets this up; see
   [Turn applications on](#enable) and
-  [Kubernetes prerequisites](../operations/managed-kubernetes.md).
+  [Kubernetes prerequisites](../operations/kubernetes-prerequisites.md).
 - Your container image serves HTTP on one port, runs as a non-root user with a
   numeric user ID, and answers its [health check](#health-check).
 - For the CLI and Python client, install the SDK (`pip install kionga`, version
@@ -362,7 +362,7 @@ says that `KIONGA_APPLICATIONS_BASE_DOMAIN` is not set.
 To enable applications:
 
 1. Install Kionga on Kubernetes with the Helm chart, and install the
-   [cluster prerequisites](../operations/managed-kubernetes.md): cert-manager,
+   [cluster prerequisites](../operations/kubernetes-prerequisites.md): cert-manager,
    KEDA with its HTTP add-on, and an ingress controller.
 2. Choose a base domain that differs from the console host, such as
    `kionga.company-x.net`, and point a wildcard DNS record `*.kionga.company-x.net`
@@ -394,7 +394,7 @@ must be installed too. They come with each platform release in `config/crd`.
 Source builds run rootless BuildKit, which needs an unconfined seccomp and
 AppArmor profile. A namespace that enforces the Pod Security `baseline` or
 `restricted` level refuses those pods, so builds need a namespace that doesn't.
-See [Kubernetes prerequisites](../operations/managed-kubernetes.md).
+See [Kubernetes prerequisites](../operations/kubernetes-prerequisites.md#pod-security-for-builds).
 
 ## Troubleshooting
 

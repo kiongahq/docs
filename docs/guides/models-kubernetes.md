@@ -20,7 +20,7 @@ API are the same on both.
 
     - **Chart wiring.** The chart in deploy v0.2.0 does not install the model
       deployment resource definition or set the operator's object store
-      variables. See [Kubernetes prerequisites](../operations/managed-kubernetes.md).
+      variables. See [Kubernetes prerequisites](../operations/kubernetes-prerequisites.md).
     - **Canary.** The gateway and the operator are being aligned on the shape of
       the canary fields. A plain deploy is unaffected by the canary part. Treat
       the canary sections as the behavior to expect after the change.
@@ -192,4 +192,4 @@ to reach the object store in your network policies.
 ## Next steps
 
 - [Register, deploy and serve models](models-serving.md).
-- [Kubernetes prerequisites](../operations/managed-kubernetes.md).
+- [Kubernetes prerequisites](../operations/kubernetes-prerequisites.md).

@@ -198,6 +198,8 @@ nav:
       - Compose public overlay (legacy): hosting.md
       - Kubernetes:
           - Deploy on Kubernetes: operations/managed-kubernetes.md
+          - Kubernetes prerequisites: operations/kubernetes-prerequisites.md
+          - Managed operations: operations/managed-operations.md
           - Amazon EKS: operations/providers/aws-eks.md
           - Google GKE: operations/providers/gcp-gke.md
           - Azure AKS: operations/providers/azure-aks.md
@@ -208,6 +210,7 @@ nav:
       - Updates and rollback: operations/updates.md
       - Production readiness: operations/production-operations.md
       - Troubleshooting: operations/troubleshooting.md
+  - Roadmap: roadmap.md
   - Reference:
       - reference/index.md
       - REST API: reference/api.md

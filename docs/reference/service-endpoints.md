@@ -26,7 +26,7 @@ deployments replace all of them; see [Choose a deployment](../operations/index.m
 
 | Service | From your machine | Inside the stack | Credentials (local defaults) |
 | --- | --- | --- | --- |
-| Landing page | `http://localhost:8080` | `http://gateway:8080` | None |
+| Console redirect (`/` goes to the console) | `http://localhost:8080` | `http://gateway:8080` | None |
 | Console and API | `http://localhost:8080/console` | `http://gateway:8080` | `admin` / `kionga-local` (role from `KIONGA_LOCAL_ROLE`), or single sign-on |
 | Dex (single sign-on) | `http://localhost:5556/dex` | `http://dex:5556/dex` | Test directory password `kionga-sso-dev` |
 | Jupyter workbench | `http://localhost:8080/workspace?tool=workbench` | `http://jupyter:8888` | Your console session. For diagnostics only: `http://127.0.0.1:8888/workspaces/workbench/` with token `kionga-local` (`JUPYTER_TOKEN`). |
@@ -107,7 +107,8 @@ addresses:
   that starts with `KIONGA_PLATFORM_SECRET_` or is listed in
   `KIONGA_PLATFORM_SECRET_REFS`. An OpenFaaS connection can also use
   `OPENFAAS_PASSWORD`, an MLflow connection `MLFLOW_TOKEN`, and a KFP connection
-  `KFP_TOKEN`. Other names return a 422, and a saved connection that uses one fails
+  `KFP_TOKEN`. A KFP connection is a health-checked service only: on Kubernetes,
+  Kionga runs container pipelines as Kubernetes Jobs, not on Kubeflow. Other names return a 422, and a saved connection that uses one fails
   its test with `not permitted`; see
   [Migrate a stored reference](../operations/production-operations.md#migrate-a-stored-reference).
   Kionga sends the value as a bearer token. Never paste a secret into the form;
@@ -136,9 +137,11 @@ item stays pending unless you connect one, for example a Kind cluster.
   `FRAUD_MODEL_ENDPOINT` to a deployed model's endpoint URL and
   `CALLCENTER_AGENT_ID` to a deployed agent ID, then run
   `docker compose -f deploy/compose.yaml up -d realtime-processor`.
-- **Serverless functions**: connect an OpenFaaS or faasd gateway with
+- **Serverless functions** on Compose or a single server: connect an OpenFaaS or faasd gateway with
   `OPENFAAS_URL`, `OPENFAAS_USER` and `OPENFAAS_PASSWORD`; see
   [Connect OpenFaaS functions](../operations/local.md#connect-openfaas-functions).
+  On Kubernetes, Kionga runs functions itself; see
+  [Run functions on Kubernetes](../guides/functions.md).
 
 ## Use external services
 

@@ -97,8 +97,10 @@ operating system's keychain, never in source control.
 
 ## Choose the runtime for new pipeline runs and functions
 
-Kionga sends container pipelines to Prefect and functions to OpenFaaS. An
-administrator can switch to another Prefect or OpenFaaS deployment without
+On Compose and single-server installs, Kionga sends container pipelines to
+Prefect and functions to OpenFaaS. On Kubernetes, container pipelines run as
+Kubernetes Jobs and functions run in Kionga, so these connections don't apply
+there. An administrator can switch to another Prefect or OpenFaaS deployment without
 restarting the gateway.
 
 1. Open **Platform** and click **＋ Add connection**.

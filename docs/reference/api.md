@@ -328,14 +328,31 @@ A normal user sees only the buckets in their access profile.
 | `GET` | `/api/v1/catalog` | read | `catalog` | Shared catalog; `kind` filter: `model`, `feature`, `agent`, `tool` |
 | `GET` | `/api/v1/prompts` | read | `catalog` | Langfuse prompt library |
 
+## Applications
+
+Kubernetes installs only. On Compose, every route returns `409` with
+`not_configured`, a message and the steps to enable applications. A normal user
+needs the `applications` service. See [Deploy applications](../guides/applications.md).
+
+| Method | Path | Access | Service | Purpose |
+| --- | --- | --- | --- | --- |
+| `GET` | `/api/v1/applications` | read | `applications` | List applications with live status, URL and ready replicas. Filter with `project_id` |
+| `POST` | `/api/v1/applications` | write | `applications` | Deploy an application: `project_id`, `name`, `image` or `source`, and optional `port`, `env`, `secret_refs`, `resources`, `replicas`, `scaling`, `health_path`, `visibility` |
+| `GET` | `/api/v1/applications/{name}` | read | `applications` | Read an application with status, conditions and last build |
+| `PUT` | `/api/v1/applications/{name}` | write | `applications` | Replace the configuration; the name and project can't change |
+| `DELETE` | `/api/v1/applications/{name}` | write | `applications` | Delete the application and its workload |
+| `POST` | `/api/v1/applications/{name}/redeploy` | write | `applications` | Restart the pods, and rebuild a Git source |
+| `GET` | `/api/v1/applications/{name}/logs` | read | `applications` | Recent logs per pod (`tail`, `container`, `since`). With `follow=true`, a bounded Server-Sent Events stream |
+| `GET` | `/api/v1/applications/{name}/events` | read | `applications` | Kubernetes events for the application |
+
 ## Real-time and functions
 
 | Method | Path | Access | Service | Purpose |
 | --- | --- | --- | --- | --- |
 | `GET` | `/api/v1/realtime` | read | `realtime` | Live statistics for the real-time examples |
 | `POST` | `/api/v1/realtime/{demo}` | reporting | | Report stream statistics |
-| `GET` | `/api/v1/functions` | read | `functions` | List functions and whether OpenFaaS is configured |
-| `POST` | `/api/v1/functions` | write | `functions` | Deploy a function: `project_id`, `name`, `image`, optional `cpu`, `memory`, `env_vars`, `labels`, `annotations` |
+| `GET` | `/api/v1/functions` | read | `functions` | List functions and whether OpenFaaS is configured (on Kubernetes, `runtime` is `kubernetes`) |
+| `POST` | `/api/v1/functions` | write | `functions` | Deploy a function: `project_id`, `name`, `image`, optional `cpu`, `memory`, `env_vars`, `labels`, `annotations`, and on Kubernetes `replicas` and `scaling` |
 | `DELETE` | `/api/v1/functions/{name}` | write | `functions` | Remove a function |
 | `POST` | `/api/v1/functions/{name}/invoke` | write | `functions` | Invoke a function with the request body as payload |
 | `POST` | `/api/v1/functions/{name}/invoke-async` | write | `functions` | Queue an invocation and return its call ID |

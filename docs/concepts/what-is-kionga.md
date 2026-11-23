@@ -49,7 +49,8 @@ Kionga puts a single control plane in front of these systems:
 | Agents | Deployment of LangGraph and other framework agents, chat, sessions, traces, token usage and cost, canary traffic and replica autoscaling on Kubernetes |
 | Features | Online features in Redis for low-latency lookups, offline snapshots in object storage, and connections to external feature stores |
 | Real-time processing | Kafka stream consumers that enrich events with online features and score them with a model or agent, with three runnable examples: fraud detection, call-center analysis and recommendations |
-| Serverless functions | Project-owned functions with resource limits and HTTP, asynchronous, scheduled or Kafka triggers, run on an OpenFaaS or faasd gateway you provide |
+| Serverless functions | Project-owned functions with resource limits. On Kubernetes they are Kionga-native and scale to zero. On Compose, with HTTP, asynchronous, scheduled or Kafka triggers, they run on an OpenFaaS or faasd gateway you provide |
+| Applications | Your own services, deployed from an image or a public Git repository at `<name>.<your domain>`, self-healing and autoscaled on Kubernetes |
 | Governance | Single sign-on, deny-by-default access profiles, resource quotas, access requests, policies, personal API keys and an immutable audit log |
 | Deployment | The same images on a laptop, a single server or Kubernetes, configured by environment and configuration files |
 
@@ -62,8 +63,13 @@ Kionga puts a single control plane in front of these systems:
 - **It does not ship its own language model.** Agents call the provider you
   configure: OpenAI, Anthropic, or any OpenAI-compatible server. A built-in `mock`
   model lets you run everything without a provider key.
-- **It does not bundle a serverless engine.** Kionga manages functions end to end,
-  but runs them on an OpenFaaS or faasd gateway that you provide.
+- **It does not bundle a serverless engine on Compose.** On Kubernetes, Kionga runs
+  functions itself. On Compose and single-server installs, it manages functions
+  end to end but runs them on an OpenFaaS or faasd gateway that you provide.
+- **It is not hosted for you by default.** You install it in your own
+  infrastructure. Enterprise plans can have Kionga's team operate it inside your
+  cloud; see [Managed operations](../operations/managed-operations.md). A
+  Kionga-hosted service is on the [roadmap](../roadmap.md).
 
 ## Next steps
 

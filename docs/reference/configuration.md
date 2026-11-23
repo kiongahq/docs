@@ -340,6 +340,10 @@ this behavior keep their credentials until you redeploy them.
 
 ## Serverless (OpenFaaS)
 
+These settings apply to Compose and single-server installs. On Kubernetes, Kionga
+runs functions itself and ignores them; see
+[Run functions on Kubernetes](../guides/functions.md).
+
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `OPENFAAS_URL` | *(unset)* | faasd/OpenFaaS gateway; unset means serverless is "not configured" |
@@ -404,6 +408,42 @@ context; users should not override it. The platform API remains configured by
 | `TEST_MEMORY_DSN` | pgvector DSN for the SDK's agent-memory round-trip test (`sdk-python`) |
 | `KIONGA_RUN_EVALS` | Set to `1` to run the paid agent evaluation lane (needs a real provider key) |
 
+## Kubernetes workloads
+
+Applications, functions and model endpoints on Kubernetes. See
+[Deploy applications](../guides/applications.md#enable),
+[Run functions on Kubernetes](../guides/functions.md) and
+[Deploy and canary models on Kubernetes](../guides/models-kubernetes.md#set-up).
+
+**Gateway**
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `KIONGA_RUNTIME` | automatic | `kubernetes` or `compose`. Unset, the gateway uses Kubernetes mode when it runs in a pod |
+| `KIONGA_APPLICATIONS_BASE_DOMAIN` | *(unset)* | Applications are served at `<name>.<base domain>`. Unset, applications return `409 not_configured` |
+| `KIONGA_KEDA_INTERCEPTOR_URL` | `http://keda-add-ons-http-interceptor-proxy.keda:8080` | KEDA HTTP add-on interceptor that carries function calls |
+| `KIONGA_WEBSITE_URL` | *(unset)* | Link to the Kionga website in the console. Unset, the link is hidden |
+
+**Operator**
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `KIONGA_APPLICATIONS_BASE_DOMAIN` | *(unset)* | Base domain for application hosts. Unset, no host is served |
+| `KIONGA_APPLICATIONS_TLS_SECRET` | *(unset)* | Wildcard certificate Secret in the workload namespace. Unset, URLs use `http://` |
+| `KIONGA_INGRESS_CLASS` | *(unset)* | `ingressClassName` of application Ingresses |
+| `KIONGA_SSO_UPSTREAM` | *(unset)* | Gateway `host:port` for `sso` applications. Unset, they aren't published |
+| `KIONGA_KEDA_HTTP_INTERCEPTOR` | `keda-add-ons-http-interceptor-proxy.keda.svc.cluster.local:8080` | Interceptor `host:port` |
+| `KIONGA_BUILD_REGISTRY` | *(unset)* | Registry prefix for Git builds. Unset turns Git builds off |
+| `KIONGA_BUILD_PUSH_SECRET` | *(unset)* | `dockerconfigjson` Secret with push access |
+| `KIONGA_BUILD_REGISTRY_INSECURE` | `false` | Push over plain HTTP |
+| `KIONGA_BUILDKIT_IMAGE` | a pinned rootless BuildKit | Image that runs builds |
+| `KIONGA_MODEL_STORAGE_SECRET` | *(unset)* | Secret with the object store keys for model servers |
+| `KIONGA_MODEL_S3_ENDPOINT` | *(unset)* | Object store `host:port` |
+| `KIONGA_MODEL_S3_USE_HTTPS` | `0` | `1` for HTTPS |
+| `KIONGA_MODEL_S3_REGION` | `us-east-1` | Object store region |
+| `KIONGA_MLFLOW_ARTIFACTS_DESTINATION` | *(unset)* | Bucket behind MLflow's artifact proxy |
+| `KIONGA_KSERVE_DEPLOYMENT_MODE` | `RawDeployment` | KServe deployment mode |
+
 ## Kubernetes scale path (optional)
 
 Read by the operator and integration worker only:
@@ -418,7 +458,7 @@ Read by the operator and integration worker only:
 | `WORKSPACE_FEATURE_URL` / `WORKSPACE_STORAGE_URL` | in-cluster platform services | Feature and object access injected into each workspace |
 | `WORKSPACE_MLFLOW_URL` / `WORKSPACE_PREFECT_URL` | in-cluster upstreams | Experiment and orchestration endpoints injected into each workspace |
 | `WORKSPACE_LANGFUSE_URL` / `WORKSPACE_KAFKA_REST_URL` | in-cluster upstreams | Observability and event endpoints injected into each workspace |
-| `KIONGA_TARGET_NAMESPACE` | `default` | Namespace where lifecycle CRDs and workspaces are created |
+| `KIONGA_TARGET_NAMESPACE` | `default` | Namespace where lifecycle CRDs, workspaces and the application, function and model deployment resources are created |
 | `KIONGA_AGENT_NAMESPACE` | `default` | Namespace the gateway uses for ID-derived agent Service DNS; keep equal to the agent lifecycle target namespace |
 | `TRACE_PROXY_IMAGE` | `ghcr.io/kiongahq/trace-proxy:latest` | Sidecar image reconciled into every Kubernetes agent pod |
 

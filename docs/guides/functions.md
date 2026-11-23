@@ -19,7 +19,7 @@ The API and the commands are the same in both cases, so a client doesn't change.
 | --- | --- | --- |
 | Engine | Kionga, with KEDA for scaling | faasd or an OpenFaaS gateway you provide |
 | Scale to zero | Built in, on by default | Depends on your OpenFaaS setup |
-| Setup | The [cluster prerequisites](../operations/managed-kubernetes.md) | `OPENFAAS_URL`, `OPENFAAS_USER` and `OPENFAAS_PASSWORD` |
+| Setup | The [cluster prerequisites](../operations/kubernetes-prerequisites.md) | `OPENFAAS_URL`, `OPENFAAS_USER` and `OPENFAAS_PASSWORD` |
 | Cron and Kafka triggers | Not available | OpenFaaS connectors |
 | Asynchronous calls | Run in the gateway, with no queue | OpenFaaS queue |
 

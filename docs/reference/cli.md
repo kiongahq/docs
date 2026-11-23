@@ -109,6 +109,11 @@ The `kionga` command is installed in the Jupyter workbench and the browser IDE.
 It works with your project's source code. It reaches Kionga through the
 preset `KIONGA_URL` of the workspace, so it needs no API key.
 
+The command also runs the SDK's `apps` commands, described in
+[Manage applications](#manage-applications), when the SDK (version 0.3.2 or
+later) is installed. Elsewhere, install the SDK with `pip install kionga` to get
+the same `kionga` command.
+
 | Command | Effect |
 | --- | --- |
 | `kionga templates [--json]` | Show the project template catalog |
@@ -140,3 +145,41 @@ When you create a project, Kionga returns a `scaffold_command` with the exact
 template, version and settings. Prefer running that command. See
 [Scaffold a project](../guides/scaffolding.md) and
 [Project templates](../guides/project-templates.md).
+
+## Manage applications
+
+`kionga apps` deploys and operates [applications](../guides/applications.md) on a
+Kubernetes install. It reads the gateway address from `KIONGA_URL` (or `--url`)
+and a personal API key from `KIONGA_TOKEN`. Errors print as `kionga: <reason>`
+and exit with status 1. On an install without applications, every command fails
+with the `not_configured` reply and its steps.
+
+| Command | Effect | API call |
+| --- | --- | --- |
+| `kionga apps deploy <name> --project <id> (--image <image> \| --git <url>)` | Deploy an application | `POST /api/v1/applications` |
+| `kionga apps update <name>` | Change the settings you pass and keep the rest | `GET` then `PUT /api/v1/applications/{name}` |
+| `kionga apps list [--project <id>]` | List applications with phase, replicas and URL | `GET /api/v1/applications` |
+| `kionga apps get <name>` | Show one application with its status | `GET /api/v1/applications/{name}` |
+| `kionga apps logs <name> [--tail N] [--container NAME]` | Print recent logs of each pod, 1 to 2000 lines (default 200) | `GET /api/v1/applications/{name}/logs` |
+| `kionga apps events <name>` | Print Kubernetes events, newest first | `GET /api/v1/applications/{name}/events` |
+| `kionga apps redeploy <name>` | Restart the pods, and rebuild a Git source | `POST /api/v1/applications/{name}/redeploy` |
+| `kionga apps delete <name> [-y]` | Delete the application, after confirmation unless `-y` | `DELETE /api/v1/applications/{name}` |
+
+`deploy` and `update` take these options:
+
+| Option | Meaning |
+| --- | --- |
+| `--image`, or `--git` with `--ref`, `--context-dir` and `--dockerfile` | What to run. Use one of the two. |
+| `--port` | The container port. Default 8080. |
+| `--env KEY=VALUE` | An environment variable. Repeat for more. |
+| `--secret NAME` | A Kubernetes Secret to load as environment. Repeat for more. |
+| `--cpu`, `--memory` | Per-replica resources, such as `500m` and `512Mi`. |
+| `--min-replicas`, `--max-replicas` | The replica range. A minimum of 0 scales to zero. |
+| `--scale-on requests\|cpu` with `--target N` | The autoscaling trigger and its target. Pass both. |
+| `--health-path` | The health check path. Default `/`. |
+| `--visibility public\|sso` | Who can reach it. Default `sso`. |
+| `--wait`, `--timeout SECONDS`, `--json` | Wait until ready (default 600 seconds), and print JSON instead of a table. |
+
+`kionga apps logs --follow` arrives in a later SDK release. To follow logs now, use
+the [streaming log API](../guides/applications.md#logs).
+
