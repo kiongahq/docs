@@ -1,0 +1,126 @@
+# Known structure gaps. Each line is `<page> <rule>`; scripts/check_structure.py explains the rules.
+# Every line is work to do: the page does not yet have the section or content its page type
+# requires, and the content must come from the code, not be written to fill the heading.
+# The check fails on a gap that is not listed and on a line whose gap is fixed, so this
+# file only shrinks. When you fix a page, delete its lines in the same change.
+
+# Missing section: before you begin
+guides/langflow.md section:before-you-begin
+operations/kubernetes-prerequisites.md section:before-you-begin
+operations/managed-operations.md section:before-you-begin
+operations/production-operations.md section:before-you-begin
+operations/sandboxes.md section:before-you-begin
+operations/troubleshooting.md section:before-you-begin
+operations/updates.md section:before-you-begin
+
+# Missing section: related pages
+guides/access-control.md section:related-pages
+guides/agent-designer.md section:related-pages
+guides/agent-frameworks.md section:related-pages
+guides/agent-teams.md section:related-pages
+guides/agents.md section:related-pages
+guides/applications.md section:related-pages
+guides/coding-workspace.md section:related-pages
+guides/console-navigation.md section:related-pages
+guides/distributed-workspaces.md section:related-pages
+guides/engineering-blog.md section:related-pages
+guides/feature-stores.md section:related-pages
+guides/features.md section:related-pages
+guides/functions.md section:related-pages
+guides/huggingface.md section:related-pages
+guides/langflow.md section:related-pages
+guides/logs.md section:related-pages
+guides/models-kubernetes.md section:related-pages
+guides/models-serving.md section:related-pages
+guides/pipelines.md section:related-pages
+guides/project-templates.md section:related-pages
+guides/realtime.md section:related-pages
+guides/scaffolding.md section:related-pages
+guides/workbench.md section:related-pages
+operations/external-storage.md section:related-pages
+operations/kubernetes-prerequisites.md section:related-pages
+operations/local.md section:related-pages
+operations/log-export.md section:related-pages
+operations/managed-kubernetes.md section:related-pages
+operations/managed-operations.md section:related-pages
+operations/production-operations.md section:related-pages
+operations/providers/aws-eks.md section:related-pages
+operations/providers/azure-aks.md section:related-pages
+operations/providers/gcp-gke.md section:related-pages
+operations/public-vm.md section:related-pages
+operations/sandboxes.md section:related-pages
+operations/single-sign-on.md section:related-pages
+operations/troubleshooting.md section:related-pages
+operations/updates.md section:related-pages
+
+# Missing section: troubleshooting
+guides/agent-designer.md section:troubleshooting
+guides/agent-frameworks.md section:troubleshooting
+guides/agent-teams.md section:troubleshooting
+guides/agents.md section:troubleshooting
+guides/coding-workspace.md section:troubleshooting
+guides/console-navigation.md section:troubleshooting
+guides/distributed-workspaces.md section:troubleshooting
+guides/engineering-blog.md section:troubleshooting
+guides/feature-stores.md section:troubleshooting
+guides/features.md section:troubleshooting
+guides/langflow.md section:troubleshooting
+guides/logs.md section:troubleshooting
+guides/pipelines.md section:troubleshooting
+guides/project-templates.md section:troubleshooting
+guides/workbench.md section:troubleshooting
+operations/external-storage.md section:troubleshooting
+operations/kubernetes-prerequisites.md section:troubleshooting
+operations/local.md section:troubleshooting
+operations/log-export.md section:troubleshooting
+operations/managed-kubernetes.md section:troubleshooting
+operations/managed-operations.md section:troubleshooting
+operations/production-operations.md section:troubleshooting
+operations/providers/aws-eks.md section:troubleshooting
+operations/providers/azure-aks.md section:troubleshooting
+operations/providers/gcp-gke.md section:troubleshooting
+operations/public-vm.md section:troubleshooting
+operations/sandboxes.md section:troubleshooting
+operations/troubleshooting.md section:troubleshooting
+operations/updates.md section:troubleshooting
+
+# Missing section: verify
+guides/access-control.md section:verify
+guides/agent-designer.md section:verify
+guides/agent-frameworks.md section:verify
+guides/agent-teams.md section:verify
+guides/agents.md section:verify
+guides/applications.md section:verify
+guides/coding-workspace.md section:verify
+guides/console-navigation.md section:verify
+guides/distributed-workspaces.md section:verify
+guides/engineering-blog.md section:verify
+guides/feature-stores.md section:verify
+guides/features.md section:verify
+guides/functions.md section:verify
+guides/huggingface.md section:verify
+guides/langflow.md section:verify
+guides/logs.md section:verify
+guides/models-kubernetes.md section:verify
+guides/models-serving.md section:verify
+guides/pipelines.md section:verify
+guides/project-templates.md section:verify
+guides/realtime.md section:verify
+guides/scaffolding.md section:verify
+guides/workbench.md section:verify
+operations/kubernetes-prerequisites.md section:verify
+operations/managed-operations.md section:verify
+operations/production-operations.md section:verify
+operations/sandboxes.md section:verify
+operations/single-sign-on.md section:verify
+operations/troubleshooting.md section:verify
+operations/updates.md section:verify
+
+# Concept pages describe what and why; numbered steps belong in a how-to.
+concepts/how-it-works.md step-list
+
+# Pages that should walk through numbered steps.
+getting-started/quickstart.md steps
+guides/functions.md steps
+guides/models-serving.md steps
+operations/managed-operations.md steps
