@@ -5,11 +5,11 @@ description: Run functions on Kubernetes as Kionga-native workloads that scale t
 
 # Run functions on Kubernetes
 
-A function is a container image that serves HTTP, which Kionga runs for you and
-calls through the gateway. On Kubernetes, functions are Kionga-native: Kionga
-runs each one as a self-healing, autoscaling pod, and by default it scales to
-zero when nobody calls it and starts again on the next call. There is no OpenFaaS
-on a Kubernetes install.
+Deploy a function on Kubernetes, call it through the gateway, and let it scale to
+zero when nobody calls it. A function is a container image that serves HTTP,
+which Kionga runs for you. On Kubernetes, functions are Kionga-native: Kionga
+runs each one as a self-healing, autoscaling pod, and by default it starts the
+pod again on the next call. There is no OpenFaaS on a Kubernetes install.
 
 Compose and single-server installs keep faasd (OpenFaaS's single-node engine).
 For those, follow [Git, functions and distributed workspaces](distributed-workspaces.md#deploy-a-function).
@@ -42,80 +42,91 @@ The API and the commands are the same in both cases, so a client doesn't change.
 
 ## Deploy a function
 
-=== "SDK"
+1. Deploy the function with the SDK, the CLI or the API:
 
-    ```python
-    client.deploy_function(
-        "prj-123", "score-events", "ghcr.io/acme/score-events:1.4.0",
-        cpu="500m", memory="512Mi",
-        min_replicas=0, max_replicas=5,
-        scaling={"metric": "requests", "target": 100},
-    )
-    ```
+    === "SDK"
 
-=== "CLI"
+        ```python
+        client.deploy_function(
+            "prj-123", "score-events", "ghcr.io/acme/score-events:1.4.0",
+            cpu="500m", memory="512Mi",
+            min_replicas=0, max_replicas=5,
+            scaling={"metric": "requests", "target": 100},
+        )
+        ```
 
-    ```bash
-    kionga-cli function deploy prj-123 score-events ghcr.io/acme/score-events:1.4.0
-    ```
+    === "CLI"
 
-=== "API"
+        ```bash
+        kionga-cli function deploy prj-123 score-events ghcr.io/acme/score-events:1.4.0
+        ```
 
-    ```bash
-    curl -s -X POST "$KIONGA_URL/api/v1/functions" \
-      -H "Authorization: Bearer $KIONGA_TOKEN" \
-      -H 'Content-Type: application/json' \
-      -d '{"project_id": "prj-123", "name": "score-events",
-           "image": "ghcr.io/acme/score-events:1.4.0",
-           "cpu": "500m", "memory": "512Mi",
-           "replicas": {"min": 0, "max": 5},
-           "scaling": {"metric": "requests", "target": 100}}'
-    ```
+    === "API"
 
-The request returns at once with the function in the `pending` state. Kionga
-creates the function only after Kubernetes accepts it. A function name is global
-across projects: if the name belongs to another project, the request returns `409
-conflict`.
+        ```bash
+        curl -s -X POST "$KIONGA_URL/api/v1/functions" \
+          -H "Authorization: Bearer $KIONGA_TOKEN" \
+          -H 'Content-Type: application/json' \
+          -d '{"project_id": "prj-123", "name": "score-events",
+               "image": "ghcr.io/acme/score-events:1.4.0",
+               "cpu": "500m", "memory": "512Mi",
+               "replicas": {"min": 0, "max": 5},
+               "scaling": {"metric": "requests", "target": 100}}'
+        ```
 
-| Field | Default | Notes |
-| --- | --- | --- |
-| `name` | none | A lowercase DNS label, up to 45 characters. |
-| `image` | none | Required. An OCI image reference. |
-| `env_vars` | none | Environment variables, as a map. |
-| `cpu`, `memory` | `100m`, `256Mi` | Per pod, as Kubernetes quantities. Request and limit are equal. The SDK's own defaults are `500m` and `512Mi`. |
-| `replicas` | `min` 0, `max` 5 | `max` is 1 to 100. |
-| `scaling` | `requests`, target 100 | `requests` counts concurrent calls per pod. `cpu` scales on utilization and needs `min` of 1 or more. |
+2. Read the response. The request returns at once with the function in the
+   `pending` state. Kionga creates the function only after Kubernetes accepts
+   it. A function name is global across projects: if the name belongs to another
+   project, the request returns `409 conflict`.
+3. Set the fields that your function needs:
+
+    | Field | Default | Notes |
+    | --- | --- | --- |
+    | `name` | none | A lowercase DNS label, up to 45 characters. |
+    | `image` | none | Required. An OCI image reference. |
+    | `env_vars` | none | Environment variables, as a map. |
+    | `cpu`, `memory` | `100m`, `256Mi` | Per pod, as Kubernetes quantities. Request and limit are equal. The SDK's own defaults are `500m` and `512Mi`. |
+    | `replicas` | `min` 0, `max` 5 | `max` is 1 to 100. |
+    | `scaling` | `requests`, target 100 | `requests` counts concurrent calls per pod. `cpu` scales on utilization and needs `min` of 1 or more. |
 
 A function has no public host by default. Callers reach it through the gateway,
 which also checks who may call it. The same health, restart and rolling-update
 rules as for [applications](applications.md) apply. See
 [Self-healing and autoscaling](../concepts/self-healing-and-autoscaling.md).
 
-**Verify:** `GET /api/v1/functions` lists the function with the status `ready`
-or `scaled-to-zero` and `"runtime": "kubernetes"`.
-
 ## Invoke a function
 
-```bash
-export KIONGA_FUNCTION_PAYLOAD='{"customer_id":"c-42"}'
-kionga-cli function invoke score-events
-kionga-cli function invoke-async score-events
-```
+1. Call the function and wait for its response:
 
-```python
-result = client.invoke_function("score-events", {"customer_id": "c-42"})
-call = client.invoke_function_async("score-events", {"customer_id": "c-42"})
-```
+    ```bash
+    export KIONGA_FUNCTION_PAYLOAD='{"customer_id":"c-42"}'
+    kionga-cli function invoke score-events
+    ```
 
-- **Synchronous** calls return the function's JSON response. The request body can
-  be up to 1 MiB, and the gateway waits up to 2 minutes, which covers a cold
-  start. A non-2xx response from the function comes back as `502 invoke_failed`
-  with its message.
-- **Asynchronous** calls return `202` with a `call_id` at once and run in the
-  background of the gateway replica that took the request. There is no queue: if
-  that replica stops before the call finishes, the call is lost. The gateway logs
-  the outcome with the call ID. Use a synchronous call, or a pipeline, when you
-  must not lose work.
+    ```python
+    result = client.invoke_function("score-events", {"customer_id": "c-42"})
+    ```
+
+    A synchronous call returns the function's JSON response. The request body
+    can be up to 1 MiB, and the gateway waits up to 2 minutes, which covers a
+    cold start. A non-2xx response from the function comes back as `502
+    invoke_failed` with its message.
+
+2. To start a call without waiting, use an asynchronous call:
+
+    ```bash
+    kionga-cli function invoke-async score-events
+    ```
+
+    ```python
+    call = client.invoke_function_async("score-events", {"customer_id": "c-42"})
+    ```
+
+    An asynchronous call returns `202` with a `call_id` at once and runs in the
+    background of the gateway replica that took the request. There is no queue:
+    if that replica stops before the call finishes, the call is lost. The
+    gateway logs the outcome with the call ID. Use a synchronous call, or a
+    pipeline, when you must not lose work.
 
 ## Scale to zero and wake
 
@@ -123,10 +134,11 @@ With the `requests` trigger and a minimum of 0, Kionga removes the last pod afte
 five minutes without calls. The next call reaches the KEDA HTTP interceptor,
 which holds it while a pod starts, and forwards it when the pod is ready. The
 interceptor holds a call for its wait limit, 20 seconds by default, so keep
-images small and startup quick. A function that must answer instantly needs a
-minimum of 1.
+images small and startup quick. A new function starts with one pod and scales to
+zero after the idle period.
 
-A new function starts with one pod and scales to zero after the idle period.
+To keep a function warm, set `min_replicas` (`replicas.min` in the API) to 1.
+A function that must answer instantly needs a minimum of 1.
 
 ## What isn't available on Kubernetes
 
@@ -136,16 +148,41 @@ A new function starts with one pod and scales to zero after the idle period.
 - **OpenFaaS settings.** `OPENFAAS_URL` and the OpenFaaS connection don't affect
   functions on Kubernetes.
 
+## Verify
+
+1. List the functions:
+
+    ```bash
+    curl -s "$KIONGA_URL/api/v1/functions" \
+      -H "Authorization: Bearer $KIONGA_TOKEN"
+    ```
+
+    The response has `"runtime": "kubernetes"` and an `items` array. The
+    function appears with the status `ready` (at least one pod is running) or
+    `scaled-to-zero` (the function is ready with no pods running). Right after a
+    deploy, the status is `pending` until the operator reports the function.
+    `kionga-cli function list` prints the same list.
+
+2. Invoke the function. A synchronous call returns the function's JSON
+   response, and an asynchronous call returns `{"accepted": true, "call_id":
+   "call-..."}`.
+
 ## Troubleshooting
 
-| Symptom | What to check |
-| --- | --- |
-| `409 conflict` on deploy | The name belongs to another project. |
-| `400 invalid_request`, `cpu scaling keeps at least one replica` | Set `min_replicas` to 1 or more, or use `requests` scaling. |
-| `502 invoke_failed` after a long wait | The function didn't become ready in time, or its image can't start. Check `kionga-cli function list` and the pod events. |
-| Status `failed` | The image can't be pulled or runs as root. Read the status message. |
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| `409 conflict`, `a function named <name> belongs to another project` | A function name is global, and another project already uses it. | Choose a different name. |
+| `400 invalid_request`, `cpu scaling keeps at least one replica: set replicas.min to 1 or more` | You set `cpu` scaling with a minimum of 0. | Set `min_replicas` to 1 or more, or use `requests` scaling. |
+| `400 invalid_request`, `function names on Kubernetes are at most 45 characters` | The name is longer than 45 characters. | Shorten the name. |
+| `502 invoke_failed` with `function <name> is not deployed` | No function resource has that name in the cluster. | Deploy the function, or check the name with `kionga-cli function list`. |
+| `502 invoke_failed` with `function <name> failed: <reason>` | The operator reports the function as failed. | Read the reason, fix the image or its settings, and deploy again. |
+| `502 invoke_failed` after a long wait | The function didn't become ready in time, or its image can't start. | Check `kionga-cli function list` and the pod events. |
+| Status `failed` | The operator reported a failure for the function. | Read the status `message` in the function list and fix the cause it names. |
+| `503 kubernetes_unavailable` | The gateway cannot reach the Kubernetes API with its in-cluster service account. | Check the gateway's service account and the cluster's API access; see the [cluster prerequisites](../operations/kubernetes-prerequisites.md). |
 
-## Next steps
+## Related pages
 
 - [Deploy applications](applications.md).
 - [Self-healing and autoscaling](../concepts/self-healing-and-autoscaling.md).
+- [Git, functions and distributed workspaces](distributed-workspaces.md#deploy-a-function) for Compose installs.
+- [Define and run pipelines](pipelines.md#schedule-a-flow) to schedule calls.

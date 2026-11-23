@@ -5,7 +5,7 @@ description: Register a model version, pass its quality gate, promote it, deploy
 
 # Register, deploy and serve models
 
-Take a trained model from registration to a live REST endpoint: register a
+Take a trained model from registration to a live REST endpoint. You register a
 version, check its quality gate, promote it, deploy it, send predictions, and
 roll back when you need to.
 
@@ -27,103 +27,105 @@ roll back when you need to.
 
 A training pipeline usually registers its model. To register one yourself:
 
-=== "SDK"
+1. Register the version:
 
-    ```python
-    model = client.register_model(
-        "prj-123", "churn-classifier", "1", "models:/m-1234",
-        metrics={"accuracy": 0.968},
-        serving_image="ghcr.io/acme/churn-sklearn@sha256:<digest>",
-    )
-    print(model.id, model.gate_status)
-    ```
+    === "SDK"
 
-=== "API"
+        ```python
+        model = client.register_model(
+            "prj-123", "churn-classifier", "1", "models:/m-1234",
+            metrics={"accuracy": 0.968},
+            serving_image="ghcr.io/acme/churn-sklearn@sha256:<digest>",
+        )
+        print(model.id, model.gate_status)
+        ```
 
-    ```bash
-    curl -s -X POST "$KIONGA_URL/api/v1/models" \
-      -H "Authorization: Bearer $KIONGA_TOKEN" \
-      -H 'Content-Type: application/json' \
-      -d '{"project_id": "prj-123", "name": "churn-classifier", "version": "1",
-           "artifact_uri": "models:/m-1234",
-           "serving_image": "ghcr.io/acme/churn-sklearn@sha256:<digest>",
-           "metrics": {"accuracy": 0.968}}'
-    ```
+    === "API"
+
+        ```bash
+        curl -s -X POST "$KIONGA_URL/api/v1/models" \
+          -H "Authorization: Bearer $KIONGA_TOKEN" \
+          -H 'Content-Type: application/json' \
+          -d '{"project_id": "prj-123", "name": "churn-classifier", "version": "1",
+               "artifact_uri": "models:/m-1234",
+               "serving_image": "ghcr.io/acme/churn-sklearn@sha256:<digest>",
+               "metrics": {"accuracy": 0.968}}'
+        ```
+
+2. Read `gate_status` in the response. A new version starts in the `candidate`
+   stage with a quality gate:
+
+    | Gate status | When |
+    | --- | --- |
+    | `passed` | The default for a registered artifact |
+    | `failed` | The metrics include `accuracy` below `0.8` |
+    | `needs_evaluation` | The artifact is an imported Hugging Face reference (`hf://`) |
 
 `serving_image` is optional. Set it when the model needs libraries that the
 default serving image does not have; see
 [Avoid training-serving skew](#avoid-training-serving-skew). The image must match
 `SERVE_IMAGE_ALLOWED_PREFIXES`, and in production it must be pinned by digest.
-
-A new version starts in the `candidate` stage with a quality gate:
-
-| Gate status | When |
-| --- | --- |
-| `passed` | The default for a registered artifact |
-| `failed` | The metrics include `accuracy` below `0.8` |
-| `needs_evaluation` | The artifact is an imported Hugging Face reference (`hf://`) |
-
 A project cannot hold two versions with the same name and version number.
-
-**Verify:** the model appears under **Models** with its stage, quality gate and
-metrics, and the **Model quality by version** chart includes it.
 
 ## Promote a model
 
 Promotion moves a version to `staging`, `production` or `archived`. Promoting to
 `production` requires a `passed` quality gate.
 
-=== "Console"
+1. Promote the version:
 
-    On the model card, click **Promote**. The console promotes the version to
-    `production`.
+    === "Console"
 
-=== "SDK"
+        Open **Models** and click **Promote** in the version's row. The console
+        promotes the version to `production`.
 
-    ```python
-    client.promote_model(model.id, "staging")
-    ```
+    === "SDK"
 
-=== "API"
+        ```python
+        client.promote_model(model.id, "staging")
+        ```
 
-    ```bash
-    curl -s -X POST "$KIONGA_URL/api/v1/models/<model-id>/promote" \
-      -H "Authorization: Bearer $KIONGA_TOKEN" \
-      -H 'Content-Type: application/json' \
-      -d '{"stage": "production"}'
-    ```
+    === "API"
 
-**Verify:** the model card shows the new stage, for example `production · v1`.
+        ```bash
+        curl -s -X POST "$KIONGA_URL/api/v1/models/<model-id>/promote" \
+          -H "Authorization: Bearer $KIONGA_TOKEN" \
+          -H 'Content-Type: application/json' \
+          -d '{"stage": "production"}'
+        ```
 
 ## Deploy a model to a live endpoint
 
 Deploying starts an `mlflow models serve` container for the version and records
 its endpoint. Deployment also requires a `passed` quality gate.
 
-=== "Console"
+1. Deploy the version:
 
-    On the model card, click **Deploy**.
+    === "Console"
 
-=== "SDK"
+        Open **Models**, click **Deploy** in the version's row, leave **Canary
+        weight (%)** at `0`, and click **Deploy**.
 
-    ```python
-    client.deploy_model(model.id)
-    ```
+    === "SDK"
 
-=== "API"
+        ```python
+        client.deploy_model(model.id)
+        ```
 
-    ```bash
-    curl -s -X POST "$KIONGA_URL/api/v1/models/<model-id>/deploy" \
-      -H "Authorization: Bearer $KIONGA_TOKEN" \
-      -H 'Content-Type: application/json' \
-      -d '{"canary_weight": 0}'
-    ```
+    === "API"
 
-When the container starts, the model's `deployment_status` becomes `serving`
-and its `endpoint_url` is recorded, for example
-`http://kionga-serve-churn-classifier:5001`. If the serving manager rejects the
-deployment, the status becomes `failed` and the request returns `502` with the
-reason.
+        ```bash
+        curl -s -X POST "$KIONGA_URL/api/v1/models/<model-id>/deploy" \
+          -H "Authorization: Bearer $KIONGA_TOKEN" \
+          -H 'Content-Type: application/json' \
+          -d '{"canary_weight": 0}'
+        ```
+
+2. Wait for the container to start. The model's `deployment_status` becomes
+   `serving` and its `endpoint_url` is recorded, for example
+   `http://kionga-serve-churn-classifier:5001`. If the serving manager rejects
+   the deployment, the status becomes `failed` and the request returns `502`
+   with the reason.
 
 `canary_weight` (0 to 100) is recorded on the model. The bundled serving path
 runs one container per model name and does not split traffic between versions.
@@ -131,60 +133,57 @@ On Kubernetes, a canary does split traffic; see
 [Deploy and canary models on Kubernetes](models-kubernetes.md#send-a-share-of-traffic-to-a-canary).
 Agents have their own [canary traffic control](agents.md#shift-canary-traffic).
 
-**Verify:** the model card shows a **● live** tag and a **Test** button.
-
 ## Send a prediction
 
 The gateway forwards your request to the model's MLflow `/invocations` route.
 
-=== "Console"
+1. Send a request:
 
-    1. On a live model card, click **Test**.
-    2. Edit the **Request payload** and click **Send prediction request**.
+    === "Console"
 
-=== "API"
+        1. In the live version's row, click **Test**.
+        2. Edit the **Request payload** and click **Predict**.
 
-    ```bash
-    curl -s -X POST "$KIONGA_URL/api/v1/models/<model-id>/predict" \
-      -H "Authorization: Bearer $KIONGA_TOKEN" \
-      -H 'Content-Type: application/json' \
-      -d '{"inputs": [[0.1,-1.2,0.5,2.0,0.3,-0.7,1.1,0.0,-0.4,0.9,-1.5,0.2]]}'
-    ```
+    === "API"
+
+        ```bash
+        curl -s -X POST "$KIONGA_URL/api/v1/models/<model-id>/predict" \
+          -H "Authorization: Bearer $KIONGA_TOKEN" \
+          -H 'Content-Type: application/json' \
+          -d '{"inputs": [[0.1,-1.2,0.5,2.0,0.3,-0.7,1.1,0.0,-0.4,0.9,-1.5,0.2]]}'
+        ```
 
 A model without a live endpoint returns `409 not_serving`.
-
-**Verify:** the response contains predictions, for example
-`{"predictions": [1]}`.
 
 ## Roll back a model
 
 Rollback returns the version to its previous stage, sets its deployment status to
 `rolled_back` and removes its serving container.
 
-=== "Console"
+1. Roll the version back:
 
-    On the model card, click **Rollback**.
+    === "Console"
 
-=== "SDK"
+        Open **Models** and click **Rollback** in the version's row.
 
-    ```python
-    client.rollback_model(model.id)
-    ```
+    === "SDK"
 
-=== "API"
+        ```python
+        client.rollback_model(model.id)
+        ```
 
-    ```bash
-    curl -s -X POST "$KIONGA_URL/api/v1/models/<model-id>/rollback" \
-      -H "Authorization: Bearer $KIONGA_TOKEN" -d '{}'
-    ```
+    === "API"
+
+        ```bash
+        curl -s -X POST "$KIONGA_URL/api/v1/models/<model-id>/rollback" \
+          -H "Authorization: Bearer $KIONGA_TOKEN" -d '{}'
+        ```
 
 A version that was never promoted has no previous stage, and rollback returns
-`no previous stage is available`.
-
-**Verify:** the model card shows the previous stage and the deployment status
-`rolled_back`.
+`422` with `no previous stage is available`.
 
 ## Avoid training-serving skew
+
 
 A model trained with one library version can fail to load under another. The
 default serving image matches the [Jupyter workbench](workbench.md) pins
@@ -207,17 +206,40 @@ server runs on the platform network, and dropped capabilities,
 Administrators list trusted images in `SERVE_IMAGE_ALLOWED_PREFIXES`; see
 [Serving manager](../reference/configuration.md#serving-manager).
 
+## Verify
+
+Check each step against the model record. `GET /api/v1/models` returns the
+registered versions in an `items` array.
+
+1. **Register:** the version appears under **Models** with its **Stage**,
+   **Quality gate** and **Metrics**, and the API record has `"stage":
+   "candidate"` and the `gate_status` you expect.
+2. **Promote:** the **Stage** column shows the new stage, and the API record has
+   the matching `stage`.
+3. **Deploy:** the **Deployment** column shows `serving`, a **Test** button
+   appears in the row, and the API record has a `deployment_status` of `serving`
+   and an `endpoint_url` that starts with `http`.
+4. **Predict:** the response contains predictions, for example
+   `{"predictions": [1]}`.
+5. **Roll back:** the **Stage** column shows the previous stage, and the
+   **Deployment** column shows `rolled_back`.
+
 ## Troubleshooting
 
-| Symptom | What to check |
-| --- | --- |
-| `model evaluation gates have not passed` | The gate is `failed` or `needs_evaluation`. Register an evaluated version with passing metrics. |
-| Deploy returns `422` naming the image | The `serving_image` is outside `SERVE_IMAGE_ALLOWED_PREFIXES`, or it has no `@sha256:` digest where one is required. |
-| Deploy returns `502 serving_failed` | The serving manager could not start the container; the message gives its reason. See [Troubleshooting](../operations/troubleshooting.md). |
-| `409 not_serving` on predict | Deploy the model first, and wait for the **● live** tag. |
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| `422`, `model evaluation gates have not passed` | You promoted to `production` or deployed a version whose gate is `failed` or `needs_evaluation`. | Register an evaluated version with passing metrics. |
+| `409`, `resource already exists` | The project already holds a version with that name and version number. | Register the model under a new version number. |
+| `409 not_configured`, `Model serving is not configured: SERVING_MANAGER_URL is not set, so Deploy cannot start a model server.` | The gateway has no serving manager address. | Set `SERVING_MANAGER_URL` on the gateway. The Compose stack sets it for you. |
+| `502 serving_failed`, `... is outside SERVE_IMAGE_ALLOWED_PREFIXES ...` or `only the default serving image is allowed until the operator sets SERVE_IMAGE_ALLOWED_PREFIXES` | The version's `serving_image` is outside the images the operator allows. | Use an allowed image, or ask an administrator to add its prefix to `SERVE_IMAGE_ALLOWED_PREFIXES`. |
+| `502 serving_failed`, `... must be pinned by digest (name@sha256:...)` | The operator requires digests and the `serving_image` has none. | Register the version with an image pinned as `name@sha256:<digest>`. |
+| `502 serving_failed` with another reason | The serving manager could not start the container. The message gives its reason. | Fix the cause it names. See [Troubleshooting](../operations/troubleshooting.md). |
+| `409 not_serving`, `model has no live serving endpoint` | The version has no live endpoint. | Deploy the model first, and wait for `deployment_status` to become `serving`. |
+| `422`, `no previous stage is available` | The version was never promoted, so rollback has no stage to return to. | Promote the version before you roll it back, or deploy a different version. |
 
-## Next steps
+## Related pages
 
 - [Import a Hugging Face model](huggingface.md).
+- [Deploy and canary models on Kubernetes](models-kubernetes.md).
 - [Use a deployed model in real-time scoring](realtime.md).
 - [Train models in a pipeline](pipelines.md).

@@ -26,12 +26,7 @@ guides/distributed-workspaces.md section:related-pages
 guides/engineering-blog.md section:related-pages
 guides/feature-stores.md section:related-pages
 guides/features.md section:related-pages
-guides/functions.md section:related-pages
-guides/huggingface.md section:related-pages
 guides/langflow.md section:related-pages
-guides/logs.md section:related-pages
-guides/models-kubernetes.md section:related-pages
-guides/models-serving.md section:related-pages
 guides/pipelines.md section:related-pages
 guides/project-templates.md section:related-pages
 guides/realtime.md section:related-pages
@@ -65,7 +60,6 @@ guides/engineering-blog.md section:troubleshooting
 guides/feature-stores.md section:troubleshooting
 guides/features.md section:troubleshooting
 guides/langflow.md section:troubleshooting
-guides/logs.md section:troubleshooting
 guides/pipelines.md section:troubleshooting
 guides/project-templates.md section:troubleshooting
 guides/workbench.md section:troubleshooting
@@ -97,12 +91,7 @@ guides/distributed-workspaces.md section:verify
 guides/engineering-blog.md section:verify
 guides/feature-stores.md section:verify
 guides/features.md section:verify
-guides/functions.md section:verify
-guides/huggingface.md section:verify
 guides/langflow.md section:verify
-guides/logs.md section:verify
-guides/models-kubernetes.md section:verify
-guides/models-serving.md section:verify
 guides/pipelines.md section:verify
 guides/project-templates.md section:verify
 guides/realtime.md section:verify
@@ -121,6 +110,4 @@ concepts/how-it-works.md step-list
 
 # Pages that should walk through numbered steps.
 getting-started/quickstart.md steps
-guides/functions.md steps
-guides/models-serving.md steps
 operations/managed-operations.md steps
