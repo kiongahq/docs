@@ -12,6 +12,13 @@ something goes wrong. It applies to [applications](../guides/applications.md),
 [functions](../guides/functions.md) and
 [agents](../guides/agents.md#autoscale-agents).
 
+The [autoscaling](#autoscaling) triggers apply to applications, functions and
+agents. The self-healing settings in the next section (the probe timings, the
+rolling update, the disruption budget and the locked-down pod) are described for
+applications and functions. Agents differ: they have no public host, check
+`/healthz` with readiness and liveness probes only, and never scale to zero
+because their minimum is 1.
+
 Compose and single-server installs do not run these controllers. There, a
 container runtime restarts a container that exits, and nothing scales it.
 

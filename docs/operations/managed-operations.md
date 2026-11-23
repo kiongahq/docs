@@ -101,8 +101,9 @@ python3 scripts/support-bundle.py --context CONTEXT --namespace kionga-system
 It is read-only. It collects tool and cluster versions, the Helm release and its
 history, node and prerequisite details, Kionga resources with their status,
 workloads, pods, events and recent logs. It never reads Secrets, removes every
-literal environment value, and redacts credentials from text and logs. Read the
-archive before you send it. You decide what leaves your account.
+literal environment value, and redacts credentials it recognizes from text and logs. Redaction matches
+known credential shapes and can't catch every secret a log might contain, so read
+the archive before you send it. You decide what leaves your account.
 
 ## Upgrades
 
