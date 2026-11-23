@@ -157,6 +157,7 @@ nav:
       - What is Kionga: concepts/what-is-kionga.md
       - Core concepts: concepts/core-concepts.md
       - How Kionga works: concepts/how-it-works.md
+      - Self-healing and autoscaling: concepts/self-healing-and-autoscaling.md
       - Open source and licensing: concepts/open-source.md
   - Guides:
       - guides/index.md
@@ -174,6 +175,8 @@ nav:
           - Features: guides/features.md
           - Feature store integrations: guides/feature-stores.md
           - Real-time processing: guides/realtime.md
+      - Applications and functions:
+          - Deploy applications: guides/applications.md
       - AI agents:
           - Build agents: guides/agents.md
           - Agent Designer: guides/agent-designer.md

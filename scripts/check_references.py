@@ -14,6 +14,7 @@ checks each one against those checkouts:
            the Go control plane registers
   cli      `kionga-cli <command> <subcommand>` against platform/go/cmd/cli and
            `kionga <command>` against the workspace CLI (workspace/workspace/kionga.py)
+           and the SDK CLI it passes through to (sdk-python/kionga/cli.py)
   sdk      kionga modules, exports, and KiongaClient methods
   style    house style in prose: no em dashes and no banned filler words
 
@@ -342,6 +343,13 @@ def load_facts(root: Path, docs_repo: Path = DOCS_REPO) -> Facts:
     kionga = root / "workspace" / "workspace" / "kionga.py"
     if kionga.is_file():
         facts.kionga = argparse_commands(kionga.read_text())
+
+    # The workspace CLI passes commands such as `kionga apps` through to the
+    # SDK's own CLI, so those commands are valid too.
+    sdk_cli = root / "sdk-python" / "kionga" / "cli.py"
+    if sdk_cli.is_file():
+        for command, subs in argparse_commands(sdk_cli.read_text()).items():
+            facts.kionga.setdefault(command, set()).update(subs)
 
     sdk = root / "sdk-python" / "kionga"
     if sdk.is_dir():
