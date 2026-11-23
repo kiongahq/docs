@@ -25,8 +25,12 @@ enable it; see [Turn applications on](#enable).
       and sets the variables listed in [Turn applications on](#enable).
     - **Gateway and operator alignment.** Redeploy, the `internal` visibility,
       sign-in for `sso` applications on their own host and the secret label
-      check are being aligned between the gateway and the operator. This guide
-      describes the aligned behavior. Where a step needs the fix, it says so.
+      check are being aligned between the gateway and the operator. The
+      operator will take a redeploy from the resource's `spec.restartedAt`,
+      read the flat `canaryVersion` and `canaryWeight` model fields, report
+      `status.host` and `status.message`, and find pods by the
+      `kionga.dev/application` label. This guide describes the aligned
+      behavior. Where a step needs the fix, it says so.
     - **Live log following in the CLI.** `kionga apps logs --follow` arrives in a
       later SDK release. The API already streams logs; see
       [Read logs and events](#logs).
