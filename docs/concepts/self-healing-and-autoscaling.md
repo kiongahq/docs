@@ -177,5 +177,5 @@ that far.
 
 - [Deploy an application](../guides/applications.md).
 - [Run functions on Kubernetes](../guides/functions.md).
-- [Autoscale agents](../guides/agents.md#autoscale-agents).
+- [Scale agents automatically](../guides/agents.md#autoscale-agents).
 - [Deploy on Kubernetes](../operations/managed-kubernetes.md).

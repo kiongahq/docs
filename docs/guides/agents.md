@@ -345,7 +345,7 @@ Deployment and Service, and reports the agent ready when at least
 `min_replicas` pods are available. On Compose, `AGENT_RUNTIME_URL` points
 every agent at the shared runtime, so autoscaling does not apply.
 
-## Autoscale agents {#autoscale-agents}
+## Scale agents automatically {#autoscale-agents}
 
 On Kubernetes, an agent runs between `min_replicas` and `max_replicas` pods.
 Choose what drives the scaling with `scaling`:

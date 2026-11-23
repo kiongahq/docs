@@ -145,7 +145,7 @@ Rules for sources:
 - Set an image or a source, not both.
 - The install needs a build registry. Without one, an application with a source
   fails with the reason `BuildNotConfigured`. Image deployments still work.
-- A build has a one hour limit and 2 CPUs and 4 GiB of memory at most.
+- A build has a one hour limit and 2 CPU cores and 4 GiB of memory at most.
 - The phase is `Building` until the first build succeeds. If a later build fails,
   Kionga keeps serving the previous image and shows the failure in the
   application's last build.

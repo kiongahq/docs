@@ -129,7 +129,7 @@ response times and escalation paths are agreed in the contract. Access during an
 incident uses the same grant: the team can't reach more than `operations.access`
 gives it.
 
-## Runbook for your team
+## Steps for your team
 
 | Task | Steps |
 | --- | --- |
