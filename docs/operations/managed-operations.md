@@ -8,7 +8,8 @@ description: How the Enterprise plan works, where Kionga's team installs and ope
 Managed operations is part of the Enterprise plan. Kionga's team installs and
 operates Kionga **inside your own cloud**, in your cluster and your account, with
 the same Helm chart that anyone can install. You get the platform without staffing
-its upgrades, backups and on-call. Your data never leaves your account.
+its upgrades, backups and on-call, as agreed in the contract. Kionga runs in your
+account, and your data is stored there.
 
 If you run Kionga yourself, nothing on this page applies, and you can skip it.
 For the self-managed install, see [Deploy on Kubernetes](managed-kubernetes.md).
@@ -26,13 +27,13 @@ For the self-managed install, see [Deploy on Kubernetes](managed-kubernetes.md).
 | | You | Kionga's team |
 | --- | --- | --- |
 | Cloud account and cluster | Own and pay for them. Create the cluster, or approve one | Installs into it |
-| Data | Stored in your databases, object storage and secret manager, in your account | Operates the services that use them. Does not copy data out |
+| Data | Stored in your databases, object storage and secret manager, in your account | Operates the services that use them. Data handling terms are agreed in the contract |
 | Network, DNS and TLS | Provide the domain, the wildcard DNS record and certificate rules | Configures Kionga's side |
 | Identity | Run your identity provider and decide who is in `subjects` | Signs in only through the identities you list |
 | Install and configuration | Approve changes | Installs the chart and keeps its values current |
 | Upgrades | Approve the window | Plans and applies them, and rolls back if needed |
-| Backup and restore | Own the backup storage | Runs the backups and the restore |
-| On-call | Reach the team through the agreed channel | Responds to incidents as the contract says |
+| Backup and restore | Own the backup storage | Backups and restores as agreed in the contract |
+| On-call | Reach the team through the agreed channel | Coverage and response as agreed in the contract |
 
 ## Same chart, your cluster
 
@@ -114,8 +115,8 @@ The window and the approval process are agreed in the contract.
 
 ## Backup and restore
 
-Your data lives in PostgreSQL, object storage and your secret manager. The team
-runs the backups and the restores from them. Backup
+Your data lives in PostgreSQL, object storage and your secret manager. Who runs the
+backups and the restores from them, and the backup
 schedules, retention and restore targets are agreed in the contract. For the
 controls that any production install needs, see
 [Production readiness](production-operations.md#backups-and-recovery).

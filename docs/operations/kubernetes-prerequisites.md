@@ -30,7 +30,7 @@ You need each add-on only for the features you turn on:
     add-ons yourself, apply the resource definitions from the platform
     release, and set the variables named on each page.
 
-## cert-manager
+## Cert-manager
 
 [cert-manager](https://cert-manager.io/) issues the wildcard certificate for
 application host names, such as `*.kionga.company-x.net`.
@@ -43,7 +43,7 @@ application host names, such as `*.kionga.company-x.net`.
   plain `http://`.
 - KServe also uses cert-manager for its webhook certificates.
 
-## KEDA and the KEDA HTTP add-on
+## KEDA and its HTTP add-on
 
 [KEDA](https://keda.sh/) with its HTTP add-on scales workloads on the number of
 concurrent HTTP requests, and holds a request while a scaled-to-zero workload
@@ -74,8 +74,7 @@ store. See [Set up model serving](../guides/models-kubernetes.md#set-up).
 ## Ingress controller
 
 Choose an ingress controller and name its class in `ingress.className`, as the
-base install describes. Kionga doesn't pick one for you. The Kubernetes project
-retired ingress-nginx in 2026, so don't choose it for a new install.
+base install describes. Kionga doesn't pick one for you, and does not default to ingress-nginx.
 
 Application Ingresses send request-scaled traffic to the KEDA interceptor through
 a Service of type `ExternalName`, and send `sso` traffic to the gateway the same
@@ -85,7 +84,7 @@ this off by default.
 Set the class for application Ingresses with `KIONGA_INGRESS_CLASS` on the
 operator.
 
-## Wildcard DNS
+## Wildcard DNS records
 
 Choose a base domain for applications, for example `kionga.company-x.net`.
 
@@ -97,7 +96,7 @@ Choose a base domain for applications, for example `kionga.company-x.net`.
 An application named `billing` is then served at
 `billing.kionga.company-x.net`.
 
-## Registry for Git builds
+## Registry for builds
 
 Applications deployed from a Git repository build in the cluster and push the
 image to a registry you choose. Without a registry, applications from an image
@@ -111,7 +110,7 @@ still work and Git sources fail with `BuildNotConfigured`.
 - For a registry inside the cluster that serves plain HTTP, set
   `KIONGA_BUILD_REGISTRY_INSECURE=true`.
 
-## Pod Security for builds
+## Pod security for builds
 
 Git builds use rootless BuildKit. It needs user namespaces, so the build pod runs
 with an unconfined seccomp profile and an unconfined AppArmor profile. It does not

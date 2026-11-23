@@ -182,4 +182,3 @@ with the `not_configured` reply and its steps.
 
 `kionga apps logs --follow` arrives in a later SDK release. To follow logs now, use
 the [streaming log API](../guides/applications.md#logs).
-

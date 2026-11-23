@@ -129,7 +129,7 @@ the average goes above the target, and remove them when it falls.
 Requests scaling suits workloads that wait on other systems, such as model
 calls or databases, because they can be slow without using much CPU.
 
-### Scale on CPU
+### Scale on CPU use
 
 Kionga adds a Kubernetes HorizontalPodAutoscaler. The target is average CPU
 utilization as a percentage of the replica's CPU request (the default is 80). It
@@ -143,7 +143,7 @@ needs the Kubernetes metrics API, so metrics-server must run in the cluster.
 CPU scaling suits workloads that do their work in the process, such as image
 processing, and installs without KEDA.
 
-### Without the KEDA HTTP add-on
+### Without the HTTP add-on
 
 If the cluster does not serve the add-on's API when the operator starts, a
 workload that asks for request scaling runs on CPU scaling with a minimum of 1

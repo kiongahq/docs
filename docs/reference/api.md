@@ -227,6 +227,7 @@ are not added together. See [Pipelines](../guides/pipelines.md).
 | `POST` | `/api/v1/models/{id}/promote` | write | `models` | Move to `stage`: `staging`, `production` or `archived` |
 | `POST` | `/api/v1/models/{id}/deploy` | write | `models` | Start a model server; `canary_weight` from 0 to 100 |
 | `POST` | `/api/v1/models/{id}/rollback` | write | `models` | Return to the previous stage and remove the model server |
+| `GET` | `/api/v1/models/{id}/deployment` | read | `models` | Live deployment status of a version: `pending`, `serving` (with `endpoint_url`) or `failed` (with a message). On Kubernetes it reads the operator's status |
 | `POST` | `/api/v1/models/{id}/predict` | write | `models` | Send a prediction request to the live endpoint (MLflow `/invocations` format) |
 | `GET` | `/api/v1/models/huggingface` | read | `models` | Search the Hugging Face Hub (`search`, `task`) |
 | `POST` | `/api/v1/models/huggingface/import` | write | `models` | Register a pinned Hub revision in a project ([Hugging Face models](../guides/huggingface.md)) |
