@@ -69,6 +69,11 @@ TABLE_SEPARATOR = re.compile(r"^(?=[^\n]*\|)[ \t]*\|?[ \t]*:?-{3,}:?[ \t]*(?:\|[
 SENTENCE_BREAK = re.compile(r"[.!?][\"')\]]*\s+(?=[A-Z0-9`\"(\[])")
 SENTENCE_END = re.compile(r"\.[\"')\]]*$")
 HEADING_ATTRIBUTES = re.compile(r"\s*\{[^}]*\}\s*$")
+# Lines that open an indented body: a list item, a content tab, an admonition or a collapsible block.
+CONTAINER_START = re.compile(r"^[ ]{0,3}(?:[-*+]|\d+\.)[ \t]|^[ ]{0,3}(?:===|\?\?\?\+?|!!!)[ ]")
+# Words and initialisms whose full stop does not end a sentence.
+ABBREVIATION = re.compile(r"\b(?:e\.g|i\.e|etc|vs|approx|Inc|Ltd|Dr|Mr|Ms|St|No)\.|\b(?:[A-Za-z]\.){2,}")
+HTML_COMMENT = re.compile(r"<!--.*?-->", re.S)
 DASHES = ("\u2014",)  # an em dash
 
 
@@ -102,32 +107,66 @@ def split_front_matter(text: str) -> tuple[dict | None, str]:
 
 
 def scan_code(body: str) -> tuple[str, list[str]]:
-    """The body with fenced code blanked line for line, and the language of each fence in order.
+    """The body reduced to what the site renders as structure, and the language of each fence.
 
-    Backtick and tilde fences are both recognised, at any indent. A fence closes only with the
-    same character, at least as long, and nothing after it. An empty language means none.
+    Fenced code, HTML comments and indented code blocks are blanked line for line, so a
+    heading, step or table inside them does not count. Backtick and tilde fences are both
+    recognised, at any indent. A fence closes only with the same character, at least as long,
+    and nothing after it. An empty language means none.
+
+    Indentation is structure inside a list item, content tab or admonition, where a body is
+    indented four spaces. Anywhere else, a line indented four spaces or more after a blank line
+    is an indented code block.
     """
     plain: list[str] = []
     languages: list[str] = []
     open_fence: tuple[str, int] | None = None
-    for line in body.split("\n"):
-        match = FENCE.match(line)
-        if open_fence is None:
-            if match:
-                open_fence = (match.group(2)[0], len(match.group(2)))
-                info = match.group(3).strip()
-                if info.startswith("{"):
-                    classes = re.findall(r"\.([\w+#-]+)", info)
-                    languages.append(classes[0] if classes else "")
-                else:
-                    languages.append(info.split(" ")[0] if info else "")
-                plain.append("")
-            else:
-                plain.append(line)
-        else:
+    in_comment = False
+    in_container = False
+    previous_blank = True
+    for raw in body.split("\n"):
+        line = raw
+        if open_fence is not None:
+            match = FENCE.match(line)
             plain.append("")
             if match and match.group(2)[0] == open_fence[0] and len(match.group(2)) >= open_fence[1] and not match.group(3).strip():
                 open_fence = None
+            previous_blank = False
+            continue
+        if in_comment:
+            end = line.find("-->")
+            if end < 0:
+                plain.append("")
+                continue
+            in_comment = False
+            line = line[end + 3:]
+        line = HTML_COMMENT.sub("", line)
+        start = line.find("<!--")
+        if start >= 0:
+            in_comment = True
+            line = line[:start]
+        blank = not line.strip()
+        indented = line[:1] in (" ", "\t") and not blank
+        deep = line.startswith("    ") or line.startswith("\t")
+        if indented and deep and not in_container and previous_blank:
+            plain.append("")  # an indented code block
+            previous_blank = False
+            continue
+        if not indented and not blank:
+            in_container = bool(CONTAINER_START.match(line))
+        match = FENCE.match(line)
+        if match:
+            open_fence = (match.group(2)[0], len(match.group(2)))
+            info = match.group(3).strip()
+            if info.startswith("{"):
+                classes = re.findall(r"\.([\w+#-]+)", info)
+                languages.append(classes[0] if classes else "")
+            else:
+                languages.append(info.split(" ")[0] if info else "")
+            plain.append("")
+        else:
+            plain.append(line)
+        previous_blank = blank
     return "\n".join(plain), languages
 
 
@@ -145,7 +184,8 @@ def description_problem(value: object) -> str | None:
     if not isinstance(value, str) or not value.strip():
         return "front matter needs a one-sentence description"
     text = " ".join(value.split())
-    if SENTENCE_BREAK.search(text) or not SENTENCE_END.search(text):
+    masked = ABBREVIATION.sub(lambda m: m.group(0).replace(".", ""), text)
+    if SENTENCE_BREAK.search(masked) or not SENTENCE_END.search(text):
         return "the description must be exactly one sentence ending in a full stop"
     return None
 

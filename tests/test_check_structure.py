@@ -179,7 +179,7 @@ def test_there_is_no_baseline_to_hide_a_gap_in() -> None:
 
 def test_headings_inside_any_fence_do_not_count() -> None:
     missing_verify = HOW_TO.replace("## Verify\n\nOpen the address.\n", "")
-    for fence in (FENCE, TILDES, "  " + FENCE, "    " + TILDES):
+    for fence in (FENCE, TILDES, "  " + FENCE, "   " + TILDES):
         hidden = missing_verify.replace("## Related pages", f"{fence}text\n## Verify\n{fence}\n\n## Related pages")
         assert "section:verify" in rules("guides/deploy.md", hidden), repr(fence)
 
@@ -244,4 +244,53 @@ def test_front_matter_with_crlf_line_endings_and_folded_yaml_is_read() -> None:
 def test_only_em_dashes_are_rejected() -> None:
     assert rules("roadmap.md", page(f"# Roadmap\n\nBetween 2{EN}100 nodes.\n")) == set()
     assert rules("roadmap.md", page(f"# Roadmap\n\nA pause {EM} here.\n")) == {"dash"}
+
+
+def test_abbreviations_in_a_description_do_not_split_the_sentence() -> None:
+    for value in ["Use e.g. Linux.", "An i.e. example.", "Works on Linux, macOS, etc. for teams.", "Runs in the U.S. region.", "Compare vs. the old setup."]:
+        assert rules("roadmap.md", page("# Roadmap\n", f'description: "{value}"')) == set(), value
+    assert rules("roadmap.md", page("# Roadmap\n", 'description: "Use e.g. Linux. And more."')) == {"description"}
+
+
+def test_headings_and_steps_inside_html_comments_do_not_count() -> None:
+    hidden = HOW_TO.replace("## Verify\n\nOpen the address.\n", "<!--\n## Verify\n\nOpen the address.\n-->\n")
+    assert rules("guides/deploy.md", hidden) == {"section:verify"}
+    one_line = HOW_TO.replace("## Verify", "<!-- ## Verify -->")
+    assert "section:verify" in rules("guides/deploy.md", one_line)
+    steps = HOW_TO.replace("1. Open **Applications**.\n2. Select **Deploy**.\n", "<!--\n1. Open it.\n-->\nOpen Applications.\n")
+    assert rules("guides/deploy.md", steps) == {"steps"}
+    kept = HOW_TO.replace("## Verify", "## Verify <!-- shown -->")
+    assert rules("guides/deploy.md", kept) == set()
+
+
+def test_a_comment_can_contain_a_fence_marker_without_confusing_the_scan() -> None:
+    body = f"# Roadmap\n\n<!--\n{FENCE}\n-->\n\n{FENCE}text\nok\n{FENCE}\n"
+    assert rules("roadmap.md", page(body)) == set()
+
+
+def test_indented_code_blocks_are_not_structure() -> None:
+    no_steps = HOW_TO.replace("1. Open **Applications**.\n2. Select **Deploy**.\n", "Open Applications.\n\n    1. not a Markdown list\n")
+    assert rules("guides/deploy.md", no_steps) == {"steps"}
+    concept = page("# Idea\n\nThe layout is:\n\n    1. a line of sample output\n")
+    assert rules("concepts/idea.md", concept) == set()
+    reference = page("# Settings\n\nExample:\n\n    | Name | Value |\n    | --- | --- |\n")
+    assert rules("reference/settings.md", reference) == {"table"}
+    literal = page(f"# Roadmap\n\nExample:\n\n    {FENCE}\n    not a fence\n")
+    assert rules("roadmap.md", literal) == set()
+
+
+def test_indentation_inside_lists_tabs_and_admonitions_is_still_structure() -> None:
+    tab = page('# Idea\n\n=== "Compose"\n\n    1. First.\n')
+    assert rules("concepts/idea.md", tab) == {"step-list"}
+    note = page("# Idea\n\n!!! note\n\n    1. First.\n")
+    assert rules("concepts/idea.md", note) == {"step-list"}
+    item = page("# Idea\n\n- Item\n\n    1. Nested.\n")
+    assert rules("concepts/idea.md", item) == {"step-list"}
+    table_in_tab = page('# Settings\n\n=== "Compose"\n\n    | Name | Value |\n    | --- | --- |\n')
+    assert rules("reference/settings.md", table_in_tab) == set()
+
+
+def test_a_lazy_continuation_line_is_not_a_code_block() -> None:
+    body = HOW_TO.replace("Deploy a service so people can reach it.", "Deploy a service so people\n    can reach it.")
+    assert rules("guides/deploy.md", body) == set()
 
