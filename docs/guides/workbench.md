@@ -66,8 +66,9 @@ the API. See the workspace routes in
 
 !!! info "Available in a later release"
     Platform v0.2.1 and earlier have no **Start** or **Stop** button. In those
-    versions the panel shows a stopped or unavailable workspace as a disabled
-    button, such as `JupyterLab: stopped`, and an operator starts it.
+    versions the panel shows an unavailable workspace as a disabled button with
+    its state, such as `JupyterLab: offline`. The hover text of the button says
+    what to do, for example to ask your administrator to start the workspace.
 
 ## Call Kionga from a notebook
 
