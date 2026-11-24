@@ -38,28 +38,43 @@ API are the same on both.
 
 ## Deploy a model
 
-=== "Console"
+1. Deploy the version:
 
-    On the model card, click **Deploy**.
+    === "Console"
 
-=== "SDK"
+        Open **Models**, click **Deploy** in the version's row, leave **Canary
+        weight (%)** at `0`, and click **Deploy**.
 
-    ```python
-    client.deploy_model(model.id)
-    deployment = client.wait_for_model_deployment(model.id)
-    print(deployment.endpoint_url)
-    ```
+    === "SDK"
 
-=== "API"
+        ```python
+        client.deploy_model(model.id)
+        deployment = client.wait_for_model_deployment(model.id)
+        print(deployment.endpoint_url)
+        ```
+
+    === "API"
+
+        ```bash
+        curl -s -X POST "$KIONGA_URL/api/v1/models/<model-id>/deploy" \
+          -H "Authorization: Bearer $KIONGA_TOKEN" \
+          -H 'Content-Type: application/json' \
+          -d '{"canary_weight": 0}'
+        ```
+
+    The request returns `202` with `deployment_status` set to `pending`.
+
+2. Read the live status at any time:
 
     ```bash
-    curl -s -X POST "$KIONGA_URL/api/v1/models/<model-id>/deploy" \
-      -H "Authorization: Bearer $KIONGA_TOKEN" \
-      -H 'Content-Type: application/json' \
-      -d '{"canary_weight": 0}'
+    curl -s "$KIONGA_URL/api/v1/models/<model-id>/deployment" \
+      -H "Authorization: Bearer $KIONGA_TOKEN"
     ```
 
-The request returns `202` with `deployment_status` set to `pending`. Behind it:
+3. Send predictions as in [Send a prediction](models-serving.md#send-a-prediction).
+   The gateway forwards the request to the server's `/invocations` route.
+
+Behind the request:
 
 1. The gateway creates one deployment resource for the model name in its
    project.
@@ -71,21 +86,8 @@ The request returns `202` with `deployment_status` set to `pending`. Behind it:
    set. If KServe reports a failure, the status becomes `failed` and
    `deployment_message` says why.
 
-Read the live status at any time:
-
-```bash
-curl -s "$KIONGA_URL/api/v1/models/<model-id>/deployment" \
-  -H "Authorization: Bearer $KIONGA_TOKEN"
-```
-
-**Verify:** the reply has `"status": "serving"` and an `endpoint_url`. The model
-card shows **● live**.
-
 Promotion in the registry changes the MLflow stage only. It does not start or stop
 a server. Deploy does that.
-
-Send predictions as in [Send a prediction](models-serving.md#send-a-prediction).
-The gateway forwards the request to the server's `/invocations` route.
 
 ## Send a share of traffic to a canary
 
@@ -139,9 +141,6 @@ Raising the weight moves more keys to the canary and never moves a key back,
 because a key goes to the canary when its hash is below the weight. Lowering
 the weight returns those keys to the stable version.
 
-**Verify:** over about 100 requests, the `X-Kionga-Model-Version` header shows the
-canary version for about the weight percent of them.
-
 ### Promote or roll back a canary
 
 - **Promote:** deploy the new version with a weight of 0 or 100. The new version
@@ -179,17 +178,38 @@ InferenceService and that KServe must be installed. Without a way to reach the
 artifacts, it fails with the location it could not read. Allow the model servers
 to reach the object store in your network policies.
 
+## Verify
+
+1. **Deploy:** the status call returns `"status": "serving"` and an
+   `endpoint_url` that starts with `http`. The response also carries `model_id`,
+   `name`, `version`, `message` and `canary_weight`. In the console, the
+   **Deployment** column of **Models** shows `serving` for the version, and a
+   **Test** button appears in its row.
+2. **Canary:** over about 100 requests without a routing key, the
+   `X-Kionga-Model-Version` response header shows the canary version for about
+   the weight percent of them. With a routing key, the same key always shows the
+   same version.
+3. **Canary status:** the canary version's **Deployment** column shows `serving`
+   with the note `canary <weight>%`.
+
 ## Troubleshooting
 
-| Symptom | What to check |
-| --- | --- |
-| `422 model evaluation gates have not passed` | The model's gate is `failed` or `needs_evaluation`. |
-| `422 a canary needs a serving stable version` | Deploy the stable version first, with weight 0, and wait for `serving`. |
-| Status stays `pending` | Read the `message`. Common causes are a missing KServe, a model server that can't download the artifact, or an image pull error. |
-| Status `failed` with an `s3://` message | The model's artifacts aren't in an S3-compatible store the operator can read. |
-| `409 not_serving` on predict | The stable version isn't serving yet. |
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| `422`, `model evaluation gates have not passed` | The model's gate is `failed` or `needs_evaluation`. | Register an evaluated version with passing metrics. |
+| `422`, `a canary needs a serving stable version of <name>; deploy one with canary_weight 0 first` | No stable version of the model is serving. | Deploy the stable version with weight 0, and wait for `serving`. |
+| `422`, `canary_weight must be between 0 and 100` | The weight is outside the range. | Send a weight from 0 to 100. |
+| `503 kubernetes_unavailable`, `the gateway cannot reach the Kubernetes API with its in-cluster service account` | The gateway cannot call the Kubernetes API. | Check the gateway's service account; see [Kubernetes prerequisites](../operations/kubernetes-prerequisites.md). |
+| Status stays `pending`, and `message` says `waiting for the model server to become ready` or names an InferenceService | KServe is still starting the server, or the server cannot start. | Wait. If it stays pending, check for a missing KServe, a server that cannot download the artifact, or an image pull error in the pod events. |
+| Status `failed`, `this cluster does not serve serving.kserve.io/v1beta1 InferenceService; install KServe in RawDeployment mode` | KServe is not installed. | Install KServe in RawDeployment mode. See [Set up model serving](#set-up). |
+| Status `failed`, `MLflow is not configured on the operator (MLFLOW_URL)` | The operator cannot reach MLflow. | Set `MLFLOW_URL` on the operator and restart it. |
+| Status `failed`, `artifact location "<uri>" is proxied by MLflow; set KIONGA_MLFLOW_ARTIFACTS_DESTINATION to the bucket behind it` | MLflow serves the artifacts itself, and the operator does not know the bucket. | Set `KIONGA_MLFLOW_ARTIFACTS_DESTINATION` on the operator, for example `s3://kionga-models`. |
+| Status `failed`, `artifact location "<uri>" uses scheme "<scheme>"; KServe here reads s3:// only` | The model's artifacts are not in an S3-compatible store. | Store the artifacts in an S3-compatible bucket. |
+| `409 not_serving` on predict | The stable version is not serving yet. | Wait for `serving`, then retry. |
+| Rollback returns `409`, `version <v> is a canary on this version; roll the canary back first` | You rolled back the stable version while a canary exists. | Roll the canary back first. |
 
-## Next steps
+## Related pages
 
 - [Register, deploy and serve models](models-serving.md).
 - [Kubernetes prerequisites](../operations/kubernetes-prerequisites.md).
+- [Shift canary traffic for agents](agents.md#shift-canary-traffic).

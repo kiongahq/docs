@@ -47,8 +47,8 @@ publish without an editorial role.
 
 ## Write a post
 
-1. Open `/studio`, or in the console open **Engineering blog** and click
-   **Open editorial workspace**.
+1. Open `/studio`, or in the console open **Publishing** and click
+   **Writing studio**.
 2. Click **New post**. Type a title (the slug follows it until you edit the slug),
    a one-line summary, and the body.
     - Press **Tab** or **+** to add headings, lists (bulleted, numbered,
@@ -62,7 +62,7 @@ publish without an editorial role.
 5. Click **Preview** to see the post as readers will, at desktop width or phone
    width.
 6. Click **Submit for review**. The post becomes read-only for you until an editor
-   publishes it or requests changes. Click **Withdraw** to take it back.
+   publishes it or requests changes. Click **Withdraw from review** to take it back.
 
 Changes save automatically, and Ctrl+S (⌘+S on macOS) saves at once. The status
 next to the post badge shows whether the post is saving, saved, or kept locally
@@ -146,7 +146,58 @@ include `kionga_editorial_saves_total`, `kionga_editorial_transitions_total`,
 **Verify:** an image uploaded in a post displays in **Preview** and on the
 published page.
 
-## Related
+## Verify
 
-- For the design of the editor and editorial identity, see the
-  [engineering handbook](https://kiongahq.github.io/docs/engineering-access/).
+- **Submitted post:** the post appears under **Reviews** for editors, with the status
+  waiting for review.
+- **Published post:** list the published posts and read one by its slug:
+
+    ```bash
+    curl -s "$KIONGA_URL/api/v1/blogs"
+    curl -s "$KIONGA_URL/api/v1/blogs/<slug>"
+    ```
+
+    The list response has `items`, `total` and `site`, and your post is in `items`. You
+    can narrow it with `tag`, `author` and `q` query parameters. A post that is not
+    published returns `404` with `not_found` and "blog post not found."
+- **Editorial member:** the new member can open `/studio` and sees the actions of their
+  role.
+- **Media:** an image uploaded in a post displays in **Preview** and on the published
+  page.
+
+## Troubleshooting
+
+- *Publishing fails with a message that starts with `Before publishing, add`.* The message lists what is
+  missing: a title of at least 5 characters, a summary of at least 20 characters, at
+  least 20 words of content, alt text on every image, or alt text on the cover image.
+  Add each item, then publish again.
+- *"your editorial role does not allow this."* The action needs a higher role. For
+  example, only editors and editorial admins publish and schedule. Ask an
+  editorial admin to change your role under **Authors**.
+- *"this action is not valid for the post's current status."* The post is in a state
+  that does not allow the action, such as submitting a post that is already waiting for
+  review. Reload the post and check its status.
+- *"you are not a member of the editorial workspace."* An editorial admin has not added
+  you under **Authors**. Platform roles do not grant editorial access, and personal API
+  keys cannot use the editorial workspace.
+- *"editorial session expired or invalid."* An editorial session lasts 4 hours. Sign in
+  to `/studio` again.
+- *"the editorial workspace already has an editorial admin."* **Become the first
+  editorial admin** works only while no active editorial admin exists. Ask the current
+  editorial admin to add you.
+- *"the workspace must keep at least one active editorial admin."* You tried to remove,
+  demote or suspend the last editorial admin. Add another editorial admin first.
+- *"another post already uses this slug."* Choose a different slug for the post.
+- *"an image in this post has not been uploaded."* An image block has no uploaded file.
+  Upload the image again or remove the block.
+- *An upload is refused with "image is larger than 10 MB," "only JPEG, PNG, WebP and GIF
+  images are accepted," or "image dimensions are too large."* Resize the image to 10 MB
+  or less, at most 12,000 pixels per side and 50 megapixels, and use one of the listed
+  formats.
+
+## Related pages
+
+- [Manage users, groups and policies](access-control.md)
+- [Navigate the console](console-navigation.md)
+- The [engineering handbook](https://kiongahq.github.io/docs/engineering-access/) covers
+  the design of the editor and editorial identity.

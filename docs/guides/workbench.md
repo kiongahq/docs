@@ -5,11 +5,11 @@ description: Open the JupyterLab workbench, call Kionga from notebooks without a
 
 # Work in the Jupyter workbench
 
-The workbench is JupyterLab running next to the platform services, with the
-Kionga SDK, pinned ML libraries and a terminal. Use it to explore data, train
-models and call the platform from notebooks. This guide covers opening the
-workbench, calling Kionga, reading object storage, installing tools, using
-coding assistants and taking a model from a notebook to a live endpoint.
+Open the JupyterLab workbench, call Kionga from notebooks, read object storage,
+install your own tools, and take a model from a notebook to a live endpoint. The
+workbench is JupyterLab running next to the platform services, with the Kionga
+SDK, pinned ML libraries and a terminal. Use it to explore data, train models and
+call the platform from notebooks.
 
 ## Before you begin
 
@@ -25,8 +25,8 @@ coding assistants and taking a model from a notebook to a live endpoint.
 
 1. Sign in to the Kionga console.
 2. Open the workbench in one of these ways:
-    - In the sidebar, click **Jupyter workbench ↗**.
-    - Open a project and click **Open in Jupyter ↗** to open its folder,
+    - In the sidebar, click **JupyterLab**.
+    - Open a project and click **Open JupyterLab** to open its folder,
       `projects/<namespace>`.
     - Open **Settings > Developer workspaces** and choose **JupyterLab**.
 
@@ -35,57 +35,55 @@ with your console session. You do not need a Jupyter token. The workspace
 toolbar switches between JupyterLab and the browser IDE and takes you back to
 the console.
 
-**Verify:** JupyterLab opens, and the file browser shows `quickstart.ipynb`.
-
 ## Call Kionga from a notebook
 
 Inside the workbench, the SDK reaches the platform through a local helper set in
 `KIONGA_URL` and acts as you. You do not need a personal API key, and your
 browser session is never copied into the notebook kernel.
 
-```python
-from kionga import KiongaClient
+1. In a notebook cell, run:
 
-with KiongaClient() as client:
-    for project in client.list_projects():
-        print(project.id, project.name)
-```
+    ```python
+    from kionga import KiongaClient
 
-**Verify:** the cell prints the projects you see in the console.
+    with KiongaClient() as client:
+        for project in client.list_projects():
+            print(project.id, project.name)
+    ```
 
 Personal API keys are for tools that run outside Kionga, such as an IDE on your
 laptop or external automation.
 
 ## Run the guided quickstart notebook
 
-Open `quickstart.ipynb` in the file browser and run the cells. Kionga copies it
+1. Open `quickstart.ipynb` in the file browser and run the cells. Kionga copies it
 into your workspace the first time the workbench starts and never overwrites
 your edits. It walks through the platform in code:
 
-1. Check your identity and platform health.
-2. List projects, registered models and feature views.
-3. Train a scikit-learn model and log it to MLflow.
-4. Register the model with Kionga, so it appears under **Models**.
-5. Read online features through the feature gateway.
-6. Produce real-time fraud events and read the stream statistics.
+- Check your identity and platform health.
+- List projects, registered models and feature views.
+- Train a scikit-learn model and log it to MLflow.
+- Register the model with Kionga, so it appears under **Models**.
+- Read online features through the feature gateway.
+- Produce real-time fraud events and read the stream statistics.
 
 ## Read and write object storage as files
 
 Each platform bucket is mounted under `/workspace/object-store/<bucket>`, so you
 can use ordinary file APIs:
 
-```python
-from pathlib import Path
+1. In a notebook cell, run:
 
-features = Path("/workspace/object-store/kionga-features")
-print(list(features.iterdir()))
-```
+    ```python
+    from pathlib import Path
+
+    features = Path("/workspace/object-store/kionga-features")
+    print(list(features.iterdir()))
+    ```
 
 Files you write under these paths go straight to object storage. The mounted
 buckets are `kionga-models`, `kionga-artifacts`, `kionga-features`,
 `kionga-traces`, `kionga-agents` and `kionga-pipeline-logs`.
-
-**Verify:** `ls /workspace/object-store` in a terminal lists the buckets.
 
 ## Install your own packages and extensions
 
@@ -120,11 +118,9 @@ Keep these limits in mind:
 - JupyterLab cannot install VS Code extensions (`.vsix`). Use the
   [browser IDE](coding-workspace.md) for those.
 
-**Verify:** `python -m pip list --user` shows the package.
-
 ## Code with AI assistants
 
-The workbench includes three kinds of coding help:
+The workbench includes three kinds of coding help. Use the one that fits:
 
 - **Jupyter AI chat:** open the chat panel in the left sidebar, choose a
   provider, and describe the code or analysis you need. It can reference
@@ -148,7 +144,7 @@ credentials are set. For the full scaffold workflow, see
 
 ## Train a model and serve it
 
-The workbench pins `scikit-learn==1.7.0` and `mlflow==3.16.1`, the same versions
+The workbench pins `scikit-learn==1.7.0` and `mlflow==3.17.2`, the same versions
 as the default serving image, so a model you train here loads in a live
 endpoint.
 
@@ -187,9 +183,6 @@ endpoint.
 3. Open **Models** in the console, deploy `notebook-classifier`, and send a
    request from its **Test** dialog. See [Deploy and serve models](models-serving.md).
 
-**Verify:** `notebook-classifier` appears under **Models** with the version you
-registered.
-
 ## Environment reference
 
 Every workbench kernel and terminal has these variables set:
@@ -219,8 +212,34 @@ also has `git`, `curl`, `codex`, `claude` and `kionga`.
   persistent volume. See
   [Provision a teammate's workspace](distributed-workspaces.md#provision-a-teammates-workspace).
 
-## Next steps
+## Verify
+
+1. **Open:** JupyterLab opens, and the file browser shows `quickstart.ipynb`.
+   Kionga copies it into `/workspace` the first time the workbench starts.
+2. **SDK:** the cell prints the projects you see in the console.
+3. **Object storage:** `ls /workspace/object-store` in a terminal lists the
+   buckets. The directory is empty when the deployment has no object-store
+   mount; see Troubleshooting.
+4. **Packages:** `python -m pip list --user` shows the package you installed.
+5. **Model:** `notebook-classifier` appears under **Models** with the version
+   you registered, and its `stage` is `candidate`.
+
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| The **Developer workspaces** panel shows `JupyterLab: <state>` as a disabled button | The workbench is not available, and the state says why. | Ask an operator to start the workbench, then reload. |
+| No **JupyterLab** link in the sidebar | You do not have the `workbench` service. | Ask an administrator for the service, or request it from **My access**. |
+| The workbench container exits with `Object-store filesystem mount requires S3_ENDPOINT and /dev/fuse` | The deployment gives the workbench no object-store endpoint or no `/dev/fuse` device. | An operator sets `S3_ENDPOINT` and the FUSE device, or sets `S3_MOUNT_OPTIONAL=true` to start without the mount. With the option set, `/workspace/object-store` stays empty and storage remains available through the platform API. |
+| The workbench container exits with `Object-store filesystem mount requires S3_MOUNT_PREFIX, ...; refusing to mount whole buckets.` | The workbench has no prefix of its own in each bucket. | An operator sets `S3_MOUNT_PREFIX`, for example `projects/<namespace>`. |
+| `KIONGA_JUPYTER_TRUST_XHEADERS must be true or false.` | The variable has another value. | Set it to `true` or `false`. |
+| A server extension does not load | You did not restart the workbench. | Restart the workbench. Reload the browser tab for a frontend-only extension. |
+| A model you trained fails to load in a live endpoint | The libraries in your environment differ from the serving image. | Keep the pinned MLflow and scikit-learn versions, or register a `serving_image`. See [Avoid training-serving skew](models-serving.md#avoid-training-serving-skew). |
+| `kionga agents` shows `missing` or `login or API key required` | The agent's command-line tool is not installed, or its credential is not set. | Ask an operator to set `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` for the workspace. |
+
+## Related pages
 
 - [Use the browser IDE](coding-workspace.md) for VS Code extensions.
 - [Define a pipeline](pipelines.md) to run your training code on a schedule.
 - [Deploy and serve models](models-serving.md).
+- [Scaffold a project](scaffolding.md).
