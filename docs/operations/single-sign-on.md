@@ -69,7 +69,7 @@ example when the directory is down.
     make -C deploy sso-reload
     ```
 
-**Verify:** the provider's button appears on <http://localhost:8080/login>.
+**Check:** the provider's button appears on <http://localhost:8080/login>.
 
 Dex renders `deploy/sso/dex.yaml` (a template) with the connectors
 whose client ids are set, and writes the login-page list from the same rendered
@@ -168,7 +168,7 @@ test directory and demo account off, Dex's own email and password admin
 With GitHub, group names are `org:team` (for example `your-org:ml-admins`); map
 those names in `KIONGA_SSO_GROUP_ROLES`.
 
-**Verify:** `curl $KIONGA_URL/auth/providers` lists your providers, and signing in through one lands you in the console.
+**Check:** `curl $KIONGA_URL/auth/providers` lists your providers, and signing in through one lands you in the console. [Verify](#verify) shows the response.
 
 ## Choose how first-time users get access {#sign-up}
 
@@ -249,6 +249,34 @@ and `/api/v1/me` reports `connector` and the latest `access_request` status.
 - Map groups to the least privileged roles, and grant project and service access
   with [access control policies](../guides/access-control.md).
 
+## Verify
+
+1. List the sign-in options the gateway offers:
+
+    ```bash
+    curl -s "$KIONGA_URL/auth/providers"
+    ```
+
+    The response is a JSON object with `local` (true while local accounts are
+    enabled) and `providers`, a list of objects with `id`, `name` and `type`:
+
+    ```json
+    {"local":true,"providers":[{"id":"ldap","name":"Company directory","type":"ldap"}]}
+    ```
+
+    Every provider you configured appears in the list.
+
+2. Open the login page, choose a provider and sign in. The browser returns to
+   the console.
+
+3. Read your identity as the signed-in user. The `connector` field of
+   `/api/v1/me` names the provider you used, and `access_request` shows the
+   state of a first-time sign-up:
+
+    ```bash
+    curl -s -b kionga.cookies "$KIONGA_URL/api/v1/me"
+    ```
+
 ## Troubleshooting
 
 | Symptom | Check |
@@ -261,7 +289,17 @@ and `/api/v1/me` reports `connector` and the latest `access_request` status.
 | Dex says "Invalid username or password" | Dex logs: bind DN and password, `userSearch` filter and `username` attribute |
 | Signed in but no access | Waiting for approval (the console banner says so), or the user's groups are not in `KIONGA_SSO_GROUP_ROLES`; Dex logs list the groups it found at login |
 | `identity token validation failed` | `OIDC_ISSUER` must equal Dex's `issuer` exactly; `OIDC_AUDIENCE` must be the client id; with `KIONGA_TENANT` set, enable `KIONGA_SSO_SINGLE_TENANT` |
+| Gateway exits with `KIONGA_SSO_PROVIDERS is not a JSON list of {id, name, type}` or `KIONGA_SSO_GROUP_ROLES maps "<group>" to unknown role "<role>"` | The value is not valid JSON, or a group maps to a role that does not exist. The valid roles are `admin`, `operator`, `engineer`, `user` and `viewer` |
 | Gateway exits with `requires KIONGA_LOCAL_PASSWORD` | `KIONGA_LOCAL_LOGIN=true` next to SSO needs an explicit break-glass password |
 | Gateway exits with `must be at least 16 characters and not a development default` | Production mode rejects a short or default break-glass password; set a long random `KIONGA_LOCAL_PASSWORD` (or `KIONGA_LOCAL_PASSWORD_FILE`) |
 | Local form says "Too many failed attempts for this account" | After 5 failures each attempt waits up to 60 s; wait, then use the correct password. Failures reset after 15 minutes or on success |
 | SSO works on this machine but not from another | Ports bind to `127.0.0.1` by default, and the browser is sent to `localhost`. Set `KIONGA_BIND_ADDRESS`, `KIONGA_GATEWAY_URL`, and `DEX_ISSUER` as in [Network exposure](local.md#network-exposure) |
+
+## Related pages
+
+- [Manage users, groups and policies](../guides/access-control.md)
+- [Permissions](../reference/rbac.md)
+- [Configuration](../reference/configuration.md#rbac)
+- [Run locally](local.md#network-exposure): network exposure for sign-in from
+  another machine
+- [Production readiness](production-operations.md)

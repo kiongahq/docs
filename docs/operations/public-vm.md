@@ -67,7 +67,7 @@ arguments):
 Back up `KIONGA_CREDENTIAL_KEY` with your recovery plan. Replacing it makes
 previously stored personal credentials unreadable.
 
-## Steps
+## Install Kionga
 
 1. **Get the deployment files.** The installer needs only the `deploy`
    repository; it never builds from source.
@@ -249,7 +249,22 @@ make -C deploy public-down DEPLOYMENT=/etc/kionga/deployment.json
 Never use `docker compose down -v` to upgrade or troubleshoot: it deletes
 Caddy's certificate data.
 
-## Next steps
+## Troubleshooting
+
+The installer prints `Deployment failed: <reason>` and stops before it starts
+anything. The gateway messages are in
+[Troubleshooting](troubleshooting.md#the-gateway-exits-at-startup-with-a-configuration-error).
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| `Deployment failed: ... must be pinned to a verified SHA256 image digest` | `gateway_image` or `caddy_image` in `deployment.json` uses a tag | Use `repository@sha256:<64 hex characters>` for both |
+| `Deployment failed: config public origin must match the deployment domain` | `KIONGA_ALLOWED_ORIGIN` is not exactly `https://` followed by `domain` | Make them match, with no trailing slash or port |
+| `Deployment failed: missing or empty secret file`, `must not be world-accessible` or `deploy user cannot read secret file` | One of the four secret files is missing, empty, readable by everyone, or unreadable by the installing user | Write the file again, then set ownership and modes as in step 5. Never print secret contents while you diagnose this |
+| `Could not pull the pinned images` | The `ghcr.io/kiongahq` images are private, the digest is wrong, or the server cannot reach the registry | Sign in again as the installing user (step 2), then check the digests and outbound HTTPS |
+| `Readiness failed; check DNS, TLS, secrets, database and container logs` | `https://<your-domain>/api/v1/ready` never answered `200`: DNS does not point at the server, ports 80 and 443 are blocked so Caddy cannot get a certificate, the gateway exited at startup, or PostgreSQL is unreachable | Read the gateway and Caddy logs with the commands in [Verify](#verify). The installer does not roll back data |
+| `/api/v1/ready` answers `503` with code `not_ready` and `Database is unavailable` | The gateway cannot reach PostgreSQL within 2 seconds | Check `DATABASE_URL`, the database's network rules and its certificate |
+
+## Related pages
 
 - [Production readiness](production-operations.md): monitoring, backups and the
   acceptance checklist.
@@ -259,6 +274,7 @@ Caddy's certificate data.
   startup errors.
 - [Deploy on Kubernetes](managed-kubernetes.md) when you need notebooks, IDE
   workspaces or agents.
-
-Related: [Docker Compose secrets](https://docs.docker.com/compose/how-tos/use-secrets/),
-[Caddy automatic HTTPS](https://caddyserver.com/docs/automatic-https).
+- [Sandboxes and gVisor](sandboxes.md#enable-sandboxes-on-a-single-server):
+  agent teams on a single server.
+- [Docker Compose secrets](https://docs.docker.com/compose/how-tos/use-secrets/)
+- [Caddy automatic HTTPS](https://caddyserver.com/docs/automatic-https)

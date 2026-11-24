@@ -4,12 +4,25 @@ description: What to configure, monitor, back up and test before you admit users
 
 # Production readiness
 
-Use this page before you admit users to a [single-server](public-vm.md) or
-[Kubernetes](managed-kubernetes.md) deployment. A successful install, a passing
+This guide shows you what to configure, monitor, back up and test before you
+admit users to a [single-server](public-vm.md) or
+[Kubernetes](managed-kubernetes.md) deployment, and ends with the acceptance
+checklist. A successful install, a passing
 health check or a green verifier run does not prove that an installation is
 secure, recoverable or highly available. Record your installation's owners,
 cloud, cluster, identity mappings, release digests, dependency versions and
 acceptance results.
+
+## Before you begin
+
+- A completed install of a [single server](public-vm.md) or
+  [Kubernetes](managed-kubernetes.md) deployment.
+- An owner for each part of the installation, and a staging environment that
+  matches production.
+- An administrator, a provisioned user, an unprovisioned user and a suspended
+  user in your identity provider, so you can run the acceptance checklist.
+- On Kubernetes, `kubectl` and Python 3 on the machine you work from, and a
+  checkout of the `deploy` repository.
 
 ## Configuration and secrets
 
@@ -190,10 +203,8 @@ Treat every failure as a release blocker.
 Steps 3 to 5 and step 8 need a workload plane, so they do not apply to the
 single-server deployment unless you have integrated a separate one.
 
-On Kubernetes, `deploy/scripts/verify-production.py` automates the read-only
-control-plane checks, and `--test-workspace-handoff` adds a workspace session
-check; see [Verify](managed-kubernetes.md#verify). Record the result, then run
-the stateful, disruptive and recovery cases in staging.
+Record the result of each step, then run the stateful, disruptive and recovery
+cases in staging. [Verify](#verify) lists the checks you can automate.
 
 ## Migrate a stored reference
 
@@ -229,3 +240,66 @@ Then fix each record:
     An administrator who can register an endpoint can still read any variable in that scope by
     pointing a new record at their own server. Give each secret only to people you would trust
     with its value.
+
+## Verify
+
+1. On Kubernetes, run the read-only verifier. It automates the control-plane
+   checks in the checklist, and `--test-workspace-handoff` adds a workspace
+   session check. See [Verify](managed-kubernetes.md#verify) in the Kubernetes
+   guide for the full command:
+
+    ```bash
+    python3 deploy/scripts/verify-production.py --context CONTEXT --namespace kionga-system \
+      --origin https://console.example.com --workspace-host https://<workspace-host> \
+      --admin-token-file /secure/admin-id-token --user-token-file /secure/user-id-token \
+      --forbidden-project PROJECT_ID --expect-monitoring
+    ```
+
+    The command prints one line for each group of checks, for example
+    `Cluster: replicas, probes, digests, TLS ingress, HPA, isolation, and node spread pass`
+    and `HTTP: TLS, identity, provisioning, project denial, and workspace origin checks pass`.
+    A failed check prints `Acceptance failed: <reason>` and exits with status 1.
+
+2. On either deployment, check readiness and anonymous denial from outside:
+
+    ```bash
+    curl -s https://<your-domain>/api/v1/ready                                  # {"status":"ready"}
+    curl -s -o /dev/null -w '%{http_code}\n' https://<your-domain>/api/v1/me     # 401
+    ```
+
+3. Work through the [acceptance checklist](#acceptance-checklist) and keep the
+   evidence. Treat every failure as a release blocker.
+
+## Troubleshooting
+
+Each service reads its configuration at startup and exits with one of these
+messages. Read the log of the service that exits.
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| `production requires <NAME>` | A value the gateway needs in production is empty | Set it. See [What the gateway requires in production](#what-the-gateway-requires-in-production) |
+| `production requires an HTTPS URL for <NAME>` | An OIDC endpoint or `KIONGA_ALLOWED_ORIGIN` is not an `https://` URL, or embeds credentials | Use an `https://` URL without credentials |
+| `OIDC_REDIRECT_URL must match the public origin and /auth/callback` | The redirect URL has another host than `KIONGA_ALLOWED_ORIGIN`, or another path | Set it to `https://<console-host>/auth/callback` |
+| `production DATABASE_URL must use PostgreSQL with sslmode=verify-full` | The URI uses another scheme or `sslmode` | Add `sslmode=verify-full` and make sure the server certificate verifies |
+| `production <NAME> must be a strong non-development credential` | `OIDC_CLIENT_SECRET` or `KIONGA_INTERNAL_TOKEN` is short, or contains `local` or `change-me` | Use at least 24 random characters |
+| `production KIONGA_LOCAL_PASSWORD (break-glass sign-in) must be at least 16 characters and not a development default` | Local sign-in is on with a weak password | Use a longer password without `local`, `change-me` or `password`, or turn off `KIONGA_LOCAL_LOGIN` |
+| `KIONGA_CREDENTIAL_KEY must encode 32 bytes` | The key is not the base64 encoding of 32 bytes | Generate it with `openssl rand -base64 32` |
+| `isolated workspaces require a distinct DNS base domain, Kubernetes discovery and the trusted proxy disabled` | The workspace base domain is invalid, equals the console host, or the trusted proxy is on | Set a DNS name distinct from the console host, and keep `KIONGA_TRUSTED_WORKSPACE_PROXY` off |
+| `workspace and console hosts must share a registrable site for host-only workspace cookies` | The workspace domain is on another registrable domain than the console | Use a workspace domain under the console's registrable domain |
+| `config key <NAME> is invalid or must be supplied separately as a secret` | A secret-like key is in the JSON configuration file | Move the value to a secret file |
+| `KIONGA_CONFIG_FILE must be a JSON object of string values` | A value in the file is not a string | Quote every value, including `true`, `false` and numbers |
+| `set only one of <NAME> and <NAME>_FILE` or `<NAME>_FILE is empty` | Both forms are set, or the file has no content | Keep one form, and write the value into the file |
+| `file exceeds 64 KiB` | A configuration or secret file is larger than the limit | Shrink the file |
+| `KIONGA_RUNTIME_AUTH=required needs KIONGA_INTERNAL_TOKEN of at least 16 characters` | An agent runtime runs in production without the gateway's token | Give it the same `KIONGA_INTERNAL_TOKEN` as the gateway |
+| Startup log line `secret reference refused, record will not authenticate until migrated` | A saved record names a variable outside its scope | See [Migrate a stored reference](#migrate-a-stored-reference) |
+
+## Related pages
+
+- [Single server](public-vm.md)
+- [Deploy on Kubernetes](managed-kubernetes.md)
+- [Updates and rollback](updates.md)
+- [Single sign-on](single-sign-on.md)
+- [Sandboxes and gVisor](sandboxes.md)
+- [Troubleshooting](troubleshooting.md)
+- [Configuration reference](../reference/configuration.md#secret-references)
+- [PostgreSQL backup documentation](https://www.postgresql.org/docs/current/backup.html)

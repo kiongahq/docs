@@ -23,7 +23,7 @@ install the chart with the GKE overlay. It adds the Google Cloud steps to
   certificates. The overlay sets `ingress.className: nginx`; change it if you
   use another controller.
 
-## Steps
+## Prepare the cluster and install
 
 1. **Get cluster credentials** and note the context name; use it explicitly in
    every command:
@@ -40,7 +40,7 @@ install the chart with the GKE overlay. It adds the Google Cloud steps to
    `deploy/helm/secretstore-gcp.example.yaml`.
 
 3. **Create the namespace, CRDs and pull Secret**, as in steps 1 and 2 of
-   [Deploy on Kubernetes](../managed-kubernetes.md#steps), then apply the
+   [Deploy on Kubernetes](../managed-kubernetes.md#install-the-chart), then apply the
    secret store:
 
     ```bash
@@ -77,18 +77,54 @@ install the chart with the GKE overlay. It adds the Google Cloud steps to
 
 ## Verify
 
-With `--enable-dataplane-v2`, GKE treats `ipBlock` rules for Pod and Service ranges in its own way.
-Test Kionga's network policies against your actual VPC and DNS paths before you
-allow user workloads. The preflight does not prove IAM permissions, policy
-behavior, disk attachment or recovery. Follow
-[Verify](../managed-kubernetes.md#verify) in the Kubernetes guide, then run
-restore and failover drills before you admit users.
+1. List the platform resources:
 
-## Next steps
+    ```bash
+    kubectl --context CONTEXT -n kionga-system get pods,services,ingress,hpa,pdb
+    kubectl --context CONTEXT -n kionga-system get externalsecrets
+    ```
 
-- [Production readiness](../production-operations.md).
+    Every pod is `Running` and ready, and every ExternalSecret has the
+    `Ready` condition set to `True`.
 
-Related: [GKE network policy](https://cloud.google.com/kubernetes-engine/docs/how-to/network-policy),
-[Workload Identity Federation for GKE](https://cloud.google.com/kubernetes-engine/docs/concepts/workload-identity),
-[PD CSI driver](https://cloud.google.com/kubernetes-engine/docs/how-to/persistent-volumes/gce-pd-csi-driver),
-[External Secrets for Google](https://external-secrets.io/latest/provider/google-secrets-manager/).
+2. Run the production verifier from
+   [Verify](../managed-kubernetes.md#verify) in the Kubernetes guide, with
+   `--context CONTEXT`. It exits with status 0 after it prints the cluster and
+   HTTP checks, such as `Cluster: replicas, probes, digests, TLS ingress, HPA,
+   isolation, and node spread pass`. On a failure it prints
+   `Acceptance failed: <reason>` and exits with status 1.
+
+With `--enable-dataplane-v2`, GKE treats `ipBlock` rules for Pod and Service ranges in its own way. Test Kionga's network policies against your actual VPC and DNS paths before you allow user workloads. The preflight does not prove IAM permissions, policy behavior, disk attachment or recovery. Run restore and failover drills before you admit users.
+
+## Troubleshooting
+
+The preflight in step 5 prints `Preflight passed. Confirm actual policy
+enforcement, IAM, PVC provisioning, and failover in staging.` when every check
+passes. On a failure it prints `Preflight failed: <reason>` and exits with
+status 1.
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| `Preflight failed: --project is required for gke` or `--location is required for gke` | The command lacks the flag | Add `--project PROJECT` and `--location LOCATION` |
+| `Preflight failed: GKE cluster is not RUNNING` | The cluster is creating, updating, reconciling or in error | Wait until `gcloud container clusters describe` reports `RUNNING` |
+| `Preflight failed: GKE Workload Identity Federation is disabled` | The cluster has no workload pool | Turn on Workload Identity Federation for the cluster |
+| `Preflight failed: GKE needs Dataplane V2 or enabled NetworkPolicy` | The cluster uses neither `ADVANCED_DATAPATH` nor the NetworkPolicy add-on | Create the cluster with `--enable-dataplane-v2`, or enable network policy enforcement |
+| `Preflight failed: GKE PD CSI driver is disabled` | The Compute Engine persistent disk CSI driver add-on is off | Turn it on |
+| `Preflight failed: kubectl context points to a different cluster endpoint` | The `--context` does not point at the cluster you named | Run `kubectl config get-contexts`, then pass the context for this cluster |
+| `Preflight failed: at least three Ready nodes are required` | The cluster has fewer than three nodes in the `Ready` condition | Add nodes, or wait for them to become `Ready` |
+| `Preflight failed: Ready nodes must span at least two zones` | The Ready nodes carry fewer than two distinct `topology.kubernetes.io/zone` labels | Spread the node group across two or more zones |
+| `Preflight failed: kionga-pd-balanced uses an unexpected provisioner` | The class `kionga-pd-balanced` exists with another provisioner | Apply the example class from step 4. A class keeps its provisioner, so replace a class that has another one |
+| `Preflight failed: storage class must allow expansion`, `must delay binding until scheduled` or `must retain volumes` | The class differs from the example in `allowVolumeExpansion`, `volumeBindingMode` (`WaitForFirstConsumer`) or `reclaimPolicy` (`Retain`) | Create the class from the example file with those three settings. A class keeps its binding mode and reclaim policy, so replace a class that differs |
+| `Preflight failed: Command '[...]' returned non-zero exit status` | The cloud CLI or `kubectl` failed, for example because you are not signed in or the cluster name is wrong | Run the command shown in the message by hand and read its error |
+| An ExternalSecret is not `Ready` | The Google service account cannot read the Kionga secret versions in Secret Manager, or the `kionga-secret-reader` service account cannot impersonate it | Check the project, cluster name and location in `deploy/helm/secretstore-gcp.example.yaml` and the impersonation binding |
+| Pods stay in `ImagePullBackOff` | The `ghcr-pull` Secret is missing from a namespace | See [Troubleshooting](../troubleshooting.md#pods-stay-in-imagepullbackoff-or-errimagepull) |
+
+## Related pages
+
+- [Deploy on Kubernetes](../managed-kubernetes.md)
+- [Production readiness](../production-operations.md)
+- [Troubleshooting](../troubleshooting.md#kubernetes)
+- [GKE network policy](https://cloud.google.com/kubernetes-engine/docs/how-to/network-policy)
+- [Workload Identity Federation for GKE](https://cloud.google.com/kubernetes-engine/docs/concepts/workload-identity)
+- [PD CSI driver](https://cloud.google.com/kubernetes-engine/docs/how-to/persistent-volumes/gce-pd-csi-driver)
+- [External Secrets for Google](https://external-secrets.io/latest/provider/google-secrets-manager/)

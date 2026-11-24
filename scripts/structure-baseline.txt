@@ -6,12 +6,6 @@
 
 # Missing section: before you begin
 guides/langflow.md section:before-you-begin
-operations/kubernetes-prerequisites.md section:before-you-begin
-operations/managed-operations.md section:before-you-begin
-operations/production-operations.md section:before-you-begin
-operations/sandboxes.md section:before-you-begin
-operations/troubleshooting.md section:before-you-begin
-operations/updates.md section:before-you-begin
 
 # Missing section: related pages
 guides/access-control.md section:related-pages
@@ -37,21 +31,6 @@ guides/project-templates.md section:related-pages
 guides/realtime.md section:related-pages
 guides/scaffolding.md section:related-pages
 guides/workbench.md section:related-pages
-operations/external-storage.md section:related-pages
-operations/kubernetes-prerequisites.md section:related-pages
-operations/local.md section:related-pages
-operations/log-export.md section:related-pages
-operations/managed-kubernetes.md section:related-pages
-operations/managed-operations.md section:related-pages
-operations/production-operations.md section:related-pages
-operations/providers/aws-eks.md section:related-pages
-operations/providers/azure-aks.md section:related-pages
-operations/providers/gcp-gke.md section:related-pages
-operations/public-vm.md section:related-pages
-operations/sandboxes.md section:related-pages
-operations/single-sign-on.md section:related-pages
-operations/troubleshooting.md section:related-pages
-operations/updates.md section:related-pages
 
 # Missing section: troubleshooting
 guides/agent-designer.md section:troubleshooting
@@ -69,20 +48,10 @@ guides/logs.md section:troubleshooting
 guides/pipelines.md section:troubleshooting
 guides/project-templates.md section:troubleshooting
 guides/workbench.md section:troubleshooting
-operations/external-storage.md section:troubleshooting
-operations/kubernetes-prerequisites.md section:troubleshooting
-operations/local.md section:troubleshooting
-operations/log-export.md section:troubleshooting
-operations/managed-kubernetes.md section:troubleshooting
-operations/managed-operations.md section:troubleshooting
-operations/production-operations.md section:troubleshooting
-operations/providers/aws-eks.md section:troubleshooting
-operations/providers/azure-aks.md section:troubleshooting
-operations/providers/gcp-gke.md section:troubleshooting
-operations/public-vm.md section:troubleshooting
-operations/sandboxes.md section:troubleshooting
+# This page is the diagnosis catalog and its H1 is Troubleshooting. A second H2 with the same
+# name adds nothing: the symptom entries under Local stack, Single server and Kubernetes are
+# the troubleshooting content. The page has the other required sections.
 operations/troubleshooting.md section:troubleshooting
-operations/updates.md section:troubleshooting
 
 # Missing section: verify
 guides/access-control.md section:verify
@@ -108,19 +77,9 @@ guides/project-templates.md section:verify
 guides/realtime.md section:verify
 guides/scaffolding.md section:verify
 guides/workbench.md section:verify
-operations/kubernetes-prerequisites.md section:verify
-operations/managed-operations.md section:verify
-operations/production-operations.md section:verify
-operations/sandboxes.md section:verify
-operations/single-sign-on.md section:verify
-operations/troubleshooting.md section:verify
-operations/updates.md section:verify
 
 # Concept pages describe what and why; numbered steps belong in a how-to.
-concepts/how-it-works.md step-list
 
 # Pages that should walk through numbered steps.
-getting-started/quickstart.md steps
 guides/functions.md steps
 guides/models-serving.md steps
-operations/managed-operations.md steps

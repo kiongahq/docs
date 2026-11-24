@@ -21,7 +21,7 @@ Helm chart does not include it.
   destination below.
 - For a private CA, its PEM bundle.
 
-## Steps
+## Configure and start the exporter
 
 1. **Store the credential as a file.** Compose mounts `deploy/config/secrets/`
    read-only at `/run/kionga-secrets` in the exporter. Everything in that
@@ -69,22 +69,28 @@ Helm chart does not include it.
 
 ## Verify
 
-Check the exporter's status, which is published on `127.0.0.1` only:
+1. Check the exporter's status, which is published on `127.0.0.1` only:
 
-```bash
-curl -s http://localhost:8086/status
-```
+    ```bash
+    curl -s http://localhost:8086/status
+    ```
 
-The same state appears on the console's **Platform** page:
+    The response is a JSON object. Its `state` field holds one of the values
+    below, and `cursor`, `exported`, `dead_lettered` and `last_error` show the
+    progress. When the settings are incomplete, the object has only `state` and
+    `detail`.
 
-| State | Meaning |
-| --- | --- |
-| `not_deployed` | The exporter is not running (the default). |
-| `not_configured` | Running, but the `KIONGA_LOG_EXPORT_*` settings are incomplete; the detail says what is missing. |
-| `configured` | Configured, nothing exported yet. |
-| `healthy` | The last batch was accepted. |
-| `degraded` | The last request failed; the exporter retries with a backoff from 1 second, doubling up to 60 seconds. |
-| `unavailable` | Five or more consecutive failures. |
+2. Confirm that `state` is `healthy`. The same state appears on the console's
+   **Platform** page:
+
+    | State | Meaning |
+    | --- | --- |
+    | `not_deployed` | The exporter is not running (the default). |
+    | `not_configured` | Running, but the `KIONGA_LOG_EXPORT_*` settings are incomplete; the detail says what is missing. |
+    | `configured` | Configured, nothing exported yet. |
+    | `healthy` | The last batch was accepted. |
+    | `degraded` | The last request failed; the exporter retries with a backoff from 1 second, doubling up to 60 seconds. |
+    | `unavailable` | Five or more consecutive failures. |
 
 ## Where the logs go
 
@@ -137,9 +143,28 @@ Then start the cluster and the exporter:
 docker compose -f deploy/compose.yaml --profile log-export-es --profile log-export up -d elasticsearch log-exporter
 ```
 
-## Related
+## Troubleshooting
 
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| `not_deployed` on the **Platform** page | The exporter container is not running | Start it with the command in step 3 |
+| `not_configured` with `KIONGA_LOG_EXPORT_TARGET must be elasticsearch or opensearch` | The target is empty or misspelled | Set `KIONGA_LOG_EXPORT_TARGET` to `elasticsearch` or `opensearch` |
+| `not_configured` with `KIONGA_LOG_EXPORT_URL must be an http(s) URL` | The address is empty or has no scheme | Set a full URL such as `https://search.example.com:9200` |
+| `not_configured` with `put credentials in KIONGA_LOG_EXPORT_USERNAME / *_FILE variables, not in the URL` | The URL embeds a user name or password | Remove them from the URL and use the credential variables |
+| `not_configured` with `set KIONGA_LOG_EXPORT_API_KEY_FILE, or a username and KIONGA_LOG_EXPORT_PASSWORD_FILE, or KIONGA_LOG_EXPORT_ANONYMOUS=true for an unauthenticated test cluster` | No credential is set | Set an API key file, or a user name and a password file. Use anonymous access only for a test cluster |
+| `not_configured` with `refusing to send credentials over plain http to a remote host; use https` | The URL uses `http` for a host other than `localhost` or `127.0.0.1` | Use an `https` address |
+| `not_configured` with `read KIONGA_LOG_EXPORT_API_KEY_FILE: ...` or `read KIONGA_LOG_EXPORT_PASSWORD_FILE: ...` | The file does not exist inside the container | Put the file in `deploy/config/secrets/` and reference it as `/run/kionga-secrets/<name>` |
+| `degraded` with `last_error` `<host> rejected the credentials (HTTP 401)` or `(HTTP 403)` | The cluster refused the API key or password | Issue a new key, update the file and restart the exporter |
+| `degraded` with `last_error` `<host> unreachable: ...` | The exporter cannot reach the cluster, or TLS verification failed | Check the address and network. For a private CA, set `KIONGA_LOG_EXPORT_CA_FILE` |
+| `degraded` with `last_error` `<host> returned HTTP <status>` | The cluster answered with an error | Read the cluster's own logs. The exporter retries with a backoff |
+| `unavailable` | Five or more consecutive failures | Fix the cause shown in `last_error`. The state returns to `healthy` after the next accepted batch |
+| `last_error` is `<n> document(s) rejected by the target and dead-lettered`, and `dead_lettered` grows | The cluster rejected single documents with a `4xx` mapping or validation error | Check the index template or mapping for the destination in [Where the logs go](#where-the-logs-go) |
+
+## Related pages
+
+- [Logs and events](../guides/logs.md)
+- [Run locally](local.md)
+- [Production readiness](production-operations.md)
 - Audit events are not exported by this service. They are published to the
   Kafka topic `kionga.audit.operations`, which the Kafka integrations of
   Elastic and OpenSearch can consume.
-- [Logs and events](../guides/logs.md)

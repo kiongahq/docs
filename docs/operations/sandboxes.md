@@ -5,7 +5,9 @@ description: Install and verify gVisor for agent team sandboxes on a Linux host 
 
 # Sandboxes and gVisor
 
-Agent team sandboxes run under gVisor (`runsc`). If gVisor is not available, Kionga
+This guide shows you how to install and verify gVisor, enable sandboxes for agent
+teams on a Linux host or Kubernetes nodes, and fix sandboxes that report as
+unavailable. Agent team sandboxes run under gVisor (`runsc`). If gVisor is not available, Kionga
 refuses to create sandboxes and sandbox tools report `sandbox_unavailable`. It never
 falls back to another runtime. Teams that do not use sandboxes are unaffected.
 
@@ -19,6 +21,20 @@ To learn what this protects, see
 | Local, without gVisor (the default on macOS and Windows) | Reported as unavailable |
 | Local, on Linux with gVisor | Available once you set the image allowlist |
 | Compose public overlay (legacy) | gVisor is required, and `public-up.sh` stops without it |
+
+## Before you begin
+
+- For a single server or the local stack on Linux: root access to the host,
+  Docker or Podman, and the host's architecture, so that the installer can pick
+  the matching gVisor release.
+- For a single server: a working [single-server deployment](public-vm.md) and the
+  image digests of your release for the agent runtime, the trace proxy, the sandbox
+  manager and the sandbox image.
+- For Kubernetes: nodes that can run gVisor (on GKE, GKE Sandbox), a network
+  plugin that enforces NetworkPolicy, and a working
+  [Kubernetes deployment](managed-kubernetes.md).
+- Sandboxes use only images you list by digest, so decide which image your agents
+  use. See [Set the image allowlist](#set-the-image-allowlist).
 
 ## Install gVisor on a Linux host
 
@@ -37,30 +53,14 @@ To use Podman, or to install another way, follow the
 `gvisor-bin/` next to `runsc`. For Podman, add `runsc` under `[engine.runtimes]` in
 `containers.conf`.
 
-## Verify the runtime
-
-```bash
-make -C deploy sandbox-runtime-verify
-```
-
-The target starts a container with no network under `runsc` and reads its kernel release,
-which contains `gvisor`. Success prints `A container ran under gVisor.` Do not rely on the engine's list of runtimes:
-Podman lists `runsc` even when it is not installed.
-
-The probe image is pinned by digest. If the host has no network, the pull stops after 120
-seconds with a message. Load the image from another machine with `docker save` and
-`docker load`, then run the check again.
-
-The sandbox manager makes the same kind of check. At startup and before each create, it
-confirms the runtime and that a probe reports gVisor's kernel.
-
 ## Enable sandboxes on a single server
 
 The single-server installer adds agent teams and sandboxes when your deployment file enables
 them. With the settings off, it runs only the gateway and Caddy.
 
-1. Install gVisor on the server, then verify it, as described in
-   [Install gVisor on a Linux host](#install-gvisor-on-a-linux-host).
+1. Install gVisor on the server, as described in
+   [Install gVisor on a Linux host](#install-gvisor-on-a-linux-host), then verify
+   the runtime with step 1 of [Verify](#verify).
 2. Add these secret files to `secrets_directory`, with the same ownership and mode as
    the other secret files. See [Deploy on a single server](public-vm.md).
 
@@ -160,7 +160,7 @@ refuses to start if `.env` sets `KIONGA_SANDBOX_ALLOW_UNSAFE_RUNTIME` or another
 runs under gVisor. If you start the overlay directly with Compose, that probe does not run.
 The manager still refuses to create sandboxes without gVisor.
 
-## Kubernetes
+## Enable sandboxes on Kubernetes
 
 1. Install gVisor on the nodes that run sandboxes and create its RuntimeClass, or set
    `sandbox.createRuntimeClass: true`. On GKE, use GKE Sandbox.
@@ -194,42 +194,6 @@ depend on a network plugin that enforces NetworkPolicy, so confirm that yours do
 The manager's write access stops at the sandbox namespace. Outside it, the manager can read
 only the one named RuntimeClass. The chart has no setting for the unsafe runtime.
 
-## When sandboxes are unavailable
-
-Look for the banner in the run view, then read the manager's state.
-
-```bash
-# Single server
-docker compose -p kionga-public logs sandbox-manager
-
-# Local stack
-make -C deploy local-logs | grep sandbox-manager
-
-# Kubernetes
-kubectl -n kionga-system port-forward svc/kionga-sandbox-manager 8088:8088
-curl http://localhost:8088/healthz
-```
-
-`/healthz` reports `runtime`, `runtime_verified` and `driver`. `runtime_verified: false`
-means creates return 503.
-
-| Symptom | Cause | What to do |
-| --- | --- | --- |
-| `runtime_verified` is false | gVisor is missing or not registered | Install it, run `make -C deploy sandbox-runtime-verify`, then restart `sandbox-manager`. |
-| Verify says the kernel release does not mention gVisor | The name `runsc` points to another runtime | Fix the engine's runtime configuration. |
-| Verify says the Podman client cannot choose a runtime | The Podman client on macOS and Windows has no runtime flag | Run the check on the Linux host. |
-| Creates return 503 and the runtime is verified | `KIONGA_SANDBOX_IMAGES` is empty | Set the allowlist. |
-| The manager exits at startup | The token is missing or short, or an image is not pinned | Read the log. Run `make -C deploy local-up` to generate the local token. |
-| Git tools refuse a host | The host is not in `KIONGA_SANDBOX_GIT_HOSTS` | Add it. Only HTTPS is supported. |
-| The installer or `public-up.sh` stops at the probe | The server has no working gVisor | Install gVisor on the server. |
-| The probe says the pull took too long or failed | The server cannot reach the registry | Restore network access, or load the image with `docker load`. |
-
-Workers that hit `sandbox_unavailable` report it to the coordinator. After you fix the cause,
-resume the run from the run view.
-
-!!! danger "Do not use the unsafe runtime to fix a production problem"
-    Production refuses it, and it removes the isolation that sandboxes rely on.
-
 ## Develop without gVisor
 
 On a development machine with no gVisor, you can opt in to a weaker runtime. Add both lines to
@@ -257,7 +221,77 @@ banner, and the manager refuses the flag when `KIONGA_ENVIRONMENT` is `productio
   metadata range and your API server addresses are also denied. On a single server or the local
   stack, helpers use the engine's bridge network, so private addresses are reachable too.
 
-## Check the result
+## Verify
 
-Run `make -C deploy sandbox-runtime-verify`, then start a team run with an agent whose workspace is
-**Sandbox**. Its first `exec` call should return output rather than `sandbox_unavailable`.
+1. Verify the runtime:
+
+    ```bash
+    make -C deploy sandbox-runtime-verify
+    ```
+
+    The target starts a container with no network under `runsc` and reads its kernel release,
+    which contains `gvisor`. Success prints `A container ran under gVisor.` Do not rely on the engine's list of runtimes:
+    Podman lists `runsc` even when it is not installed.
+
+    The probe image is pinned by digest. If the host has no network, the pull stops after 120
+    seconds with a message. Load the image from another machine with `docker save` and
+    `docker load`, then run the check again.
+
+    The sandbox manager makes the same kind of check. At startup and before each create, it
+    confirms the runtime and that a probe reports gVisor's kernel.
+
+2. Check a real sandbox. Start a team run with an agent whose workspace is
+   **Sandbox**. Its first `exec` call returns output rather than
+   `sandbox_unavailable`.
+
+## Troubleshooting
+
+Look for the banner in the run view, then read the manager's state.
+
+```bash
+# Single server
+docker compose -p kionga-public logs sandbox-manager
+
+# Local stack
+make -C deploy local-logs | grep sandbox-manager
+
+# Kubernetes
+kubectl -n kionga-system port-forward svc/kionga-sandbox-manager 8088:8088
+curl http://localhost:8088/healthz
+```
+
+`/healthz` reports `runtime`, `runtime_verified` and `driver`. `runtime_verified: false`
+means creates return 503.
+
+| Symptom | Cause | What to do |
+| --- | --- | --- |
+| `runtime_verified` is false | gVisor is missing or not registered | Install it, run `make -C deploy sandbox-runtime-verify`, then restart `sandbox-manager`. |
+| Verify says the kernel release does not mention gVisor | The name `runsc` points to another runtime | Fix the engine's runtime configuration. |
+| Verify says the Podman client cannot choose a runtime | The Podman client on macOS and Windows has no runtime flag | Run the check on the Linux host. |
+| Creates return 503 and the runtime is verified | `KIONGA_SANDBOX_IMAGES` is empty | Set the allowlist. |
+| The manager exits at startup | The token is missing or short, or an image is not pinned | Read the log. Run `make -C deploy local-up` to generate the local token. |
+| Git tools refuse a host | The host is not in `KIONGA_SANDBOX_GIT_HOSTS` | Add it. Only HTTPS is supported. |
+| The installer or `public-up.sh` stops at the probe | The server has no working gVisor | Install gVisor on the server. |
+| `error: pulling the probe image ... took longer than 120 seconds.` or `error: could not pull the probe image ...` | The server cannot reach the registry | Restore network access, or load the image with `docker save` and `docker load`. |
+| `error: a container failed to start under runsc.` | gVisor is installed but the engine cannot start a container with it | Read the output the message includes, and check the runtime registration in the engine's configuration. |
+| `error: a container under runsc did not finish within 60 seconds.` | The probe container hangs | Check the engine and host load, then run the check again. |
+| `sandbox.images must list at least one digest-pinned image` or `sandbox.images entries must be immutable repository@sha256:digest` (Kubernetes) | The chart has no allowlist image, or an entry uses a tag | Pin every image by digest. |
+| `sandbox.runtimeClassName must name a gVisor RuntimeClass` (Kubernetes) | The class name is empty, or it is `runc`, `crun` or `default` | Name your gVisor RuntimeClass. |
+| `sandbox.kubernetesApiCidrs is required: the manager needs the API server, and git helpers must be denied it` (Kubernetes) | No API server address is listed | List every API server address in CIDR notation, such as `<address>/32`. |
+| `sandbox.secretName is required` or `sandbox.replicas must be at least 2` (Kubernetes) | A required value is missing | Set the Secret name, and use two or more replicas. |
+| `sandbox.allowUnsafeRuntime is not supported: the unsafe runtime is for local development only` (Kubernetes) | The values set the unsafe runtime | Remove the value. The chart has no setting for it. |
+
+Workers that hit `sandbox_unavailable` report it to the coordinator. After you fix the cause,
+resume the run from the run view.
+
+!!! danger "Do not use the unsafe runtime to fix a production problem"
+    Production refuses it, and it removes the isolation that sandboxes rely on.
+
+## Related pages
+
+- [What a sandbox protects](../guides/agent-teams.md#what-a-sandbox-protects)
+- [Agent teams](../guides/agent-teams.md)
+- [Deploy on a single server](public-vm.md)
+- [Deploy on Kubernetes](managed-kubernetes.md)
+- [Configuration reference](../reference/configuration.md#agent-teams)
+- [gVisor installation guide](https://gvisor.dev/docs/user_guide/install/)

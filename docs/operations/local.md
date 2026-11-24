@@ -500,13 +500,33 @@ first: most problems after an update need a rebuild, not a reset.
     3. Start clean with `make -C deploy local-up`, or bring your data back with
        [Restore a backup](#restore-a-backup), which starts the stack itself.
 
-## Next steps
+## Troubleshooting
 
-- [Troubleshooting](troubleshooting.md#local-stack) for startup, port and
+`make -C deploy local-up` prefixes its own failures with
+`Kionga startup failed:`. After a failed start, it also prints the state of the
+services and their recent logs. The full catalog is in
+[Troubleshooting](troubleshooting.md#local-stack).
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| `<service> port <port> is in use and <VARIABLE>=<port> was set for this command` | You set the port yourself, so the command does not move it | Choose a free port, or unset the variable to let `local-up` pick one. See [Change ports](#changing-ports) |
+| `<service> port <port> and every fallback are occupied; set <VARIABLE> to a free port.` | The default port and all fallback ports are taken | Set the variable in `deploy/.env` to a free port |
+| `Image downloads require at least 5 GiB free on the host` | The host disk is nearly full | Free space, use `make -C deploy local-start` for images that are already cached, or set `KIONGA_MIN_PULL_FREE_GB=0` to skip the check |
+| `Container builds need about 15 GiB` | Free space, including space the engine holds but does not use, is below the minimum, even after `local-up` removed dangling images | Free disk space, or set `KIONGA_MIN_BUILD_FREE_GB` lower if you know the build fits |
+| `image downloads still failed after <n> attempts` | A registry or CDN ended a transfer early, often on a slow connection | Run `make -C deploy local-up` again. Completed layers stay cached. To raise the retries, set `KIONGA_START_RETRIES` |
+| `a required image is not cached or the stack could not start` | You ran `make -C deploy local-start`, which never downloads or builds | Run `make -C deploy local-up` |
+| `the gateway did not become ready within <n>s.` | The gateway failed to start, or it started slowly. The default wait is 240 seconds | Read the gateway log with `make -C deploy local-logs`, then run `make -C deploy local-up` again |
+| `Existing PostgreSQL data needs credential migration.` | A PostgreSQL volume exists, but no strong password is stored for it | Follow the message: start the existing database and run `deploy/scripts/rotate-local-postgres.py`. Do not delete the volume |
+| A service stays `unhealthy` or `Exited` | A dependency failed, or an image is stale after an update | Follow [The stack is broken after an update](troubleshooting.md#the-stack-is-broken-after-an-update). None of its steps deletes data |
+
+## Related pages
+
+- [Troubleshooting](troubleshooting.md#local-stack): startup, port and
   connectivity problems.
-- [Single sign-on](single-sign-on.md) to add OAuth providers or your own LDAP
+- [Single sign-on](single-sign-on.md): add OAuth providers or your own LDAP
   directory.
-- [Single server](public-vm.md) or [Deploy on Kubernetes](managed-kubernetes.md)
+- [Single server](public-vm.md) or [Deploy on Kubernetes](managed-kubernetes.md):
   when other people need access.
-- To run the platform test suites or the local Kubernetes (kind) cluster, see
-  the [engineering handbook](https://kiongahq.github.io/docs/engineering-access/).
+- [Install Kionga](../getting-started/installation.md)
+- The [engineering handbook](https://kiongahq.github.io/docs/engineering-access/)
+  covers the platform test suites and the local Kubernetes (kind) cluster.
