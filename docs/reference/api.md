@@ -85,10 +85,12 @@ actions; see [Permissions](rbac.md).
 | `GET` | `/api/v1/health` | public | | Health check: `{"status":"ok",...}` |
 | `GET` | `/api/v1/ready` | public | | Readiness, including the database |
 | `GET` | `/api/openapi.json` | public | | OpenAPI document |
-| `GET` | `/api/v1/me` | signed-in | | Caller identity, roles, services and effective permissions |
+| `GET` | `/api/v1/me` | signed-in | | Caller identity, roles, services and effective permissions, plus `defaults.agent_image`, the agent runtime image that the console enters in the deploy agent form. It is empty when the install sets none. |
 | `GET` | `/api/v1/project-options` | signed-in | | Minimal list of the caller's projects, for selectors |
 | `GET` | `/api/v1/workspaces` | signed-in | | Jupyter and IDE availability for the caller |
 | `POST` | `/api/v1/workspaces/{kind}/launch` | `engineer`, `admin`, `operator`, or a `user` with the service; browser sessions only | `workbench` or `ide` | Launch the Jupyter workbench (`workbench`) or browser IDE (`ide`) |
+| `POST` | `/api/v1/workspaces/{kind}/start` | `engineer`, `admin`, `operator`, or a `user` with the service; browser sessions only | `workbench` or `ide` | Start your JupyterLab and IDE workspace on Kubernetes. Idempotent: it returns the current state with `200` when the workspace is already running. |
+| `POST` | `/api/v1/workspaces/{kind}/stop` | `engineer`, `admin`, `operator`, or a `user` with the service; browser sessions only | `workbench` or `ide` | Stop your workspace and keep its volume. Idempotent. Both tools stop, because they share one pod. |
 | `GET` | `/api/v1/access-requests` | signed-in | | The caller's access requests |
 | `POST` | `/api/v1/access-requests` | signed-in | | Request one or more services, with a reason |
 | `GET` | `/api/v1/settings/tokens` | signed-in, not with an API key | | List your personal API keys. Secrets are never returned. |
@@ -99,6 +101,19 @@ actions; see [Permissions](rbac.md).
 | `GET` | `/api/v1/onboarding/readiness` | read | `overview` | Onboarding readiness score and checklist |
 | `GET` | `/api/v1/events` | read | `overview` | Server-Sent Events stream that signals when data changed |
 | `GET` | `/api/v1/audit` | read, except a normal `user` | | Immutable audit log |
+
+The start and stop routes act on your own workspace. An `admin` or `operator`
+can pass `?subject=<account subject>` to act on another person's workspace. A
+workspace that the account does not have returns `404`, and an install that runs
+JupyterLab and the IDE as Compose services returns `409` with `not_configured`
+and the steps to start them. Each change writes the audit events
+`workspace.start_requested` and then `workspace.started`, `workspace.start_failed`
+or `workspace.start_superseded`, or the same four with `stop` in place of `start`.
+A request that changes nothing writes no event. Read them with `GET /api/v1/audit`.
+
+!!! info "Available in a later release"
+    The start and stop routes, and `defaults.agent_image` on `GET /api/v1/me`,
+    are not in platform v0.2.1 or earlier.
 
 ## Administration
 

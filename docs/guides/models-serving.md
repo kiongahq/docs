@@ -142,7 +142,12 @@ The gateway forwards your request to the model's MLflow `/invocations` route.
     === "Console"
 
         1. In the live version's row, click **Test**.
-        2. Edit the **Request payload** and click **Predict**.
+        2. Enter the **Request payload** and click **Predict**. The field starts
+           empty and is required. Its placeholder shows an example of the MLflow
+           scoring format, and the help line lists the accepted shapes:
+           `dataframe_split`, `dataframe_records`, `instances` or `inputs`. The
+           example is generic and does not come from your model, so replace it
+           with inputs that match the model's signature.
 
     === "API"
 
@@ -154,6 +159,9 @@ The gateway forwards your request to the model's MLflow `/invocations` route.
         ```
 
 A model without a live endpoint returns `409 not_serving`.
+
+!!! info "Available in a later release"
+    In platform v0.2.1 and earlier, the **Request payload** starts as `{}`.
 
 ## Roll back a model
 

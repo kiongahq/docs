@@ -60,7 +60,11 @@ volume claim sized from the storage grant, a pod with only the JupyterLab and
 IDE containers they are assigned, CPU and memory from the profile (and any GPU
 on the JupyterLab container), an internal service and a generated workspace
 credential. Suspending the person scales the workspace to zero. Revoking access
-removes the workspace and its workloads.
+removes the workspace and its workloads. People start and stop their own
+workspace under **Settings > Developer workspaces**; see
+[Start and stop your workspace](workbench.md#start-and-stop-your-workspace).
+Stopping keeps the volume and every file, and stops JupyterLab and the IDE
+together.
 
 On Compose, everyone shares one JupyterLab volume, which suits a laptop or a
 single-user server. Per-user workspaces need Kubernetes.

@@ -80,12 +80,22 @@ them through the API or the SDK.
        click **Load contract**.
     4. Choose the **Project** and enter the **Name** and **Version**. Only
        projects assigned to you are listed.
-    5. Enter the **Image**, preferably pinned by digest, and the **Graph factory**
+    5. Check the **Image**, preferably pinned by digest, and enter the **Graph factory**
        (`package.module:attribute`). Choose the **Model backend**, and set the
        **Minimum replicas**, **Maximum replicas**, **Scale on** trigger, **CPU per
        replica**, **Memory per replica** and **GPUs per replica**.
     6. Under **Registered tools**, select the tools the agent may use.
     7. Click **Deploy agent**.
+
+    The **Image** field is required. When your install sets a default agent
+    runtime image, the form fills the field with it and you can change it. When
+    it sets none, the field is empty and you enter an image. The Helm chart sets
+    the default from its `agent-runtime` image. The Compose files do not set one.
+    The gateway does not apply the default itself: a request without an image
+    returns `422` with the code `validation_error`.
+
+    !!! info "Available in a later release"
+        In platform v0.2.1 and earlier, the **Image** field is always empty.
 
 === "API"
 
@@ -121,6 +131,9 @@ them through the API or the SDK.
 
 Field rules:
 
+- `image` is required. The gateway rejects a request without one. The console
+  fills it in from `defaults.agent_image` in `GET /api/v1/me` when your install
+  sets that value, and the API never fills it in for you.
 - `llm_backend` is `mock` (default), `openai`, `anthropic`, `openai-compatible`
   or `self-hosted`.
 - CPU and memory use Kubernetes quantities. They default to `500m` and `1Gi` per

@@ -16,7 +16,7 @@ before you follow an installation guide.
 | **What you provide** | Docker with Compose v2, about 8 GB of memory and 25 to 35 GB of disk for the first build | A Linux host, a DNS name, an OIDC identity provider, PostgreSQL with TLS, and secret files | A cluster (Kubernetes 1.29 or later), ingress, TLS, storage, PostgreSQL, Redis, object storage, Kafka with Kafka REST, an OIDC identity provider and a secret manager |
 | **Images** | Built from source checkouts | Released gateway image from the private `ghcr.io/kiongahq` registry and a Caddy image, both pinned by digest | Released images from the private `ghcr.io/kiongahq` registry, pinned by digest |
 | **Sign-in** | Local `admin` account plus Dex (LDAP test directory, demo account, optional OAuth providers) | Your OIDC identity provider | Your OIDC identity provider |
-| **Notebooks and IDE** | Shared Jupyter and optional browser IDE on the same machine | Not available (no workload plane) | Per-user workspaces on isolated subdomains |
+| **Notebooks and IDE** | Shared Jupyter and optional browser IDE on the same machine, started and stopped from the stack | Not available (no workload plane) | Per-user workspaces on isolated subdomains, which people start and stop from the console (after platform v0.2.1) |
 | **Availability** | None; one machine | One gateway; expect downtime during upgrades | Multiple replicas with disruption budgets and autoscaling; your dependencies must also be redundant |
 | **Agent teams** | Included; sandboxes need gVisor | Optional, enabled in `deployment.json`; sandboxes need gVisor | Optional, enabled in the chart; sandboxes need gVisor |
 | **Start here** | [Run locally](local.md) | [Single server](public-vm.md) | [Deploy on Kubernetes](managed-kubernetes.md) |

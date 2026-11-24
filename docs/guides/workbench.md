@@ -28,12 +28,46 @@ call the platform from notebooks.
     - In the sidebar, click **JupyterLab**.
     - Open a project and click **Open JupyterLab** to open its folder,
       `projects/<namespace>`.
-    - Open **Settings > Developer workspaces** and choose **JupyterLab**.
+    - Open **Settings > Developer workspaces** and click **Open JupyterLab**.
 
 The workbench opens through the gateway at `/workspace?tool=workbench`
 with your console session. You do not need a Jupyter token. The workspace
 toolbar has an **Open in** list that switches between JupyterLab and the browser
 IDE, and a **Back to console** link.
+
+## Start and stop your workspace
+
+On Kubernetes, JupyterLab and the browser IDE run in one workspace for each
+person, and you start and stop it yourself. Stopping frees the CPU and memory
+and keeps your files on the workspace volume.
+
+1. Open **Settings > Developer workspaces**. JupyterLab and **Browser IDE** each
+   show a status badge: `stopped`, `stopping`, `starting`, `ready` or `failed`.
+2. To stop the workspace, click **Stop**. **Stop** is available while the status
+   is `ready`, `starting` or `failed`.
+3. To start it again, click **Start**. **Start** is available only while the
+   status is `stopped`.
+4. Wait while the status changes. The panel refreshes every few seconds until the
+   workspace is `ready`, and a start can take a minute while the volume attaches.
+5. When the status is `ready`, click **Open JupyterLab** or **Open Browser IDE**.
+
+JupyterLab and the browser IDE share one pod, so starting or stopping either one
+starts or stops both. The panel says so, and says that files are kept when the
+workspace is stopped.
+
+On Compose, JupyterLab and the IDE are separate services of the stack, so the
+panel shows no **Start** or **Stop** button. It shows the status and says to
+start and stop them from the stack. See
+[Start the IDE on Compose](coding-workspace.md#start-the-ide-on-compose).
+
+An administrator or operator can start or stop another person's workspace with
+the API. See the workspace routes in
+[Identity, access and settings](../reference/api.md#identity-access-and-settings).
+
+!!! info "Available in a later release"
+    Platform v0.2.1 and earlier have no **Start** or **Stop** button. In those
+    versions the panel shows a stopped or unavailable workspace as a disabled
+    button, such as `JupyterLab: stopped`, and an operator starts it.
 
 ## Call Kionga from a notebook
 
@@ -101,7 +135,8 @@ and image upgrades.
     Jupyter data and layouts are kept under `/workspace/.kionga/jupyter`.
 
 3. Restart the workbench to load a new server extension, or reload the browser
-   tab for a frontend-only extension.
+   tab for a frontend-only extension. On Kubernetes, click **Stop** and then
+   **Start** under **Settings > Developer workspaces** to restart the workspace.
 
 To update the Codex or Claude Code command-line tools for your user, install
 them with `npm install --global`, for example
@@ -228,7 +263,9 @@ also has `git`, `curl`, `codex`, `claude` and `kionga`.
 
 | Symptom | Cause | Fix |
 | --- | --- | --- |
-| The **Developer workspaces** panel shows `JupyterLab: <state>` as a disabled button | The workbench is not available, and the state says why. | Ask an operator to start the workbench, then reload. |
+| The **Developer workspaces** panel shows JupyterLab as `stopped` | You or an administrator stopped your workspace. | On Kubernetes, click **Start**, wait for `ready`, then click **Open JupyterLab**. |
+| The status is `failed` | The workspace could not be reconciled. | Read the message under the status and ask an administrator to check the workspace. |
+| The panel shows JupyterLab as `offline` with no **Start** button | The install runs on Compose, where the workbench is a service of the stack. | Ask an operator to start the stack service, then reload. |
 | No **JupyterLab** link in the sidebar | You do not have the `workbench` service. | Ask an administrator for the service, or request it from **My access**. |
 | The workbench container exits with `Object-store filesystem mount requires S3_ENDPOINT and /dev/fuse` | The deployment gives the workbench no object-store endpoint or no `/dev/fuse` device. | An operator sets `S3_ENDPOINT` and the FUSE device, or sets `S3_MOUNT_OPTIONAL=true` to start without the mount. With the option set, `/workspace/object-store` stays empty and storage remains available through the platform API. |
 | The workbench container exits with `Object-store filesystem mount requires S3_MOUNT_PREFIX, ...; refusing to mount whole buckets.` | The workbench has no prefix of its own in each bucket. | An operator sets `S3_MOUNT_PREFIX`, for example `projects/<namespace>`. |

@@ -176,8 +176,8 @@ The model expects rows of 12 numeric features.
 
 === "Console"
 
-    Click **Test** in the model's row. Replace the **Request payload** with the
-    JSON below and click **Predict**.
+    Click **Test** in the model's row. Enter the JSON below as the **Request
+    payload**, replacing any text in the field, and click **Predict**.
 
     ```json
     {"inputs": [[0.1,-1.2,0.5,2.0,0.3,-0.7,1.1,0.0,-0.4,0.9,-1.5,0.2]]}
@@ -209,7 +209,8 @@ it in your project, then talk to it.
 
     1. Open **Agents** and click **Deploy agent**.
     2. Select the `churn` project, set the **Name** to `customer-support`, and
-       enter `kionga/agent-runtime:latest` as the **Image**.
+       enter `kionga/agent-runtime:latest` as the **Image**. The local stack sets
+       no default image, so the field starts empty.
     3. Keep the **Graph factory** `agents.customer_support.graph:build` and the
        **Model backend** `mock`.
     4. Click **Deploy agent**.

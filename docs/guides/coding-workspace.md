@@ -17,7 +17,9 @@ opening the IDE, installing extensions, and generating code with coding agents.
   workspaces.
 - On Compose, the IDE is optional. An operator starts it with the steps in
   [Start the IDE on Compose](#start-the-ide-on-compose). On Kubernetes, the IDE
-  is part of each user's workspace when the `ide` service is assigned.
+  is part of each user's workspace when the `ide` service is assigned, and you
+  start and stop that workspace yourself. See
+  [Start and stop your workspace](workbench.md#start-and-stop-your-workspace).
 - To use Codex or Claude Code without signing in to them interactively, an
   operator sets `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` in `deploy/.env`.
 
@@ -47,10 +49,13 @@ The IDE has no published port. It opens only through the gateway, which signs
 you in with your console session. Never publish its internal port.
 
 **Verify:** in the console, **Settings > Developer workspaces** shows **Browser
-IDE** as a link. When the IDE is offline, it shows a disabled **Browser IDE:
-offline** button instead.
+IDE** with the status `ready` and an **Open Browser IDE** link. When the IDE is
+offline, the status reads `offline` and the panel shows no link.
 
-To stop the IDE without deleting any files, run `make -C deploy ide-down`.
+To stop the IDE on Compose without deleting any files, run
+`make -C deploy ide-down`. On Kubernetes, use **Stop** under **Settings >
+Developer workspaces**, which stops JupyterLab and the IDE together and keeps
+your files.
 
 ## Open the IDE
 
@@ -61,9 +66,14 @@ To stop the IDE without deleting any files, run `make -C deploy ide-down`.
       `/workspace/projects/<namespace>`.
 
 The IDE opens at `/workspace?tool=ide`. The workspace toolbar switches to
-JupyterLab and back to the console. If the IDE is offline, a project's **Open IDE** button and the **Browser IDE**
-button under **Settings > Developer workspaces** are disabled. An operator runs
-`make -C deploy ide-up`, and then you click the button again.
+JupyterLab and back to the console. If the IDE is offline on Compose, a project's **Open IDE** button is disabled and
+**Settings > Developer workspaces** shows the status `offline` for **Browser
+IDE**. An operator runs `make -C deploy ide-up`, and then you open the IDE again.
+On Kubernetes, a stopped workspace shows `stopped` there. Click **Start** and
+wait for `ready`, as described in
+[Start and stop your workspace](workbench.md#start-and-stop-your-workspace).
+Stopping the workspace stops JupyterLab and the IDE together and keeps your
+files.
 
 **Verify:** the IDE opens with `/workspace` or the project folder in the
 explorer.
@@ -174,8 +184,8 @@ your project files.
 
 ## Verify
 
-1. In the console, open **Settings > Developer workspaces**. **Browser IDE** is a
-   link when the IDE answers.
+1. In the console, open **Settings > Developer workspaces**. **Browser IDE**
+   shows `ready` and an **Open Browser IDE** link when the IDE answers.
 2. In the IDE terminal, check the coding agents:
 
     ```bash
@@ -195,10 +205,11 @@ your project files.
 
 ## Troubleshooting
 
-- *The **Browser IDE** button is disabled and its hover text reads "IDE is offline. Run
-  make -C deploy ide-up from the Kionga workspace folder, then retry."* The IDE
-  container is not running. Run `make -C deploy ide-up`, then open the link again. In a production install the
-  message reads "Workspace is offline. Ask your administrator to start it."
+- *The **Browser IDE** status is `stopped` on Kubernetes.* Your workspace is
+  stopped. Click **Start**, wait for `ready`, then click **Open Browser IDE**.
+- *The **Browser IDE** status is `offline` on Compose.* The IDE container is not
+  running. An operator runs `make -C deploy ide-up`, and then you open the IDE
+  again.
 - *An extension install fails with `EAI_AGAIN`.* The workspace cannot resolve
   `open-vsx.org` or `openvsx.eclipsecontent.org`. Retry when the workspace has
   internet access.
