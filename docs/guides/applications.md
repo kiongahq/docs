@@ -458,7 +458,7 @@ operator's message.
 ### Reasons the operator reports
 
 The operator sets these reasons on the application's `Ready` condition, which
-`kionga apps get --json` returns under `conditions`, and they appear in the
+`kionga apps get --json` returns under `status.conditions`, and they appear in the
 `Reason:` message of a failed application. The operator's own phase names (`Failed`,
 `Progressing`, `Degraded` and `Ready`) are on the Kubernetes resource, and the gateway
 maps them to the status values above.
