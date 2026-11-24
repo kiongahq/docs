@@ -158,7 +158,7 @@ docker compose -f deploy/compose.yaml up -d mlflow
 
 **Cause.** Usually training-serving skew: the model was trained with different
 library versions than the serving image. The trainer, the serving image and
-the workbench must pin the same versions (`mlflow==3.16.1`,
+the workbench must pin the same versions (`mlflow==3.17.2`,
 `scikit-learn==1.7.0`).
 
 **Fix.** Check the logs:
