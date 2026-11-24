@@ -1,4 +1,4 @@
-"""Gate tests for scripts/check_structure.py: the page-shape rules and the baseline ratchet."""
+"""Gate tests for scripts/check_structure.py: the page-shape rules and the Markdown they must understand."""
 
 from __future__ import annotations
 
@@ -141,36 +141,12 @@ def test_the_generated_changelog_is_not_checked(tmp_path: Path) -> None:
     assert cs.collect(tmp_path) == []
 
 
-def test_the_baseline_ratchet_fails_on_new_gaps_and_on_fixed_ones() -> None:
-    found = [cs.Finding("guides/a.md", "section:verify", "x"), cs.Finding("guides/b.md", "steps", "y")]
-    assert cs.evaluate(found, {"guides/a.md section:verify", "guides/b.md steps"}) == ([], [])
-    new, stale = cs.evaluate(found, {"guides/a.md section:verify"})
-    assert [f.key() for f in new] == ["guides/b.md steps"] and stale == []
-    new, stale = cs.evaluate(found, {"guides/a.md section:verify", "guides/b.md steps", "guides/c.md steps"})
-    assert new == [] and stale == ["guides/c.md steps"]
 
 
-def test_baseline_files_allow_comments_and_blank_lines(tmp_path: Path) -> None:
-    path = tmp_path / "baseline.txt"
-    path.write_text("# header\n\nguides/a.md   section:verify  # why\n")
-    assert cs.read_baseline(path) == {"guides/a.md section:verify"}
-    assert cs.read_baseline(tmp_path / "missing.txt") == set()
 
 
-def test_the_real_documentation_passes_against_its_baseline() -> None:
-    findings = cs.collect(DOCS_REPO / "docs")
-    baseline = cs.read_baseline(DOCS_REPO / "scripts" / "structure-baseline.txt")
-    new, stale = cs.evaluate(findings, baseline)
-    assert [f.key() for f in new] == [] and stale == []
 
 
-def test_every_baseline_line_names_a_real_page_and_a_known_rule() -> None:
-    known = {"description", "h1", "heading-level", "fence-language", "dash", "section-order", "steps", "step-list", "table"}
-    known |= {f"section:{cs.slug(name)}" for names in cs.REQUIRED_SECTIONS.values() for name in names}
-    for entry in cs.read_baseline(DOCS_REPO / "scripts" / "structure-baseline.txt"):
-        page, rule = entry.split(" ", 1)
-        assert (DOCS_REPO / "docs" / page).is_file(), entry
-        assert rule in known, entry
 
 
 def test_a_page_titled_troubleshooting_does_not_need_a_troubleshooting_section() -> None:
@@ -180,3 +156,183 @@ def test_a_page_titled_troubleshooting_does_not_need_a_troubleshooting_section()
     # Any other page still needs the section.
     other = page.replace("# Troubleshooting", "# Deploy an application")
     assert rules("operations/upgrade.md", other) == {"section:troubleshooting"}
+
+
+FENCE = "`" * 3
+TILDES = "~" * 3
+EM = chr(0x2014)
+EN = chr(0x2013)
+
+
+def page(body: str, front: str = "description: What is planned.") -> str:
+    return f"---\n{front}\n---\n\n{body}"
+
+
+def test_the_real_documentation_has_no_gaps() -> None:
+    assert cs.collect(DOCS_REPO / "docs") == []
+
+
+def test_there_is_no_baseline_to_hide_a_gap_in() -> None:
+    assert not (DOCS_REPO / "scripts" / "structure-baseline.txt").exists()
+    assert not hasattr(cs, "read_baseline") and not hasattr(cs, "evaluate")
+
+
+def test_headings_inside_any_fence_do_not_count() -> None:
+    missing_verify = HOW_TO.replace("## Verify\n\nOpen the address.\n", "")
+    for fence in (FENCE, TILDES, "  " + FENCE, "   " + TILDES):
+        hidden = missing_verify.replace("## Related pages", f"{fence}text\n## Verify\n{fence}\n\n## Related pages")
+        assert "section:verify" in rules("guides/deploy.md", hidden), repr(fence)
+
+
+def test_every_fence_style_needs_a_language() -> None:
+    for fence in (FENCE, TILDES, "   " + FENCE):
+        assert rules("roadmap.md", page(f"# Roadmap\n\n{fence}\nplain\n{fence}\n")) == {"fence-language"}, repr(fence)
+        assert rules("roadmap.md", page(f"# Roadmap\n\n{fence}text\nplain\n{fence}\n")) == set(), repr(fence)
+    attr = page(f"# Roadmap\n\n{FENCE}{{ .bash title=\"x\" }}\nls\n{FENCE}\n")
+    assert rules("roadmap.md", attr) == set()
+
+
+def test_a_longer_fence_is_not_closed_by_a_shorter_one() -> None:
+    body = f"# Roadmap\n\n{FENCE}{FENCE[0]}text\n{FENCE}\n# not a heading\n{FENCE}{FENCE[0]}\n"
+    assert rules("roadmap.md", page(body)) == set()
+
+
+def test_numbered_steps_are_found_in_tabs_and_admonitions() -> None:
+    tabbed = HOW_TO.replace("1. Open **Applications**.\n2. Select **Deploy**.\n", '=== "Compose"\n\n    1. Open **Applications**.\n    2. Select **Deploy**.\n')
+    assert rules("guides/deploy.md", tabbed) == set()
+    concept = page('# Idea\n\n=== "Compose"\n\n    1. First.\n    2. Second.\n')
+    assert rules("concepts/idea.md", concept) == {"step-list"}
+
+
+def test_numbers_inside_code_are_not_steps() -> None:
+    concept = page(f"# Idea\n\n{FENCE}text\n1. not a step\n{FENCE}\n")
+    assert rules("concepts/idea.md", concept) == set()
+
+
+def test_only_a_real_table_satisfies_a_reference_page() -> None:
+    ref = lambda body: rules("reference/x.md", page("# Settings\n\n" + body))  # noqa: E731
+    assert ref("| not a table |\n") == {"table"}
+    assert ref("A rule\n\n---\n\nText | with a pipe\n") == {"table"}
+    assert ref("| Name | Value |\n| --- | --- |\n| a | b |\n") == set()
+    assert ref("Name | Value\n--- | ---\na | b\n") == set()
+    assert ref("| Left | Right |\n|:---|---:|\n| a | b |\n") == set()
+    assert ref(f"{FENCE}text\n| Name | Value |\n| --- | --- |\n{FENCE}\n") == {"table"}
+
+
+def test_heading_attributes_do_not_hide_a_required_section() -> None:
+    attributed = HOW_TO.replace("## Verify", "## Verify {#verify}").replace("# Deploy an application", "# Deploy an application {#top}")
+    assert rules("guides/deploy.md", attributed) == set()
+
+
+def test_descriptions_are_judged_as_sentences() -> None:
+    ok = ["Deploy a service at its own address.", 'Use the "Deploy" button.', "Deploy a service (see the guide).", "Version 2.1 of the API, with more detail."]
+    for value in ok:
+        assert rules("roadmap.md", page("# Roadmap\n", f"description: {value!r}".replace("'", '"') if '"' not in value else f"description: '{value}'")) == set(), value
+    for value in ["Two sentences. Here.", "No full stop", "Ends with a question?"]:
+        assert rules("roadmap.md", page("# Roadmap\n", f'description: "{value}"')) == {"description"}, value
+
+
+def test_front_matter_with_crlf_line_endings_and_folded_yaml_is_read() -> None:
+    crlf = "---\r\ndescription: What is planned.\r\n---\r\n\r\n# Roadmap\r\n"
+    assert rules("roadmap.md", crlf) == set()
+    folded = "---\ndescription: >\n  What is planned\n  for the next release.\n---\n\n# Roadmap\n"
+    assert rules("roadmap.md", folded) == set()
+    assert rules("roadmap.md", "---\ndescription: [unclosed\n---\n\n# Roadmap\n") == {"description"}
+    assert rules("roadmap.md", "---\ndescription: 5\n---\n\n# Roadmap\n") == {"description"}
+
+
+def test_only_em_dashes_are_rejected() -> None:
+    assert rules("roadmap.md", page(f"# Roadmap\n\nBetween 2{EN}100 nodes.\n")) == set()
+    assert rules("roadmap.md", page(f"# Roadmap\n\nA pause {EM} here.\n")) == {"dash"}
+
+
+def test_abbreviations_in_a_description_do_not_split_the_sentence() -> None:
+    for value in ["Use e.g. Linux.", "An i.e. example.", "Works on Linux, macOS, etc. for teams.", "Runs in the U.S. region.", "Compare vs. the old setup."]:
+        assert rules("roadmap.md", page("# Roadmap\n", f'description: "{value}"')) == set(), value
+    assert rules("roadmap.md", page("# Roadmap\n", 'description: "Use e.g. Linux. And more."')) == {"description"}
+
+
+def test_headings_and_steps_inside_html_comments_do_not_count() -> None:
+    hidden = HOW_TO.replace("## Verify\n\nOpen the address.\n", "<!--\n## Verify\n\nOpen the address.\n-->\n")
+    assert rules("guides/deploy.md", hidden) == {"section:verify"}
+    one_line = HOW_TO.replace("## Verify", "<!-- ## Verify -->")
+    assert "section:verify" in rules("guides/deploy.md", one_line)
+    steps = HOW_TO.replace("1. Open **Applications**.\n2. Select **Deploy**.\n", "<!--\n1. Open it.\n-->\nOpen Applications.\n")
+    assert rules("guides/deploy.md", steps) == {"steps"}
+    kept = HOW_TO.replace("## Verify", "## Verify <!-- shown -->")
+    assert rules("guides/deploy.md", kept) == set()
+
+
+def test_a_comment_can_contain_a_fence_marker_without_confusing_the_scan() -> None:
+    body = f"# Roadmap\n\n<!--\n{FENCE}\n-->\n\n{FENCE}text\nok\n{FENCE}\n"
+    assert rules("roadmap.md", page(body)) == set()
+
+
+def test_indented_code_blocks_are_not_structure() -> None:
+    no_steps = HOW_TO.replace("1. Open **Applications**.\n2. Select **Deploy**.\n", "Open Applications.\n\n    1. not a Markdown list\n")
+    assert rules("guides/deploy.md", no_steps) == {"steps"}
+    concept = page("# Idea\n\nThe layout is:\n\n    1. a line of sample output\n")
+    assert rules("concepts/idea.md", concept) == set()
+    reference = page("# Settings\n\nExample:\n\n    | Name | Value |\n    | --- | --- |\n")
+    assert rules("reference/settings.md", reference) == {"table"}
+    literal = page(f"# Roadmap\n\nExample:\n\n    {FENCE}\n    not a fence\n")
+    assert rules("roadmap.md", literal) == set()
+
+
+def test_indentation_inside_lists_tabs_and_admonitions_is_still_structure() -> None:
+    tab = page('# Idea\n\n=== "Compose"\n\n    1. First.\n')
+    assert rules("concepts/idea.md", tab) == {"step-list"}
+    note = page("# Idea\n\n!!! note\n\n    1. First.\n")
+    assert rules("concepts/idea.md", note) == {"step-list"}
+    item = page("# Idea\n\n- Item\n\n    1. Nested.\n")
+    assert rules("concepts/idea.md", item) == {"step-list"}
+    table_in_tab = page('# Settings\n\n=== "Compose"\n\n    | Name | Value |\n    | --- | --- |\n')
+    assert rules("reference/settings.md", table_in_tab) == set()
+
+
+def test_a_lazy_continuation_line_is_not_a_code_block() -> None:
+    body = HOW_TO.replace("Deploy a service so people can reach it.", "Deploy a service so people\n    can reach it.")
+    assert rules("guides/deploy.md", body) == set()
+
+
+def test_code_nested_deeper_inside_a_list_tab_or_admonition_is_not_structure() -> None:
+    deep = "        "
+    for opener in ("- Parent", '=== "Compose"', "!!! note"):
+        body = "# Idea\n\n" + opener + "\n\n    A paragraph in the body.\n\n" + deep + "1. literal code\n"
+        assert rules("concepts/idea.md", page(body)) == set(), opener
+        steps = HOW_TO.replace("1. Open **Applications**.\n2. Select **Deploy**.\n", opener + "\n\n    Open Applications.\n\n" + deep + "1. literal code\n")
+        assert rules("guides/deploy.md", steps) == {"steps"}, opener
+        table = "# Settings\n\n" + opener + "\n\n" + deep + "| Name | Value |\n" + deep + "| --- | --- |\n"
+        assert rules("reference/settings.md", page(table)) == {"table"}, opener
+
+
+def test_every_line_of_an_indented_code_block_is_code() -> None:
+    concept = page("# Idea\n\nSample output:\n\n    1. first\n    2. second\n\n    3. after a blank line\n")
+    assert rules("concepts/idea.md", concept) == set()
+    ended = page("# Idea\n\nSample output:\n\n    1. first\n\nBack in the text.\n\n1. A real list again.\n")
+    assert rules("concepts/idea.md", ended) == {"step-list"}
+
+
+def test_nested_bodies_keep_their_own_depth() -> None:
+    nested = page('# Idea\n\n=== "A"\n\n    - item\n\n        1. nested step\n\n            1. deeper step\n')
+    assert rules("concepts/idea.md", nested) == {"step-list"}
+    code_after = page('# Idea\n\n=== "A"\n\n    - item\n\n            1. code inside the item\n')
+    assert rules("concepts/idea.md", code_after) == set()
+    back_out = page('# Idea\n\n=== "A"\n\n    - item\n\n            1. code\n\nA paragraph.\n\n1. A real step.\n')
+    assert rules("concepts/idea.md", back_out) == {"step-list"}
+
+
+def test_a_tab_indented_code_block_is_code() -> None:
+    concept = page("# Idea\n\nSample:\n\n\t1. literal\n")
+    assert rules("concepts/idea.md", concept) == set()
+
+
+def test_closing_hashes_on_a_heading_are_ignored() -> None:
+    closed = HOW_TO.replace("## Verify", "## Verify ##").replace("## Related pages", "## Related pages ## {#related}")
+    assert rules("guides/deploy.md", closed) == set()
+
+
+def test_a_setext_heading_is_not_seen_so_the_page_must_use_hashes() -> None:
+    setext = page("Roadmap\n=======\n\nText.\n")
+    assert rules("roadmap.md", setext) == {"h1"}
+

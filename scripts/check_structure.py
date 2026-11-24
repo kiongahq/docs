@@ -12,18 +12,21 @@ check, so structure does not depend on a reviewer remembering it:
   explanation  no numbered step lists
   reference    at least one table
 
-A page titled Troubleshooting is the troubleshooting content, so it does not repeat the section.
 Section landing pages (index.md) and the generated changelog are checked only for
-the rules that apply to every page. Section headings must match the standard
-exactly, so every page of a type reads the same way.
+the rules that apply to every page. A page titled Troubleshooting is the
+troubleshooting content, so it does not repeat the section. Section headings must
+match the standard exactly, so every page of a type reads the same way.
 
-Known gaps live in scripts/structure-baseline.txt, one `<page> <rule>` per line
-with a comment saying why the page cannot meet the rule yet. The check fails on a
-gap that is not in the baseline, and on a baseline line whose gap no longer
-exists, so the list can only shrink.
+There is no list of exceptions: any gap fails the check, so a page cannot ship
+without the shape of its type.
+
+Limits, by design: nesting follows the four-column convention MkDocs requires for list items,
+content tabs and admonitions, so a two-space nested list is not understood; headings must use
+the # form, so a setext heading (underlined with = or -) is not seen and the page fails the
+H1 rule until it is rewritten.
 
 Usage:
-  python scripts/check_structure.py [--docs docs] [--baseline scripts/structure-baseline.txt]
+  python scripts/check_structure.py [--docs docs]
 Exit status: 0 clean, 1 findings.
 """
 
@@ -34,6 +37,8 @@ import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+
+import yaml
 
 # Section directory -> page type, from the documentation standard.
 SECTION_TYPES = {
@@ -59,8 +64,22 @@ REQUIRED_SECTIONS = {
 # Pages the build generates, so their source cannot follow the page shapes.
 GENERATED = {"changelog.md"}
 
-NUMBERED = re.compile(r"^\s{0,3}\d+\. ", re.M)
-TABLE_ROW = re.compile(r"^\|.+\|\s*$", re.M)
+# A numbered list item at any indent: steps inside content tabs and admonitions are indented.
+NUMBERED = re.compile(r"^[ \t]*\d+\. ", re.M)
+# A fence opens with three or more backticks or tildes, indented when it sits in a list, tab or admonition.
+FENCE = re.compile(r"^([ \t]*)(`{3,}|~{3,})(.*)$")
+# The separator row of a Markdown table: dashes with at least one pipe, so a bare --- rule does not count.
+TABLE_SEPARATOR = re.compile(r"^(?=[^\n]*\|)[ \t]*\|?[ \t]*:?-{3,}:?[ \t]*(?:\|[ \t]*:?-{3,}:?[ \t]*)*\|?[ \t]*$")
+# A sentence boundary: end punctuation, optional closing quotes or brackets, then the start of another sentence.
+SENTENCE_BREAK = re.compile(r"[.!?][\"')\]]*\s+(?=[A-Z0-9`\"(\[])")
+SENTENCE_END = re.compile(r"\.[\"')\]]*$")
+HEADING_ATTRIBUTES = re.compile(r"\s*\{[^}]*\}\s*$")
+HEADING_CLOSING_HASHES = re.compile(r"\s+#+\s*$")
+# The start of a list item, content tab, admonition or collapsible block, after any indent.
+CONTAINER_START = re.compile(r"(?:[-*+]|\d+\.)[ \t]|(?:===|\?\?\?\+?|!!!)[ ]")
+# Words and initialisms whose full stop does not end a sentence.
+ABBREVIATION = re.compile(r"\b(?:e\.g|i\.e|etc|vs|approx|Inc|Ltd|Dr|Mr|Ms|St|No)\.|\b(?:[A-Za-z]\.){2,}")
+HTML_COMMENT = re.compile(r"<!--.*?-->", re.S)
 DASHES = ("\u2014",)  # an em dash
 
 
@@ -69,9 +88,6 @@ class Finding:
     page: str
     rule: str
     detail: str
-
-    def key(self) -> str:
-        return f"{self.page} {self.rule}"
 
 
 def page_type(relative: Path) -> str:
@@ -83,59 +99,148 @@ def page_type(relative: Path) -> str:
     return "page"
 
 
-def split_front_matter(text: str) -> tuple[str | None, str]:
+def split_front_matter(text: str) -> tuple[dict | None, str]:
+    """The parsed front matter (None when absent, an empty dict when it is not valid YAML) and the body."""
+    text = text.replace("\r\n", "\n")
     match = re.match(r"---\n(.*?)\n---\n", text, re.S)
-    return (match.group(1), text[match.end():]) if match else (None, text)
+    if not match:
+        return None, text
+    try:
+        data = yaml.safe_load(match.group(1))
+    except yaml.YAMLError:
+        data = {}
+    return (data if isinstance(data, dict) else {}), text[match.end():]
 
 
-def blank_code(body: str) -> str:
-    """The body with fenced code replaced by blank lines, so headings inside code do not count."""
-    return re.sub(r"^```.*?^```[ \t]*$", lambda m: "\n" * m.group(0).count("\n"), body, flags=re.S | re.M)
-
-
-def fence_languages(body: str) -> list[str]:
-    """The language of each opening code fence, in order. An empty string means none."""
-    languages: list[str] = []
-    inside = False
-    for line in body.splitlines():
-        stripped = line.strip()
-        if not stripped.startswith("```"):
-            continue
-        if inside:
-            inside = False
+def indent_width(line: str) -> int:
+    """The indent of a line in columns, with tabs stopping every four columns."""
+    width = 0
+    for char in line:
+        if char == " ":
+            width += 1
+        elif char == "\t":
+            width += 4 - width % 4
         else:
-            inside = True
-            languages.append(stripped[3:].strip().split(" ")[0].split("{")[0])
-    return languages
+            break
+    return width
+
+
+def scan_code(body: str) -> tuple[str, list[str]]:
+    """The body reduced to what the site renders as structure, and the language of each fence.
+
+    Fenced code, HTML comments and indented code blocks are blanked line for line, so a
+    heading, step or table inside them does not count. Backtick and tilde fences are both
+    recognised, at any indent. A fence closes only with the same character, at least as long,
+    and nothing after it. An empty language means none.
+
+    A list item, content tab or admonition opens a body indented four columns deeper than its
+    first line, and bodies nest. Indentation up to that depth is structure. A line indented four
+    columns beyond the current body, after a blank line, starts an indented code block that
+    runs until a line indented less.
+    """
+    plain: list[str] = []
+    languages: list[str] = []
+    open_fence: tuple[str, int] | None = None
+    in_comment = False
+    bodies: list[int] = []
+    code_indent: int | None = None
+    previous_blank = True
+    for raw in body.split("\n"):
+        line = raw
+        if open_fence is not None:
+            match = FENCE.match(line)
+            plain.append("")
+            if match and match.group(2)[0] == open_fence[0] and len(match.group(2)) >= open_fence[1] and not match.group(3).strip():
+                open_fence = None
+            previous_blank = False
+            continue
+        if in_comment:
+            end = line.find("-->")
+            if end < 0:
+                plain.append("")
+                continue
+            in_comment = False
+            line = line[end + 3:]
+        line = HTML_COMMENT.sub("", line)
+        start = line.find("<!--")
+        if start >= 0:
+            in_comment = True
+            line = line[:start]
+        if not line.strip():
+            plain.append("")
+            previous_blank = True
+            continue
+        width = indent_width(line)
+        if code_indent is not None:
+            if width >= code_indent:
+                plain.append("")
+                previous_blank = False
+                continue
+            code_indent = None
+        while bodies and width < bodies[-1]:
+            bodies.pop()
+        base = bodies[-1] if bodies else 0
+        if previous_blank and width >= base + 4:
+            code_indent = base + 4
+            plain.append("")
+            previous_blank = False
+            continue
+        if CONTAINER_START.match(line.lstrip()):
+            bodies.append(width + 4)
+        match = FENCE.match(line)
+        if match:
+            open_fence = (match.group(2)[0], len(match.group(2)))
+            info = match.group(3).strip()
+            if info.startswith("{"):
+                classes = re.findall(r"\.([\w+#-]+)", info)
+                languages.append(classes[0] if classes else "")
+            else:
+                languages.append(info.split(" ")[0] if info else "")
+            plain.append("")
+        else:
+            plain.append(line)
+        previous_blank = False
+    return "\n".join(plain), languages
+
+
+def has_table(plain: str) -> bool:
+    """True when a header row with a pipe is followed by a table separator row."""
+    lines = plain.split("\n")
+    return any("|" in lines[i - 1] and TABLE_SEPARATOR.match(lines[i]) for i in range(1, len(lines)))
 
 
 def slug(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
 
 
-def sentence_count(text: str) -> int:
-    return len(re.findall(r"[.!?](?:\s|$)", text.strip()))
+def description_problem(value: object) -> str | None:
+    if not isinstance(value, str) or not value.strip():
+        return "front matter needs a one-sentence description"
+    text = " ".join(value.split())
+    masked = ABBREVIATION.sub(lambda m: m.group(0).replace(".", ""), text)
+    if SENTENCE_BREAK.search(masked) or not SENTENCE_END.search(text):
+        return "the description must be exactly one sentence ending in a full stop"
+    return None
 
 
 def check_page(relative: Path, text: str) -> list[Finding]:
     page = relative.as_posix()
     kind = page_type(relative)
     front, body = split_front_matter(text)
-    plain = blank_code(body)
+    plain, languages = scan_code(body)
     findings: list[Finding] = []
 
     def add(rule: str, detail: str) -> None:
         findings.append(Finding(page, rule, detail))
 
-    description = re.search(r"^description:\s*(.+)$", front or "", re.M)
-    if not description:
-        add("description", "front matter needs a one-sentence description")
-    else:
-        value = description.group(1).strip().strip("\"'")
-        if sentence_count(value) != 1 or not value.endswith("."):
-            add("description", "the description must be exactly one sentence ending in a full stop")
+    problem = description_problem((front or {}).get("description"))
+    if problem:
+        add("description", problem)
 
-    headings = [(len(m.group(1)), m.group(2).strip()) for m in re.finditer(r"^(#{1,6}) +(.+?)\s*$", plain, re.M)]
+    headings = [
+        (len(m.group(1)), HEADING_CLOSING_HASHES.sub("", HEADING_ATTRIBUTES.sub("", m.group(2))).strip())
+        for m in re.finditer(r"^(#{1,6}) +(.+?)\s*$", plain, re.M)
+    ]
     if sum(1 for level, _ in headings if level == 1) != 1:
         add("h1", "the page needs exactly one H1")
     previous = 1
@@ -145,7 +250,7 @@ def check_page(relative: Path, text: str) -> list[Finding]:
             break
         previous = level
 
-    if any(language == "" for language in fence_languages(body)):
+    if any(language == "" for language in languages):
         add("fence-language", "every code fence needs a language; use text for plain output")
     if any(dash in text for dash in DASHES):
         add("dash", "no em dashes; use a comma, colon, period or parentheses")
@@ -166,7 +271,7 @@ def check_page(relative: Path, text: str) -> list[Finding]:
             add("steps", f"a {kind} needs numbered steps")
     if kind == "explanation" and NUMBERED.search(plain):
         add("step-list", "an explanation describes what and why; move numbered steps to a how-to")
-    if kind == "reference" and not TABLE_ROW.search(plain):
+    if kind == "reference" and not has_table(plain):
         add("table", "a reference page is scannable: use at least one table")
     return findings
 
@@ -181,48 +286,18 @@ def collect(docs: Path) -> list[Finding]:
     return findings
 
 
-def read_baseline(path: Path) -> set[str]:
-    if not path.exists():
-        return set()
-    entries: set[str] = set()
-    for line in path.read_text(encoding="utf-8").splitlines():
-        line = line.split("#", 1)[0].strip()
-        if line:
-            entries.add(" ".join(line.split()))
-    return entries
-
-
-def evaluate(findings: list[Finding], baseline: set[str]) -> tuple[list[Finding], list[str]]:
-    """The findings the baseline does not cover, and the baseline lines nothing matches."""
-    keys = {finding.key() for finding in findings}
-    new = [finding for finding in findings if finding.key() not in baseline]
-    stale = sorted(entry for entry in baseline if entry not in keys)
-    return new, stale
-
-
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--docs", default="docs", type=Path)
-    parser.add_argument("--baseline", default=Path("scripts/structure-baseline.txt"), type=Path)
-    parser.add_argument("--list", action="store_true", help="print every gap, including the baselined ones")
     args = parser.parse_args(argv)
 
     findings = collect(args.docs)
-    baseline = read_baseline(args.baseline)
-    if args.list:
-        for finding in findings:
-            print(f"{finding.key()}  {finding.detail}")
-        print(f"{len(findings)} gaps in {len({f.page for f in findings})} pages", file=sys.stderr)
-        return 0
-    new, stale = evaluate(findings, baseline)
-    for finding in new:
+    for finding in findings:
         print(f"{finding.page}: [{finding.rule}] {finding.detail}")
-    for entry in stale:
-        print(f"{args.baseline}: stale entry '{entry}'; the gap is fixed, so remove the line")
-    covered = len(findings) - len(new)
-    status = "ok" if not new and not stale else "failed"
-    print(f"structure check {status}: {len(new)} new gaps, {len(stale)} stale baseline entries, {covered} known gaps remaining", file=sys.stderr)
-    return 1 if new or stale else 0
+    pages = len({finding.page for finding in findings})
+    status = "ok" if not findings else "failed"
+    print(f"structure check {status}: {len(findings)} gaps in {pages} pages", file=sys.stderr)
+    return 1 if findings else 0
 
 
 if __name__ == "__main__":

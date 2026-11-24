@@ -28,10 +28,10 @@ instead. Links within a site are relative; links between sites are absolute URLs
   | Concepts | Explanation | No numbered step lists |
   | Reference | Reference | At least one table |
 
-  Section landing pages (`index.md`) are exempt from the type shapes. `make docs-check`
-  runs `scripts/check_structure.py`, and the known gaps are in
-  `scripts/structure-baseline.txt`. Fix a page and delete its baseline lines in the same
-  change; the check fails if a listed gap no longer exists.
+  Section landing pages (`index.md`) are exempt from the type shapes, and a page titled
+  Troubleshooting is the troubleshooting content, so it does not repeat the section.
+  `make docs-check` runs `scripts/check_structure.py` and fails on any page that does not
+  meet its shape. There is no list of exceptions.
 - Google developer documentation style: second person, present tense, active voice.
 - No em dashes, no Latin abbreviations, no marketing language.
 - Check every command, path, variable, route and default against the code.
