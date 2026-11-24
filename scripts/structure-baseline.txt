@@ -1,5 +1,0 @@
-# Known structure gaps. Each line is `<page> <rule>`; scripts/check_structure.py explains the rules.
-# Every line is work to do: the page does not yet have the section or content its page type
-# requires, and the content must come from the code, not be written to fill the heading.
-# The check fails on a gap that is not listed and on a line whose gap is fixed, so this
-# file only shrinks. When you fix a page, delete its lines in the same change.
