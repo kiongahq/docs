@@ -91,6 +91,8 @@ them through the API or the SDK.
     runtime image, the form fills the field with it and you can change it. When
     it sets none, the field is empty and you enter an image. The Helm chart sets
     the default from its `agent-runtime` image. The Compose files do not set one.
+    The gateway does not apply the default itself: a request without an image
+    returns `422` with the code `validation_error`.
 
     !!! info "Available in a later release"
         In platform v0.2.1 and earlier, the **Image** field is always empty.

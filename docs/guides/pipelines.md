@@ -215,10 +215,10 @@ passes run parameters through unchecked, with a preflight warning.
    progress and provenance (the flow revision and hash, the overrides and the
    policy decision), and the **Execution graph**.
 
-    - **Owner** is your email address for a run you started, and the owner's
-      subject for a run that someone else started.
-    - **Trigger** and the **Trigger** column of **Run history** use the same
-      labels: `Manual`, `Schedule`, `API`, `Event` or `Retry`.
+    - The `owner` fact is your email address for a run you started, and the
+      owner's subject for a run that someone else started.
+    - The `trigger` fact and the **Trigger** column of **Run history** use the
+      same labels: `Manual`, `Schedule`, `API`, `Event` or `Retry`.
     - A run that has no recorded owner or trigger shows `Unknown`.
 
     !!! info "Available in a later release"
