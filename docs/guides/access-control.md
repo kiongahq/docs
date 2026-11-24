@@ -109,12 +109,13 @@ before you delete it.
 
 ## Check why a request was allowed or denied
 
-1. On the **Access simulator** tab, choose the **Principal**, **Action** and
-   **Resource**, and optionally a **Source IP** and **Resource profile**.
-2. Click **Evaluate**.
+1. On the **Simulator** tab, choose the **Action**, enter the **Resource**, and
+   optionally enter an **Account subject**, a **Source IP address** and a
+   **Resource profile**. An empty **Account subject** evaluates you.
+2. Click **Explain access**.
 
-The result shows allow or deny, the statement that decided, every matched
-statement, and the principal's effective policies. When a request is denied by
+The result shows **Allowed** or **Denied** under **Decision**, the statement that
+decided, every matched statement, and the principal's effective policies. When a request is denied by
 policy anywhere in the console, the error offers **Why?**, which shows the same
 trace.
 
@@ -122,19 +123,6 @@ From the API, `GET /api/v1/iam/explain?principal=&action=&resource=` returns the
 decision; anyone may explain themselves.
 
 **Verify:** the simulator's decision matches what the user sees.
-
-## Troubleshooting
-
-- *"Your role and service assignments do not open ..."*: the coarse gate refused.
-  Assign the service or role; policies cannot open an area that the role and
-  services keep closed.
-- *Default deny*: no statement allowed the action. Check the resource name in the
-  simulator; a final `*` does not match the parent.
-- *A grant does not apply*: check the statement's conditions with the simulator's
-  source IP and resource profile fields.
-- *Explaining another user shows fewer roles than expected*: explain uses the
-  user's access profile. Roles that come only from identity-provider claims show
-  when the user explains themselves.
 
 ## Policy reference
 
@@ -344,7 +332,50 @@ resources you cannot read return `404`, so their existence is not disclosed.
   sessions, models and features the caller can read, and is re-evaluated on
   every tick, so policy changes apply to open streams.
 
-## Next steps
+## Verify
 
-- [Set up single sign-on](../operations/single-sign-on.md).
-- [Set up team workspaces](distributed-workspaces.md).
+Confirm that a user has the access you intended by asking Kionga to explain a
+decision for that user. Replace `alice`, the action and the resource with your own.
+
+1. Request an explanation as an administrator:
+
+    ```bash
+    curl -s -H "Authorization: Bearer $KIONGA_TOKEN" \
+      "$KIONGA_URL/api/v1/iam/explain?principal=alice&action=project:Read&resource=kionga:project/prj-demo"
+    ```
+
+2. Read the response. It has a `principal` object (`subject`, `roles`, `groups`,
+   `services`, `project_scope`, `disabled`, `provisioned`, `source`) and a `decision`
+   object. `decision.allowed` is `true` or `false`, and `decision.decided_by` names
+   what decided: `<policy>@v<version>#<statement>`, `default-deny`, `coarse-gate` or
+   `account-suspended`.
+3. Compare `decision.decided_by` with the policy you wrote or attached. If it
+   names a different statement, a deny or another policy applies first.
+
+Explaining another principal needs `policy:Read` on `kionga:user/<subject>`. The
+**Simulator** tab runs the same request.
+
+## Troubleshooting
+
+- *"Your role and service assignments do not open ..."*: the coarse gate refused.
+  Assign the service or role; policies cannot open an area that the role and
+  services keep closed.
+- *Default deny*: no statement allowed the action. Check the resource name in the
+  simulator; a final `*` does not match the parent.
+- *A grant does not apply*: check the statement's conditions with the simulator's
+  source IP and resource profile fields.
+- *Explaining another user shows fewer roles than expected*: explain uses the
+  user's access profile. Roles that come only from identity-provider claims show
+  when the user explains themselves.
+- *`403` with `error` set to `privilege_escalation`*: you tried to attach or edit a
+  policy that grants actions you do not hold. The response lists each missing
+  grant. Ask someone who holds them, or remove those grants from the policy.
+- *`409` with `error` set to `last_admin`*: the change would demote, suspend or
+  delete the last enabled administrator. Provision a second administrator first.
+- *`409` with `error` set to `self_lockout`*: the attachment would deny you
+  `policy:Attach` on that policy. Ask another administrator to attach it.
+
+## Related pages
+
+- [Set up single sign-on](../operations/single-sign-on.md)
+- [Set up team workspaces](distributed-workspaces.md)

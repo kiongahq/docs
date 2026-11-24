@@ -236,9 +236,50 @@ Save it from **Pipelines > ＋ Define flow** with **Execution** set to
 flow that references a function that is not deployed in the same project. See
 [Define and run pipelines](pipelines.md).
 
-## Next steps
+## Verify
 
-- [Define and run pipelines](pipelines.md).
-- [Manage users, groups and policies](access-control.md).
-- Review the [production readiness checklist](../operations/production-operations.md)
-  before you onboard a team.
+- **Provisioned user:** the person appears under **Users** with the role, services and
+  compute you set. On Kubernetes, their workspace exists:
+
+    ```bash
+    kubectl get kiongaworkspaces -A
+    kubectl get deployment,pvc,service -l app.kubernetes.io/component=workspace -A
+    ```
+
+- **Git connection:** the project's **Repository** field shows the URL and the branch.
+- **Sync:** `kionga project sync` prints `Cloned <url> to <folder> (<branch>)` for a
+  new clone, or `Updated <folder> from <url> (<branch>)` for an existing one.
+- **Function:** the function card under **Functions** shows its image, resources and
+  trigger, and **Invoke** returns the function's response.
+
+## Troubleshooting
+
+- *A function deploy returns `409` with `not_configured` and "OPENFAAS_URL is not
+  configured."* The gateway is on Compose or a single server and has no OpenFaaS
+  address. An operator sets `OPENFAAS_URL`, `OPENFAAS_USER` and `OPENFAAS_PASSWORD` on
+  the gateway and restarts it.
+- *Connecting a repository fails with "repository credentials must not be embedded in
+  the URL."* The URL has a user name or token in it. Remove it. Credentials stay in
+  the Git credential helper of each workspace.
+- *`kionga project sync` fails with "project has no Git repository; connect one in the
+  Kionga console."* Connect the repository first, as described in
+  [Connect a project to Git](#connect-a-project-to-git).
+- *`kionga project sync` fails with "workspace origin is `<origin>`, expected `<url>`."*
+  The folder already holds a clone of a different repository. Sync into another folder,
+  or point the project at the repository the folder holds.
+- *`kionga project sync` fails with "target already exists and is not a Git checkout."*
+  The folder has files but is not a clone. Move the files, or sync into an empty folder.
+- *`kionga project sync` fails with "git is not installed in this workspace."* Install
+  `git` in the workspace image.
+- *A person cannot use a service or project they expect.* The gateway enforces
+  services, projects and limits on every request. Check the person's role, services,
+  assigned project IDs and resource profile under **Users & access**, and see
+  [Manage users, groups and policies](access-control.md).
+
+## Related pages
+
+- [Define and run pipelines](pipelines.md)
+- [Manage users, groups and policies](access-control.md)
+- [Run functions on Kubernetes](functions.md)
+- [Scaffold a project](scaffolding.md)
+- [Production readiness checklist](../operations/production-operations.md)

@@ -278,3 +278,66 @@ client.deploy_agent_version(version["id"], require_evaluation=True)
 
 See the [Agent graph reference](../reference/agent-graph.md) for schemas,
 components, API routes, limits and security.
+
+## Verify
+
+1. Run the saved design from the playground, or from the SDK as shown in
+   [Automate with the Python SDK](#automate-with-the-python-sdk). A finished run
+   has `status` set to `succeeded` and your reply in `output`. The other end
+   states are `failed` and `cancelled`.
+2. To read a run again, request it from the API:
+
+    ```bash
+    curl -s -H "Authorization: Bearer $KIONGA_TOKEN" \
+      "$KIONGA_URL/api/v1/agent-designs/$DESIGN_ID/runs/$RUN_ID"
+    ```
+
+    While the run is going, `status` is `running`. In the playground, each node row
+    in **Run trace** shows its own status, and nodes on a branch that did not run show
+    `skipped`.
+3. After you run an evaluation, read it with
+   `GET /api/v1/agent-evaluations/$EVALUATION_ID`. It is finished when `status` is
+   `completed`, and the gate passed when `passed` is `true`. `pass_rate` and
+   `p95_latency_ms` hold the numbers the **Evaluations** table shows.
+4. After you publish, read the version with `GET /api/v1/agent-versions/$VERSION_ID`.
+   The response has a `content_sha256` field. Publishing the same saved revision
+   again returns the same version ID.
+
+## Troubleshooting
+
+- *Run fails with `runner_unavailable` and the message "The agent designer runner
+  is not configured (KIONGA_AGENT_DESIGNER_RUNNER_URL)."* The gateway has no
+  address for the designer runner. The Compose and Helm deployments set
+  `KIONGA_AGENT_DESIGNER_RUNNER_URL` to the `agent-designer-runner` service on port
+  `9100`. Start that service, or set the variable to its address, and restart the
+  gateway. Evaluations fail the same way.
+- *A node fails with `resource_denied`, `resource_unavailable`,
+  `side_effects_not_approved`, `timeout`, `budget_exceeded` or `invalid_graph`.*
+  Each code has its own cause and fix in the table under
+  [Debug a failed node and inspect its trace](#4-debug-a-failed-node-and-inspect-its-trace).
+- *Save fails with `revision_conflict` and the message "design changed elsewhere;
+  reload before saving."* Someone else saved a newer revision. Reload the design,
+  reapply your change and save again. Test cases use the same code with "Test cases
+  changed elsewhere; reload before saving."
+- *Publish fails with `quality_gate_failed`.* The evaluation you chose did not
+  complete, tested a different graph, or passed fewer cases than its gate requires.
+  The message names which. Run a new evaluation on the saved revision and publish
+  with it.
+- *Deploy fails with `managed_runtime_unavailable`: "Deploying native agents requires
+  a Kubernetes managed agent runtime."* The deployment has no managed agent runtime,
+  as in the local Compose profile. Select **Run** on the version instead, or deploy
+  on Kubernetes. If the message is `quality_gate_failed` with "This version has no
+  passing evaluation", you selected **Only deploy versions published with a passing
+  evaluation**: publish the version with a passing evaluation.
+- *An evaluated case fails with `judge_unavailable`.* The runner could not score the
+  case, for example because it uses the `mock` model. Set a real model as described
+  in [Build agents](agents.md#using-a-real-llm) and run the evaluation again.
+- *A condition from an old draft will not run.* It must use the
+  `operator:argument` grammar from the debugging section above.
+
+## Related pages
+
+- [Agent graph reference](../reference/agent-graph.md)
+- [Build agents](agents.md)
+- [Run an agent team](agent-teams.md)
+- [Run agents built with other frameworks](agent-frameworks.md)

@@ -260,7 +260,60 @@ finishes with a summary. Each worker runs one safe command if it has a sandbox, 
 finishes. The output shows that the flow works, and says nothing about the quality of
 a real model's work.
 
-## Check the result
+## Verify
 
-A successful run has status `succeeded` and a final report in the run view. The run
-also records its usage and resume count, and writes `team_run.*` audit events.
+1. Read the run:
+
+    ```bash
+    curl -s -H "Authorization: Bearer $TOKEN" \
+      http://localhost:8080/api/v1/team-runs/<run-id>
+    ```
+
+2. While the run works, `status` is `running`. A successful run has `status` set to
+   `succeeded` and the final report in `report`. The other end states are `failed`
+   and `cancelled`. On a failed run, `error` holds the code and `error_message` the
+   detail.
+3. Check `usage` and `resume_count`. The run also writes `team_run.*` audit events.
+4. To inspect the workers, request `/api/v1/team-runs/<run-id>/workers`. The run view
+   shows the same list as a live worker table.
+
+## Troubleshooting
+
+- *A worker fails with `side_effects_not_approved`.* You started the run without
+  allowing side effects, and the worker called a `tool`, `connection` or `git_push`
+  grant. Start a new run with side effects allowed. See
+  [Approve side effects](#5-approve-side-effects).
+- *A worker stays in `waiting_approval`.* A call is waiting for a person. The person
+  who started the run, or a project member with write access to agents, approves or
+  rejects it in the run view. The worker has no timeout of its own, but the run's time
+  limit applies.
+- *A sandbox tool reports `sandbox_unavailable`.* The deployment has no sandbox
+  runtime, or gVisor is missing, and Kionga does not fall back to another runtime.
+  Other agents keep working. See [Sandboxes and gVisor](../operations/sandboxes.md).
+- *The run fails with `budget_exceeded`.* The team went over its token, worker or time
+  limit. Live workers are cancelled, and a worker stopped by a budget does not come
+  back. Raise the team limits and start a new run.
+- *A worker fails with `context_exhausted`.* The provider rejected the request after
+  Kionga elided old tool results. Resume the worker; each resume makes one more
+  attempt. The code can also appear when length was not the cause, so read the
+  provider's message in the worker's last error.
+- *A tool result says `outcome_unknown`.* A call with side effects was interrupted, and
+  Kionga never repeats it. Check the external system, then decide whether to repeat the
+  action.
+- *The run fails with `owner_access_lost`.* The person who started the run was
+  suspended or lost access to the project. Start a new run as someone with access.
+- *Resume returns `409` with `not_resumable`.* The message gives the reason: only a
+  running or failed run can resume, the run stopped on a budget limit, the run has
+  used its `max_seconds`, or no worker can be resumed. Start a new run.
+- *An error says `KIONGA_AGENT_DESIGNER_RUNNER_URL is not set`.* Teams call the
+  designer runner for model calls, and the gateway has no address for it. Enable the
+  runner as described in
+  [Enable sandboxes on a single server](../operations/sandboxes.md#enable-sandboxes-on-a-single-server),
+  or set the variable to its address and restart the gateway.
+
+## Related pages
+
+- [Agent teams reference](../reference/agent-teams.md)
+- [Sandboxes and gVisor](../operations/sandboxes.md)
+- [Build agents in the Agent Designer](agent-designer.md)
+- [Build and deploy an agent](agents.md)

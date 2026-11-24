@@ -414,8 +414,72 @@ Before you shift traffic to a new agent version:
 7. Compare quality, latency, tokens, cost and error rate.
 8. Promote the canary, or return traffic to the stable version.
 
-## Next steps
+## Verify
 
-- [Run agents built with Agno, NOOA or your own framework](agent-frameworks.md).
-- [Use the built-in feature store](features.md) for agent lookups.
-- [Process real-time events](realtime.md) with an agent.
+1. List your agents and find the new one:
+
+    ```bash
+    curl -s -H "Authorization: Bearer $KIONGA_TOKEN" "$KIONGA_URL/api/v1/agents"
+    ```
+
+    The response has `items` and `total`. The agent's `status` is `pending` until its
+    runtime answers the health check, then `ready`.
+2. Send one turn:
+
+    ```bash
+    curl -s -X POST "$KIONGA_URL/api/v1/agents/<agent-id>/invoke" \
+      -H "Authorization: Bearer $KIONGA_TOKEN" \
+      -H 'Content-Type: application/json' \
+      -d '{"message": "When are invoices issued?"}'
+    ```
+
+    The reply has `reply`, `session_id`, `input_tokens`, `output_tokens`, `cost_usd`,
+    `duration_ms` and `usage_available`. With the default `mock` backend, `reply`
+    starts with `[mock]`. After you connect a real provider, it does not.
+3. Read the usage the turn produced:
+
+    ```bash
+    curl -s -H "Authorization: Bearer $KIONGA_TOKEN" \
+      "$KIONGA_URL/api/v1/agents/<agent-id>/usage"
+    ```
+
+    The response has `sessions`, `active`, `input_tokens`, `output_tokens` and
+    `cost_usd`. `sessions` is at least 1 after your turn.
+4. After a traffic change, the agent's `canary_weight` in the list response matches
+   the weight you set, and its card shows it, for example `10% canary`.
+
+## Troubleshooting
+
+- *Chat is disabled, or a turn returns `503` with `agent_not_ready` and "agent
+  runtime is not ready."* The runtime did not pass its health check within 3
+  seconds, so Kionga did not send the turn. The agent stays `pending` until it
+  does. Check that the image can be pulled, that `graph_module` names an attribute
+  the image contains, and that the runtime starts. Then send the turn again.
+- *Deploy returns `422` with "agent references an unregistered tool: `<name>`."* The
+  agent names a tool that is not registered. Register it as described in
+  [Register the agent's tools](#register-the-agents-tools), then deploy again.
+- *Deploy returns `403` with `access_denied` and "project is not assigned to this
+  user."* You are not assigned to that project. Ask an administrator to assign it.
+- *Deploy returns `403` with `resource_not_provisioned`.* The agent does not fit your
+  compute grant. The message states the requested and granted CPU, memory or GPUs, or says that no
+  compute grant has been provisioned. Lower the maximum replicas, CPU or memory, or ask
+  an administrator for a larger grant.
+- *A turn returns `409` with "This runtime serves a different entrypoint; deploy a
+  dedicated runtime for this agent."* On Compose, the shared runtime serves one
+  `KIONGA_GRAPH_MODULE`, and the agent names another. Set the variable to the
+  agent's graph module and recreate the runtime, or deploy on Kubernetes.
+- *A turn returns `502` with `runtime_unreachable`.* The gateway could not reach the
+  runtime. Check that the runtime is running, then retry.
+- *Replies still start with `[mock]`.* The agent uses the `mock` backend. Connect a
+  provider as described in [Connect a real LLM provider](#using-a-real-llm), then
+  recreate the services.
+- *The trace proxy returns `401` with `invalid_api_key`.* The project key is missing or
+  unknown. See [Project keys](#project-keys).
+
+## Related pages
+
+- [Run agents built with Agno, NOOA or your own framework](agent-frameworks.md)
+- [Build agents in the Agent Designer](agent-designer.md)
+- [Use the built-in feature store](features.md) for agent lookups
+- [Process real-time events](realtime.md) with an agent
+- [Self-healing and autoscaling](../concepts/self-healing-and-autoscaling.md)

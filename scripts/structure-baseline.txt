@@ -14,18 +14,6 @@ operations/troubleshooting.md section:before-you-begin
 operations/updates.md section:before-you-begin
 
 # Missing section: related pages
-guides/access-control.md section:related-pages
-guides/agent-designer.md section:related-pages
-guides/agent-frameworks.md section:related-pages
-guides/agent-teams.md section:related-pages
-guides/agents.md section:related-pages
-guides/applications.md section:related-pages
-guides/coding-workspace.md section:related-pages
-guides/console-navigation.md section:related-pages
-guides/distributed-workspaces.md section:related-pages
-guides/engineering-blog.md section:related-pages
-guides/feature-stores.md section:related-pages
-guides/features.md section:related-pages
 guides/functions.md section:related-pages
 guides/huggingface.md section:related-pages
 guides/langflow.md section:related-pages
@@ -54,16 +42,6 @@ operations/troubleshooting.md section:related-pages
 operations/updates.md section:related-pages
 
 # Missing section: troubleshooting
-guides/agent-designer.md section:troubleshooting
-guides/agent-frameworks.md section:troubleshooting
-guides/agent-teams.md section:troubleshooting
-guides/agents.md section:troubleshooting
-guides/coding-workspace.md section:troubleshooting
-guides/console-navigation.md section:troubleshooting
-guides/distributed-workspaces.md section:troubleshooting
-guides/engineering-blog.md section:troubleshooting
-guides/feature-stores.md section:troubleshooting
-guides/features.md section:troubleshooting
 guides/langflow.md section:troubleshooting
 guides/logs.md section:troubleshooting
 guides/pipelines.md section:troubleshooting
@@ -85,18 +63,6 @@ operations/troubleshooting.md section:troubleshooting
 operations/updates.md section:troubleshooting
 
 # Missing section: verify
-guides/access-control.md section:verify
-guides/agent-designer.md section:verify
-guides/agent-frameworks.md section:verify
-guides/agent-teams.md section:verify
-guides/agents.md section:verify
-guides/applications.md section:verify
-guides/coding-workspace.md section:verify
-guides/console-navigation.md section:verify
-guides/distributed-workspaces.md section:verify
-guides/engineering-blog.md section:verify
-guides/feature-stores.md section:verify
-guides/features.md section:verify
 guides/functions.md section:verify
 guides/huggingface.md section:verify
 guides/langflow.md section:verify

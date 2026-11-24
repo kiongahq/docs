@@ -147,14 +147,64 @@ call `DELETE /api/v1/admin/feature-stores/<store-id>`. The built-in store, with
 the ID `internal`, cannot be edited or removed; its addresses come from
 `KIONGA_FEATURE_GATEWAY_URL` and `KIONGA_FEATURE_OFFLINE_URI` on the gateway.
 
-## Next steps
+## Verify
 
-- [Use the built-in feature store](features.md) for materialization, versions
-  and point-in-time joins.
-- [Process real-time events](realtime.md) with online features.
-- For how adapters work and how to add one, see the
-  [engineering handbook](https://kiongahq.github.io/docs/engineering-access/).
+1. After you connect a store, run **Save and test**, or call
+   `POST /api/v1/admin/feature-stores/<store-id>/test`. A healthy Feast server reports
+   the detail `Feast feature server is serving at <url>`.
+2. As a project member, list the stores shared with your projects:
 
-A saved feature store whose variable is outside this scope stops authenticating. Its health
-reads `configured` with `not permitted`. See
-[Migrate a stored reference](../operations/production-operations.md#migrate-a-stored-reference).
+    ```bash
+    curl -s -H "Authorization: Bearer $KIONGA_TOKEN" \
+      "$KIONGA_URL/api/v1/features/stores"
+    ```
+
+    The shared store is in the response. The console shows the same list under
+    **Features > Feature stores**.
+3. If you set `FEAST_URL` on the feature gateway, send a lookup and compare the values
+   with what Feast serves:
+
+    ```bash
+    curl -s -X POST "$KIONGA_FEATURE_GATEWAY_URL/get-online-features" \
+      -H 'Content-Type: application/json' \
+      -d '{"feature_service": "customer_profile", "entities": [{"entity_id": "u123"}]}'
+    ```
+
+Any other health value (`configured`, `degraded` or `unavailable`) is explained in the
+table under [Connect a Feast feature server](#connect-a-feast-feature-server).
+
+## Troubleshooting
+
+- *Health is `configured` with the message "The secret reference `<ref>` is not
+  permitted. Use env:KIONGA_FEATURE_SECRET_<NAME> or list the variable in
+  KIONGA_FEATURE_SECRET_REFS."* The store keeps a credential reference outside the
+  permitted scope, so it stops authenticating. Change the reference to a permitted
+  variable, or list the variable in `KIONGA_FEATURE_SECRET_REFS`. See
+  [Migrate a stored reference](../operations/production-operations.md#migrate-a-stored-reference).
+- *Saving a connection returns `422` for `secret_ref`.* The reference is not empty,
+  `env:FEAST_TOKEN`, `env:KIONGA_FEATURE_SECRET_<NAME>` or a variable listed in
+  `KIONGA_FEATURE_SECRET_REFS`. Use one of those. See
+  [Secret references](../reference/configuration.md#secret-references).
+- *Health is `unavailable` with "Feast feature server is unreachable."* The gateway
+  cannot reach the **Feature server URL**. Check the address, the network path and
+  that the server is running.
+- *Health is `unavailable` with "Feast rejected the credential."* Feast answered `401`
+  or `403`. Check that the variable named by the secret reference holds the right
+  bearer token on the gateway.
+- *Health is `degraded` with "Feast health check returned `<status>`" or "Feast
+  responded in `<time>`; online lookups will miss latency budgets."* Feast answered
+  with an unexpected status, or took more than 2 seconds. Check the Feast server's
+  load and its registry.
+- *Editing or removing the `internal` store returns `422`.* The built-in store is
+  configured by the platform environment and cannot be edited or removed. See
+  [Remove a store](#remove-a-store).
+- *The feature gateway's `/healthz` returns `503`.* With `FEAST_URL` set, the gateway
+  reports `503` when Feast is unreachable. Fix the Feast server or the address.
+
+## Related pages
+
+- [Use the built-in feature store](features.md) for materialization, versions and
+  point-in-time joins
+- [Process real-time events](realtime.md) with online features
+- The [engineering handbook](https://kiongahq.github.io/docs/engineering-access/)
+  explains how adapters work and how to add one

@@ -170,8 +170,54 @@ your project files.
 - On Compose, all users share one IDE and one workspace volume, so the paths
   above are shared. On Kubernetes, each user's workspace has its own volume.
 
-## Next steps
+## Verify
 
-- [Scaffold a project](scaffolding.md) from the console.
-- [Connect a project to Git](distributed-workspaces.md#connect-a-project-to-git).
-- [Work in the Jupyter workbench](workbench.md).
+1. In the console, open **Settings > Developer workspaces**. **Browser IDE** shows
+   `Ready · uses your Kionga session` when the IDE answers.
+2. In the IDE terminal, check the coding agents:
+
+    ```bash
+    kionga agents
+    ```
+
+    The command prints one line each for `codex` and `claude`, with `installed` or
+    `missing`, then `configured` (the API key is set) or `login or API key required`.
+    The `custom` line shows `configured` or `not configured`.
+3. Generate a starter. The command prints `Created <folder>` for the new project, and
+    prints `Starter generated without an agent` when you pass `--agent none`.
+4. List installed extensions:
+
+    ```bash
+    code-server --list-extensions --show-versions
+    ```
+
+## Troubleshooting
+
+- *The IDE link says "IDE is offline. Run make -C deploy ide-up from the Kionga
+  workspace folder, then retry."* The IDE container is not running. Run
+  `make -C deploy ide-up`, then open the link again. In a production install the
+  message reads "Workspace is offline. Ask your administrator to start it."
+- *An extension install fails with `EAI_AGAIN`.* The workspace cannot resolve
+  `open-vsx.org` or `openvsx.eclipsecontent.org`. Retry when the workspace has
+  internet access.
+- *`kionga scaffold --agent codex` fails with "codex CLI is not installed."* The
+  IDE terminal has no coding agent tools unless you start the agents image
+  (`claude` gives the same error for `claude CLI is not installed`). Run
+  `make -C deploy ide-agents-up`, or run the command in the Jupyter workbench,
+  which includes both.
+- *`kionga agents` shows `login or API key required`.* The agent has no API key
+  in the environment. An operator sets `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`
+  in `deploy/.env`, or you sign in to the agent in a terminal.
+- *`kionga scaffold --agent custom` fails with "KIONGA_CUSTOM_AGENT_COMMAND is not
+  configured."* Export `KIONGA_CUSTOM_AGENT_COMMAND` before you run the command, as
+  shown in [Use another command-line agent](#use-another-command-line-agent).
+- *`kionga scaffold` fails with "target already exists and is not empty."* The
+  folder named by your project exists and holds files. Choose another name, or
+  empty the folder.
+
+## Related pages
+
+- [Scaffold a project](scaffolding.md) from the console
+- [Connect a project to Git](distributed-workspaces.md#connect-a-project-to-git)
+- [Work in the Jupyter workbench](workbench.md)
+- [Create a project from a template](project-templates.md)

@@ -201,8 +201,52 @@ An administrator can check the built-in store from the console: open
 storage**, and click **Test**. The result appears as a health message, such as
 `Healthy: ...`.
 
-## Next steps
+## Verify
 
-- [Connect an external feature store](feature-stores.md).
-- [Process real-time events](realtime.md) with online features.
-- [Build an agent](agents.md) that looks up features.
+1. List the views and check each one's freshness:
+
+    ```bash
+    curl -s -H "Authorization: Bearer $KIONGA_TOKEN" \
+      "$KIONGA_URL/api/v1/features/views"
+    ```
+
+    The views you expect are listed with a freshness of `fresh`.
+2. Check that the feature gateway is healthy. `GET /healthz` on the gateway returns
+   `200` with `{"status": "ok", "mode": ...}`, or `503` with `"status": "unavailable"`
+   and an `error` field.
+3. Read features for an entity you materialized with `POST /get-online-features`. The
+   response has `PRESENT` statuses for each field. An unknown entity returns `NOT_FOUND`.
+4. After a materialization, read the view's `versions` and `lineage` as shown in
+   [Define and materialize a feature view](#define-and-materialize-a-feature-view).
+   The lineage lists the run with its `status` and `entity_count`.
+5. After a retention sweep, check that the command prints `feature retention sweep:
+   scanned=... expiry_set=... deleted=... untouched=...` with a line per view.
+
+## Troubleshooting
+
+- *A view has the freshness `stale`.* The last successful materialization is older than
+  the view's TTL. Run the materializer again. See
+  [Define and materialize a feature view](#define-and-materialize-a-feature-view).
+- *A view has the freshness `never`.* It was never materialized successfully. Run the
+  materializer and check its lineage for a run with a status and an `error`.
+- *A lookup returns `NOT_FOUND` statuses.* The entity has no online row. Check the
+  entity identifier, and that the materializer wrote the view. Rows disappear after one
+  TTL when the retention sweep runs and nothing refreshes them.
+- *A lookup returns `422` and a message that a `feature_service` and an entity are required.*
+  The request body needs a `feature_service` and a non-empty `entities` list. Each
+  entity must hold exactly one identifier, and the identifier cannot be empty.
+- *A lookup returns `400`.* The request body is not valid JSON for a lookup. Send the
+  shape shown in [Read online features](#read-online-features).
+- *The gateway's `/healthz` returns `503`.* Redis, or Feast when the gateway serves
+  from Feast, is unreachable. The `error` field in the response gives the reason.
+- *Reporting a materialization returns `403` with "only the materializer, engineers and
+  operators report materializations."* Normal users cannot report runs. Use an
+  `engineer`, `operator` or `admin` account, or the materializer's service identity.
+- *A view API call returns `404` with "feature view not found."* The name does not match
+  an applied view. List the views and check the spelling.
+
+## Related pages
+
+- [Connect an external feature store](feature-stores.md)
+- [Process real-time events](realtime.md) with online features
+- [Build and deploy an agent](agents.md) that looks up features

@@ -115,7 +115,7 @@ restarting the gateway.
    `admin`). Never paste a secret into this field.
 5. Click **Save and test**. A check passes only on a successful HTTP response;
    redirects, missing routes and authentication failures count as failures.
-6. On the connection card, click **Use for new operations**.
+6. In the connection's row, click **Use for new operations**.
 
 Kionga refuses to switch while any pipeline run is queued or running, so a run
 never changes its destination. When several connections of a type have been
@@ -126,11 +126,54 @@ Connections of other types (Kubernetes, MLflow, object storage, Kafka REST,
 Langfuse, Redis or Feast) are availability monitors: they report health, and
 their runtime settings stay in your deployment configuration.
 
-**Verify:** the card's label changes to `prefect · Active runtime` or
-`openfaas · Active runtime`.
+**Verify:** the connection's **Active runtime** column shows `Yes`.
 
-## Next steps
+## Verify
 
-- [Create a project from a template](project-templates.md).
-- [Define and run pipelines](pipelines.md).
-- [Manage users, groups and policies](access-control.md).
+- **Project filter:** after you choose a project, the page lists only that project's
+  resources, and the address bar contains `project=<project-id>`. Choosing **All
+  assigned projects** removes the parameter.
+- **Bookmarks:** open a saved address in a new tab. The same page, project filter and
+  open item appear.
+- **Personal API key:** run `kionga-cli project list`. It prints the projects that the
+  key's scopes allow.
+- **Runtime:** on **Platform**, the connection you activated shows `Yes` in the
+  **Active runtime** column, and the confirmation reads "Runtime activated for new
+  operations."
+- **Workspaces:** under **Settings > Developer workspaces**, each workspace shows a
+  ready message such as `Ready · uses your Kionga session`.
+
+## Troubleshooting
+
+- *A page shows an error and a **Retry** button.* That page failed to load, and the rest
+  of the console keeps working. Click **Retry**. If it keeps failing, check the
+  gateway's availability.
+- *A workspace link says "IDE is offline. Run make -C deploy ide-up from the Kionga
+  workspace folder, then retry."* The IDE is not running on Compose. An operator runs
+  `make -C deploy ide-up`. In a production install the message reads "Workspace is
+  offline. Ask your administrator to start it."
+- *The project selector does not list a project.* It lists only the projects assigned
+  to you or owned by you. Ask an administrator to assign the project; see
+  [Manage users, groups and policies](access-control.md).
+- *Activating a runtime fails with `runs_active`: "Wait for running and queued pipelines
+  to finish before changing runtimes."* A pipeline run is queued or running. Wait for it
+  to finish, then activate again.
+- *Activating a runtime fails with `connection_failed`.* The service did not answer the
+  check with a successful HTTP response. Redirects, missing routes and authentication
+  failures count as failures. Check the **Service address** and credential, then click
+  **Test**.
+- *Activating a runtime fails with `credential_unavailable`.* The **Credential
+  reference** names an environment variable that the gateway does not have, or that is
+  not permitted. Set it on the gateway, or use one of the
+  [permitted variables](../reference/configuration.md#secret-references).
+- *Activating a connection fails with `monitor_only`: "This connection monitors
+  availability."* Only **Prefect** and **OpenFaaS** connections change the runtime.
+  Change the other types in your deployment configuration.
+
+## Related pages
+
+- [Create a project from a template](project-templates.md)
+- [Define and run pipelines](pipelines.md)
+- [Manage users, groups and policies](access-control.md)
+- [Work in the Jupyter workbench](workbench.md)
+- [Use the browser IDE and coding agents](coding-workspace.md)

@@ -400,6 +400,34 @@ AppArmor profile. A namespace that enforces the Pod Security `baseline` or
 `restricted` level refuses those pods, so builds need a namespace that doesn't.
 See [Kubernetes prerequisites](../operations/kubernetes-prerequisites.md#pod-security-for-builds).
 
+## Verify
+
+1. Read the application:
+
+    ```bash
+    kionga apps get billing
+    ```
+
+    The command prints one line per field: `Name:`, `Project:`, `Phase:`, `URL:`,
+    `Ready:`, `Source:` and `Visibility:`, plus `Scaling:` and `Reason:` when they
+    apply. The deploy worked when `Phase:` is `ready` and `Ready:` shows
+    `<ready pods>/<maximum pods>` with at least one ready pod. An application scaled
+    to zero shows `scaled-to-zero`. See [Check status](#check-status) for every value.
+2. For a `public` application, request the health path on the `URL:` host. A status
+   from 200 to 399 is the range the health check accepts:
+
+    ```bash
+    curl -sI https://billing.<your domain>/healthz
+    ```
+
+3. List recent Kubernetes events if the phase stays `pending`:
+
+    ```bash
+    kionga apps events billing
+    ```
+
+    The table has the columns `TIME`, `TYPE`, `REASON` and `MESSAGE`.
+
 ## Troubleshooting
 
 | Symptom | What to check |
@@ -417,7 +445,7 @@ See [Kubernetes prerequisites](../operations/kubernetes-prerequisites.md#pod-sec
 | The URL doesn't resolve | The wildcard DNS record is missing, or the application is `internal`. |
 | Browser certificate warning | The wildcard certificate doesn't cover the host, or isn't issued yet. |
 
-## Next steps
+## Related pages
 
 - [Self-healing and autoscaling](../concepts/self-healing-and-autoscaling.md).
 - [Deploy on Kubernetes](../operations/managed-kubernetes.md).
