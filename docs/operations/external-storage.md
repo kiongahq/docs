@@ -106,7 +106,8 @@ Credentials never appear in responses, stored records or check reasons.
 - Use one IAM principal per deployment (or per tenant), scoped to the bucket
   and prefix.
 - `allowed_projects` records which projects may use a connection. Grant users
-  access to buckets through Kionga's bucket grants.
+  access to buckets through the **Granted buckets** field of the **Provision
+  user** dialog in **Access**, or `storage.buckets` in the access profile.
 - On Kubernetes, prefer short-lived cloud credentials (IRSA on EKS, Workload
   Identity on GKE and AKS) for buckets. The storage proxy currently uses the
   mounted `S3_ACCESS_KEY` and `S3_SECRET_KEY`. Give the gateway a `secret_ref`

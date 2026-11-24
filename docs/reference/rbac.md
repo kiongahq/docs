@@ -71,7 +71,16 @@ profile sets:
 | `disabled` | Suspends the person immediately |
 
 Administrators manage profiles in **Access** (the **Users** tab) or with
-`PUT /api/v1/admin/users/{subject}`. A person without a profile can ask for
+`PUT /api/v1/admin/users/{subject}`. In the console, **Provision user** opens a
+dialog with a **Resource profile** list (**Custom allocation** or one of the
+profiles below) and the fields **Account subject**, **Email**, **Role**,
+**Assigned services**, **Assigned project IDs**, **Storage GB**, **Granted
+buckets**, **vCPU**, **Memory GB**, **GPUs**, **GPU type**, **Maximum
+workspaces** (`max_vms`), **Maximum projects**, **Concurrent pipeline runs**
+(`max_concurrent_runs`), **Maximum functions** and **Suspend account**, and
+**Save access** stores them. The dialog also has **Local password** when local
+sign-in is on. Its **Role** list offers `user`, `viewer`, `operator` and
+`admin`; to give the `engineer` role, use the API. A person without a profile can ask for
 services from **My access**, with **Request access**. Kionga blocks duplicate pending
 requests, and records the reviewer and outcome of each approval or rejection in
 the audit log.
