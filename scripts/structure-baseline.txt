@@ -5,7 +5,6 @@
 # file only shrinks. When you fix a page, delete its lines in the same change.
 
 # Missing section: before you begin
-guides/langflow.md section:before-you-begin
 operations/kubernetes-prerequisites.md section:before-you-begin
 operations/managed-operations.md section:before-you-begin
 operations/production-operations.md section:before-you-begin
@@ -14,17 +13,6 @@ operations/troubleshooting.md section:before-you-begin
 operations/updates.md section:before-you-begin
 
 # Missing section: related pages
-guides/functions.md section:related-pages
-guides/huggingface.md section:related-pages
-guides/langflow.md section:related-pages
-guides/logs.md section:related-pages
-guides/models-kubernetes.md section:related-pages
-guides/models-serving.md section:related-pages
-guides/pipelines.md section:related-pages
-guides/project-templates.md section:related-pages
-guides/realtime.md section:related-pages
-guides/scaffolding.md section:related-pages
-guides/workbench.md section:related-pages
 operations/external-storage.md section:related-pages
 operations/kubernetes-prerequisites.md section:related-pages
 operations/local.md section:related-pages
@@ -42,11 +30,6 @@ operations/troubleshooting.md section:related-pages
 operations/updates.md section:related-pages
 
 # Missing section: troubleshooting
-guides/langflow.md section:troubleshooting
-guides/logs.md section:troubleshooting
-guides/pipelines.md section:troubleshooting
-guides/project-templates.md section:troubleshooting
-guides/workbench.md section:troubleshooting
 operations/external-storage.md section:troubleshooting
 operations/kubernetes-prerequisites.md section:troubleshooting
 operations/local.md section:troubleshooting
@@ -63,17 +46,6 @@ operations/troubleshooting.md section:troubleshooting
 operations/updates.md section:troubleshooting
 
 # Missing section: verify
-guides/functions.md section:verify
-guides/huggingface.md section:verify
-guides/langflow.md section:verify
-guides/logs.md section:verify
-guides/models-kubernetes.md section:verify
-guides/models-serving.md section:verify
-guides/pipelines.md section:verify
-guides/project-templates.md section:verify
-guides/realtime.md section:verify
-guides/scaffolding.md section:verify
-guides/workbench.md section:verify
 operations/kubernetes-prerequisites.md section:verify
 operations/managed-operations.md section:verify
 operations/production-operations.md section:verify
@@ -87,6 +59,4 @@ concepts/how-it-works.md step-list
 
 # Pages that should walk through numbered steps.
 getting-started/quickstart.md steps
-guides/functions.md steps
-guides/models-serving.md steps
 operations/managed-operations.md steps

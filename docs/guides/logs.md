@@ -5,9 +5,9 @@ description: Read, filter, search and stream the logs and events of pipeline run
 
 # Search and stream pipeline logs
 
-Kionga stores structured logs and events for every pipeline run, tagged with the
-tenant, project, flow, run, node, attempt and workload. Use this guide to read a
-node's logs, search across runs, and stream new lines from a script.
+Read the logs of a pipeline node, search logs across runs, and stream new lines
+from a script. Kionga stores structured logs and events for every pipeline run,
+tagged with the tenant, project, flow, run, node, attempt and workload.
 
 ## Before you begin
 
@@ -27,9 +27,6 @@ node's logs, search across runs, and stream new lines from a script.
 3. Filter by severity and source, search the text, load earlier lines, or turn on
    the live tail.
 
-**Verify:** the node's lines appear, newest first, with their severity and
-source.
-
 ## Search logs across runs
 
 1. Open **Logs**.
@@ -47,21 +44,20 @@ curl -s -H "Authorization: Bearer $KIONGA_TOKEN" \
   "$KIONGA_URL/api/v1/logs?project_id=<project>&order=desc&limit=100&before=<sequence>"
 ```
 
-**Verify:** the results contain only entries that match your filters.
-
 ## Stream logs from a script
 
-```bash
-curl -N -H "Authorization: Bearer $KIONGA_TOKEN" \
-  "$KIONGA_URL/api/v1/logs/stream?run_id=<run>"
-```
+1. Open a stream for a run. The stream accepts the same filters as the search
+   query:
 
-The stream uses Server-Sent Events. Each `event: logs` message carries a JSON
+    ```bash
+    curl -N -H "Authorization: Bearer $KIONGA_TOKEN" \
+      "$KIONGA_URL/api/v1/logs/stream?run_id=<run>"
+    ```
+
+2. Read the events. The stream uses Server-Sent Events. Each `event: logs` message carries a JSON
 array of at most 200 entries and an `id: <sequence>`, and the stream continues
 from the last entry, so a slow client never loses lines. To resume after a
 disconnect, reconnect with the `Last-Event-ID` header.
-
-**Verify:** new lines arrive while the run is active.
 
 ## What Kionga records
 
@@ -85,9 +81,33 @@ says otherwise.
 - **Retention:** entries older than `KIONGA_LOG_RETENTION_DAYS` (default 30) are
   deleted every hour.
 
-## Next steps
+## Verify
+
+1. **Node logs:** the node's lines appear in the run page, newest first, each
+   with its severity and source.
+2. **Search:** the results contain only entries that match your filters. The API
+   returns them in an `items` array, and adds `next_before` (descending order) or
+   `next_after` (ascending order) when a full page came back, so you can request
+   the next page.
+3. **Stream:** while the run is active, `event: logs` messages arrive, each with
+   an `id:` line holding the sequence of its last entry. When there are no new
+   lines, the stream sends a `: keep-alive` comment about every 15 seconds.
+
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| `404` with `run not found` or `project not found` | The run or project does not exist, or you cannot read its project. | Check the ID, and ask a project owner or an administrator for access. |
+| `400` with `since must be an RFC 3339 timestamp` (or `until must be ...`) | The `since` or `until` value is not an RFC 3339 timestamp. | Use a form such as `2026-01-31T09:30:00Z`. |
+| A run is visible but its logs are empty | A policy denies `logs:Read` on the pipeline. | Ask an administrator to change the [policy](access-control.md). |
+| Older lines are missing | Kionga deletes entries older than `KIONGA_LOG_RETENTION_DAYS` (default 30) every hour. | Export logs to your own store before they expire; see [Export logs](../operations/log-export.md). |
+| The log ends with `[log output truncated after <n> bytes; the full tail is in the step message]` | Streamed output per node is capped at `KIONGA_PIPELINE_LOG_STREAM_LIMIT_BYTES` (default 5 MiB, at most 100 MiB). | Read the output tail in the node's message, or raise the limit. |
+| A message ends with `…[truncated]` | The gateway cuts a message longer than 8 KiB. | Log long values across several lines. |
+
+## Related pages
 
 - [Export logs to Elasticsearch or OpenSearch](../operations/log-export.md).
   Kionga keeps working whether or not the exporter runs; **Platform** shows its
   state.
 - [Define and run pipelines](pipelines.md).
+- [Access control](access-control.md).

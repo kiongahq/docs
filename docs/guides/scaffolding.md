@@ -38,27 +38,23 @@ and the scaffold always see the same files.
 ## Run the scaffold from the console
 
 1. Open **Projects** and select the project.
-2. In the **Generate the starter code** panel, click **Run in workspace…**.
-3. Review the confirmation dialog. It shows the workspace that runs the
-   command, the working and output folders, and the exact command with every
-   argument.
-4. Click **Run in workspace**.
+2. In the **Generate starter code** panel, click **Run in workspace**.
+3. Review the **Run scaffold in workspace** dialog. It shows the workspace that
+   runs the command, the working and output folders, and the exact command with
+   every argument.
+4. Click **Run command**.
 
-The panel updates while the job runs. When it finishes, it lists the produced
-files, the `git status` of the new folder and the command output, with
-secret-looking values redacted.
-
-**Verify:** the panel shows **Last run** with status `succeeded` and
-**Created N files in `/workspace/projects/<namespace>`**. Click **Open in
-Jupyter** or **Open in IDE** to open the folder.
+The panel updates while the job runs. When it finishes, the **Last scaffold
+run** section lists the produced files, the output of the command and the `git
+status` of the new folder, with secret-looking values redacted.
 
 ## Run the scaffold in a workspace terminal
 
 Use this when you want to add a coding agent with `--agent` and `--prompt`, which
 the console does not run for you.
 
-1. Open the project and click **Copy command** in the **Generate the starter
-   code** panel. The command looks like this:
+1. Open the project and click **Copy command** in the **Generate starter code**
+   panel. The command looks like this:
 
     ```bash
     kionga scaffold churn-model --template production-ml --template-version 1.0.0 \
@@ -79,10 +75,6 @@ the console does not run for you.
 
     `kionga scaffold` writes to `$KIONGA_WORKSPACE/<name>` whatever your
     current directory is, and `KIONGA_WORKSPACE` defaults to `/workspace`.
-
-**Verify:** the command prints `Created /workspace/projects/churn-model`, and
-`ls /workspace/projects/churn-model` lists `pyproject.toml`, `Dockerfile` and
-`tests`.
 
 ## Run the scaffold through the API
 
@@ -124,9 +116,6 @@ reports `started_at`, `ended_at`, `exit_code`, `output_tail`, `files`,
 /api/v1/projects/<project-id>/scaffold-jobs` lists a project's jobs, newest
 first.
 
-**Verify:** the job's `status` is `succeeded` and `files` lists the generated
-files.
-
 ## How Kionga runs the scaffold safely
 
 - **The browser never sends a command.** A request can only choose the
@@ -145,23 +134,39 @@ files.
 For the full design, see the gateway section of the
 [engineering handbook](https://kiongahq.github.io/docs/engineering-access/).
 
+## Verify
+
+1. **Console:** the **Last scaffold run** section shows the status `succeeded`,
+   the `output_dir` `/workspace/projects/<namespace>`, and the **Produced files**
+   list. Click **Open JupyterLab** or **Open IDE** to open the folder.
+2. **Terminal:** the command prints `Created /workspace/projects/churn-model`,
+   and `ls /workspace/projects/churn-model` lists `pyproject.toml`, `Dockerfile`
+   and `tests`.
+3. **API:** the job's `status` is `succeeded`, its `exit_code` is `0`, and
+   `files` lists the generated files.
+
 ## Troubleshooting
 
-| Message | What to do |
-| --- | --- |
-| `target already exists and is not empty` | The project already has code. Open it in JupyterLab or the IDE, or sync it from Git with `kionga project sync`. |
-| `No workspace is assigned to you` | Ask an administrator for the `workbench` or `ide` service, or request it from **My access**. |
-| `This workspace image has no scaffold runner` | An operator rebuilds the workspace images, for example with `make -C deploy local-rebuild`. |
-| `The workspace rejected the scaffold credential` | An operator sets the same `KIONGA_WORKSPACE_JOB_TOKEN` on the gateway and the workspaces, then restarts them. |
-| `Scaffold jobs need KIONGA_WORKSPACE_JOB_TOKEN` | An operator sets `KIONGA_WORKSPACE_JOB_TOKEN`. Compose sets a local default; change it in any shared deployment. |
-| `The workspace did not answer` | Start the workspace from the console, then run the job again. |
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| `target already exists and is not empty: <path>` | The project folder already has files, and the scaffold never overwrites them. | Open the folder in JupyterLab or the IDE, or sync it from Git with `kionga project sync`. |
+| `this project has no template; add your own files or connect a repository` | You created the project without a template, so there is no command to run. | Add your own files, or [connect a repository](distributed-workspaces.md#connect-a-project-to-git). |
+| `No workspace is assigned to you. Request JupyterLab or the IDE from My access.` | You have neither the `workbench` nor the `ide` service. | Ask an administrator for the service, or request it from **My access**. |
+| `This workspace image has no scaffold runner. Rebuild it (make -C deploy local-rebuild) so it includes the Kionga workspace sidecar.` | The workspace image predates the scaffold runner. | An operator rebuilds the workspace images, for example with `make -C deploy local-rebuild`. |
+| `The workspace rejected the scaffold credential. KIONGA_WORKSPACE_JOB_TOKEN must match on the gateway and the workspace.` | The two tokens differ. | An operator sets the same `KIONGA_WORKSPACE_JOB_TOKEN` on the gateway and the workspaces, then restarts them. |
+| `Scaffold jobs need KIONGA_WORKSPACE_JOB_TOKEN set on the gateway and the workspace.` | The token is empty. | An operator sets `KIONGA_WORKSPACE_JOB_TOKEN`. `deploy/scripts/local-up.sh` generates one for local installs; set your own in any shared deployment. |
+| `The workspace did not answer. Make sure it is running, then run the job again.` | The workspace is stopped or unreachable. | Start the workspace from the console, then run the job again. |
+| `409 conflict`, `a scaffold job is already running for this project` | A job is still queued or running for the project. | Wait for it to finish, then retry. |
+| `The job was interrupted before it reported a result (the gateway restarted or the workspace stopped responding). Run it again.` | The job reported nothing for 5 minutes. | Run the job again. |
+| `404 not_found`, `project not found` | The project does not exist, or you cannot see it. | Check the project ID and your project access. |
 
 On Kubernetes, each user's workspace uses its own generated credential instead
 of `KIONGA_WORKSPACE_JOB_TOKEN`.
 
-## Next steps
+## Related pages
 
 - [Work in the Jupyter workbench](workbench.md) or the
   [browser IDE](coding-workspace.md).
 - [Connect the project to Git](distributed-workspaces.md#connect-a-project-to-git).
 - [Define a pipeline](pipelines.md) for the generated code.
+- [Create a project from a template](project-templates.md).
