@@ -20,6 +20,11 @@ match the standard exactly, so every page of a type reads the same way.
 There is no list of exceptions: any gap fails the check, so a page cannot ship
 without the shape of its type.
 
+Limits, by design: nesting follows the four-column convention MkDocs requires for list items,
+content tabs and admonitions, so a two-space nested list is not understood; headings must use
+the # form, so a setext heading (underlined with = or -) is not seen and the page fails the
+H1 rule until it is rewritten.
+
 Usage:
   python scripts/check_structure.py [--docs docs]
 Exit status: 0 clean, 1 findings.
@@ -69,6 +74,7 @@ TABLE_SEPARATOR = re.compile(r"^(?=[^\n]*\|)[ \t]*\|?[ \t]*:?-{3,}:?[ \t]*(?:\|[
 SENTENCE_BREAK = re.compile(r"[.!?][\"')\]]*\s+(?=[A-Z0-9`\"(\[])")
 SENTENCE_END = re.compile(r"\.[\"')\]]*$")
 HEADING_ATTRIBUTES = re.compile(r"\s*\{[^}]*\}\s*$")
+HEADING_CLOSING_HASHES = re.compile(r"\s+#+\s*$")
 # The start of a list item, content tab, admonition or collapsible block, after any indent.
 CONTAINER_START = re.compile(r"(?:[-*+]|\d+\.)[ \t]|(?:===|\?\?\?\+?|!!!)[ ]")
 # Words and initialisms whose full stop does not end a sentence.
@@ -232,7 +238,7 @@ def check_page(relative: Path, text: str) -> list[Finding]:
         add("description", problem)
 
     headings = [
-        (len(m.group(1)), HEADING_ATTRIBUTES.sub("", m.group(2)).strip())
+        (len(m.group(1)), HEADING_CLOSING_HASHES.sub("", HEADING_ATTRIBUTES.sub("", m.group(2))).strip())
         for m in re.finditer(r"^(#{1,6}) +(.+?)\s*$", plain, re.M)
     ]
     if sum(1 for level, _ in headings if level == 1) != 1:

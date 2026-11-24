@@ -326,3 +326,13 @@ def test_a_tab_indented_code_block_is_code() -> None:
     concept = page("# Idea\n\nSample:\n\n\t1. literal\n")
     assert rules("concepts/idea.md", concept) == set()
 
+
+def test_closing_hashes_on_a_heading_are_ignored() -> None:
+    closed = HOW_TO.replace("## Verify", "## Verify ##").replace("## Related pages", "## Related pages ## {#related}")
+    assert rules("guides/deploy.md", closed) == set()
+
+
+def test_a_setext_heading_is_not_seen_so_the_page_must_use_hashes() -> None:
+    setext = page("Roadmap\n=======\n\nText.\n")
+    assert rules("roadmap.md", setext) == {"h1"}
+
