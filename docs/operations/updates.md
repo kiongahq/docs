@@ -56,12 +56,13 @@ Release image digests are recorded in the release's attached files.
 
     === "Local stack"
 
-        Pull every clean checkout, then start the stack again. Only images whose
-        sources changed are rebuilt:
+        Pull every clean checkout, then rebuild the images whose sources changed
+        and start the stack again. `make -C deploy local-up` reuses cached images
+        even when their sources changed, so use `local-build-up` after an update:
 
         ```bash
         make -C deploy workspace-pull
-        make -C deploy local-up
+        make -C deploy local-build-up
         ```
 
     === "Single server"

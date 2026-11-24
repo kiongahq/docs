@@ -268,10 +268,12 @@ bash deploy/scripts/container.sh compose -f deploy/compose.yaml up objectstore-i
     make -C deploy workspace-pull
     ```
 
-2. Start the stack again. Only images whose sources changed are rebuilt:
+2. Rebuild the images whose sources changed and start the stack again.
+   `make -C deploy local-up` reuses cached images even when their sources
+   changed:
 
     ```bash
-    make -C deploy local-up
+    make -C deploy local-build-up
     ```
 
 MLflow upgrades its database schema with `mlflow db upgrade` before it starts,
