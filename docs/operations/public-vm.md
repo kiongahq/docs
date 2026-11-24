@@ -185,7 +185,7 @@ previously stored personal credentials unreadable.
     The gateway reports ready when it can reach PostgreSQL.
 
 2. Open `https://<your-domain>`, sign in through your identity provider and
-   sign out again.
+   select **Log out** in the console header.
 
 3. Check that anonymous API access is denied:
 

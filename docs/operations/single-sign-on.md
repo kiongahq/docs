@@ -28,20 +28,21 @@ example when the directory is down.
   values and secrets (Kubernetes), and restart the gateway and Dex.
 - For a directory or identity provider, you have an application registration or
   a bind account, and its client ID and secret.
-- After sign-in, an `admin` or `operator` grants access in **Users & access**
-  (see [Manage users, groups and policies](../guides/access-control.md)).
+- After sign-in, an `admin` or `operator` grants access in **Access** in the
+  **Operate** group of the console navigation (see [Manage users, groups and policies](../guides/access-control.md)).
 
 ## Try single sign-on locally {#try-it-locally}
 
 `make -C deploy local-up` starts every sign-in method. Open
-<http://localhost:8080/login>:
+<http://localhost:8080/login>. The page shows one **Sign in with ...** button per
+provider and, below them, the local form:
 
 | Option | Try it |
 | --- | --- |
-| **Company directory** (LDAP through Dex, GLAuth test directory) | Password `kionga-sso-dev` for every user below |
-| **Demo account (local only)** (Dex's no-credentials OAuth round trip) | One click; the first sign-in signs up as a demo user |
-| **GitHub, Google, GitLab, Microsoft** | Appear once their client id and secret are set (below) |
-| Local form | `admin` / `kionga-local` (break-glass) |
+| **Sign in with Company directory** (LDAP through Dex, GLAuth test directory) | Password `kionga-sso-dev` for every user below |
+| **Sign in with Demo account (local only)** (Dex's no-credentials OAuth round trip) | One click; the first sign-in signs up as a demo user |
+| **Sign in with GitHub**, **Google**, **GitLab** or **Microsoft** | Appear once their client id and secret are set (below) |
+| Local form (**Username**, **Password**, **Sign in**) | `admin` / `kionga-local` (break-glass) |
 
 | Directory user | Group | Result |
 | --- | --- | --- |
@@ -178,7 +179,7 @@ according to `KIONGA_SIGNUP`:
 
 | Mode | First sign-in creates | The person sees |
 | --- | --- | --- |
-| `approval` (default) | An access request (`Signed up with github`) for the requested default services | A "waiting for approval" banner; no service until an administrator provisions them in **Users & access** |
+| `approval` (default) | An access request (`Signed up with github`) for the requested default services | No services until an administrator provisions them in **Access**. Pages that need a service show **Access required**, and **My access** shows the account as `not provisioned` with the request as `pending` |
 | `open` | An active `user` account with the `KIONGA_SIGNUP_PROFILE` resource profile (default `starter`) | The console, at once |
 | `off` | Nothing | Access only through mapped directory groups or an administrator |
 
@@ -202,7 +203,7 @@ and `/api/v1/me` reports `connector` and the latest `access_request` status.
 
 1. The login page reads `/auth/providers` and shows a button per provider, plus the
    local form when local accounts are enabled.
-2. **Sign in with …** goes to `/auth/sso/login?connector=<id>`. The gateway sends the
+2. Each **Sign in with** button goes to `/auth/sso/login?connector=<id>`. The gateway sends the
    browser to Dex with that connector, a PKCE challenge and a nonce. Unknown
    connector ids are rejected.
 3. Dex authenticates the user with the upstream system and returns a code. The
@@ -221,7 +222,7 @@ and `/api/v1/me` reports `connector` and the latest `access_request` status.
    token roles, as for any user.
 5. On a person's first sign-in, [sign-up](#sign-up) decides whether they get an
    account.
-6. **Sign out** ends the Kionga session (and workspace sessions) for both local
+6. **Log out** in the console header, or **Sign out** on the **Settings** page, ends the Kionga session (and workspace sessions) for both local
    and single sign-on users.
 
 ## Production checklist
@@ -287,7 +288,7 @@ and `/api/v1/me` reports `connector` and the latest `access_request` status.
 | A first sign-in created no access request | `KIONGA_SIGNUP` is `off`, the email is outside `KIONGA_SIGNUP_EMAIL_DOMAINS` or unverified, or a directory group already grants a role; the gateway logs `sign-up for ...` |
 | `unknown sign-in provider` | The button id is not in `KIONGA_SSO_PROVIDERS`, or does not match a Dex connector id |
 | Dex says "Invalid username or password" | Dex logs: bind DN and password, `userSearch` filter and `username` attribute |
-| Signed in but no access | Waiting for approval (the console banner says so), or the user's groups are not in `KIONGA_SSO_GROUP_ROLES`; Dex logs list the groups it found at login |
+| Signed in but no access | Waiting for approval (**My access** shows `not provisioned` and a `pending` request), or the user's groups are not in `KIONGA_SSO_GROUP_ROLES`; Dex logs list the groups it found at login |
 | `identity token validation failed` | `OIDC_ISSUER` must equal Dex's `issuer` exactly; `OIDC_AUDIENCE` must be the client id; with `KIONGA_TENANT` set, enable `KIONGA_SSO_SINGLE_TENANT` |
 | Gateway exits with `KIONGA_SSO_PROVIDERS is not a JSON list of {id, name, type}` or `KIONGA_SSO_GROUP_ROLES maps "<group>" to unknown role "<role>"` | The value is not valid JSON, or a group maps to a role that does not exist. The valid roles are `admin`, `operator`, `engineer`, `user` and `viewer` |
 | Gateway exits with `requires KIONGA_LOCAL_PASSWORD` | `KIONGA_LOCAL_LOGIN=true` next to SSO needs an explicit break-glass password |

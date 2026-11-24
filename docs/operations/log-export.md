@@ -8,7 +8,8 @@ This guide shows you how to run the optional `log-exporter` service, which
 ships one tenant's Kionga log entries (see [Logs and events](../guides/logs.md))
 to Elasticsearch or OpenSearch. The gateway never waits on the exporter: if it
 is not running, is configured incorrectly, or the cluster is down, pipelines and the
-console keep working, and the **Platform** page shows the exporter's state.
+console keep working, and the **Log export** section of the **Platform** page
+shows the exporter's state.
 
 The exporter is packaged as a Compose profile in `deploy/compose.yaml`. The
 Helm chart does not include it.
@@ -80,8 +81,8 @@ Helm chart does not include it.
     progress. When the settings are incomplete, the object has only `state` and
     `detail`.
 
-2. Confirm that `state` is `healthy`. The same state appears on the console's
-   **Platform** page:
+2. Confirm that `state` is `healthy`. The same state appears in the **Log
+   export** section of the console's **Platform** page:
 
     | State | Meaning |
     | --- | --- |
@@ -147,7 +148,7 @@ docker compose -f deploy/compose.yaml --profile log-export-es --profile log-expo
 
 | Symptom | Cause | Fix |
 | --- | --- | --- |
-| `not_deployed` on the **Platform** page | The exporter container is not running | Start it with the command in step 3 |
+| `not_deployed` in the **Log export** section of the **Platform** page | The exporter container is not running | Start it with the command in step 3 |
 | `not_configured` with `KIONGA_LOG_EXPORT_TARGET must be elasticsearch or opensearch` | The target is empty or misspelled | Set `KIONGA_LOG_EXPORT_TARGET` to `elasticsearch` or `opensearch` |
 | `not_configured` with `KIONGA_LOG_EXPORT_URL must be an http(s) URL` | The address is empty or has no scheme | Set a full URL such as `https://search.example.com:9200` |
 | `not_configured` with `put credentials in KIONGA_LOG_EXPORT_USERNAME / *_FILE variables, not in the URL` | The URL embeds a user name or password | Remove them from the URL and use the credential variables |
