@@ -167,7 +167,7 @@ their runtime settings stay in your deployment configuration.
   not permitted. Set it on the gateway, or use one of the
   [permitted variables](../reference/configuration.md#secret-references).
 - *Activating a connection fails with `monitor_only`: "This connection monitors
-  availability."* Only **Prefect** and **OpenFaaS** connections change the runtime.
+  availability. Configure its deployment settings to change its runtime."* Only **Prefect** and **OpenFaaS** connections change the runtime.
   Change the other types in your deployment configuration.
 
 ## Related pages

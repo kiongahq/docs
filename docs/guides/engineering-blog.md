@@ -167,12 +167,12 @@ published page.
 
 ## Troubleshooting
 
-- *Publishing fails with "Before publishing, add ...."* The message lists what is
+- *Publishing fails with a message that starts with `Before publishing, add`.* The message lists what is
   missing: a title of at least 5 characters, a summary of at least 20 characters, at
   least 20 words of content, alt text on every image, or alt text on the cover image.
   Add each item, then publish again.
 - *"your editorial role does not allow this."* The action needs a higher role. For
-  example, only editors and editorial admins approve, schedule and publish. Ask an
+  example, only editors and editorial admins publish and schedule. Ask an
   editorial admin to change your role under **Authors**.
 - *"this action is not valid for the post's current status."* The post is in a state
   that does not allow the action, such as submitting a post that is already waiting for

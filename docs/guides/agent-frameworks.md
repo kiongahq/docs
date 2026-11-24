@@ -184,8 +184,8 @@ keep its Python objects between turns.
   dedicated runtime for this agent."* The Compose runtime serves one factory, and the
   agent names a different `graph_module`. Set `KIONGA_GRAPH_MODULE` to the agent's
   module, or give the agent its own runtime on Kubernetes.
-- *`build_nooa` fails with "The NOOA example executes model-generated code in the
-  runtime process."* This is intended. The factory refuses to start in every
+- *`build_nooa` fails with a message that starts "The NOOA example executes
+  model-generated code in the runtime process."* This is intended. The factory refuses to start in every
   environment, and `KIONGA_ALLOW_CODE_EXECUTION` has no effect. See the warning in
   [Run a NOOA agent](#run-a-nooa-agent).
 - *The streamed reply arrives as one piece.* Adapters buffer replies: `/stream`

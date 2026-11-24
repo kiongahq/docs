@@ -185,10 +185,12 @@ table under [Connect a Feast feature server](#connect-a-feast-feature-server).
   `env:FEAST_TOKEN`, `env:KIONGA_FEATURE_SECRET_<NAME>` or a variable listed in
   `KIONGA_FEATURE_SECRET_REFS`. Use one of those. See
   [Secret references](../reference/configuration.md#secret-references).
-- *Health is `unavailable` with "Feast feature server is unreachable."* The gateway
+- *Health is `unavailable` with a message that starts "Feast feature server is unreachable:" and gives the
+  reason.* The gateway
   cannot reach the **Feature server URL**. Check the address, the network path and
   that the server is running.
-- *Health is `unavailable` with "Feast rejected the credential."* Feast answered `401`
+- *Health is `unavailable` with "Feast rejected the credential (`<HTTP status>`); check the secret
+  reference."* Feast answered `401`
   or `403`. Check that the variable named by the secret reference holds the right
   bearer token on the gateway.
 - *Health is `degraded` with "Feast health check returned `<status>`" or "Feast
