@@ -50,96 +50,94 @@ template does not support, for example `scikit-learn` with `single-gpu` in
 
 ## List the available templates
 
-Use the catalog to compare templates before you create a project.
+Compare templates before you create a project.
 
-=== "Console"
+1. List the templates:
 
-    1. Open **Projects** and click **＋ New project**.
-    2. Under **Starting architecture**, review each template's framework,
-       accelerator, capabilities, required services and recommended profile.
+    === "Console"
 
-=== "SDK"
+        1. Open **Projects** and click **New project**.
+        2. Open the **Starting point** list and select a template. The dialog
+           shows its description and required services, and the **Framework**
+           and **Accelerator** lists show what it supports.
 
-    ```python
-    from kionga import KiongaClient
+    === "SDK"
 
-    with KiongaClient() as client:
-        for template in client.list_project_templates():
-            print(template.id, template.frameworks, template.accelerators)
-        print(client.get_project_template("distributed-training").required_services)
-    ```
+        ```python
+        from kionga import KiongaClient
 
-=== "API"
+        with KiongaClient() as client:
+            for template in client.list_project_templates():
+                print(template.id, template.frameworks, template.accelerators)
+            print(client.get_project_template("distributed-training").required_services)
+        ```
 
-    ```bash
-    curl -s -H "Authorization: Bearer $KIONGA_TOKEN" \
-      "$KIONGA_URL/api/v1/project-templates" | python -m json.tool
-    curl -s -H "Authorization: Bearer $KIONGA_TOKEN" \
-      "$KIONGA_URL/api/v1/project-templates/production-agent" | python -m json.tool
-    ```
+    === "API"
 
-=== "Workspace terminal"
+        ```bash
+        curl -s -H "Authorization: Bearer $KIONGA_TOKEN" \
+          "$KIONGA_URL/api/v1/project-templates" | python -m json.tool
+        curl -s -H "Authorization: Bearer $KIONGA_TOKEN" \
+          "$KIONGA_URL/api/v1/project-templates/production-agent" | python -m json.tool
+        ```
 
-    ```bash
-    kionga templates
-    kionga templates --json
-    ```
+    === "Workspace terminal"
 
-**Verify:** the list contains the five templates in the catalog above.
+        ```bash
+        kionga templates
+        kionga templates --json
+        ```
 
 ## Create a project
 
-=== "Console"
+1. Create the project:
 
-    1. Open **Projects** and click **＋ New project**.
-    2. Enter a **Project name** and, optionally, what it is for.
-    3. Under **Starting architecture**, select a template.
-    4. Under **Runtime shape**, choose the **Framework**, **Accelerator** and
-       **Requested profile**. Options that your grant does not cover are
-       disabled and labeled, for example `not provisioned`.
-    5. Optional: under **Source control**, enter the **Git repository** URL and
-       the **Default branch**.
-    6. Click **Create project**.
+    === "Console"
 
-=== "SDK"
+        1. Open **Projects** and click **New project**.
+        2. Under **Starting point**, select a template.
+        3. Enter a **Project name** and, optionally, a **Description**.
+        4. Choose the **Framework**, **Accelerator** and **Requested
+           allocation**. Options that your grant does not cover are disabled and
+           labeled, for example `(not provisioned)` or `(exceeds allocation)`.
+        5. Optional: enter the **Git repository URL** and the **Default
+           branch**.
+        6. Click **Create project**.
 
-    ```python
-    from kionga import KiongaClient
+    === "SDK"
 
-    with KiongaClient() as client:
-        project = client.create_project(
-            "churn-model",
-            template="production-ml",
-            framework="xgboost",
-            accelerator="cpu",
-            requested_profile="team",
-            repository_url="https://github.com/acme/churn-model.git",
-        )
-        print(project.id, project.scaffold_command)
-    ```
+        ```python
+        from kionga import KiongaClient
 
-=== "API"
+        with KiongaClient() as client:
+            project = client.create_project(
+                "churn-model",
+                template="production-ml",
+                framework="xgboost",
+                accelerator="cpu",
+                requested_profile="team",
+                repository_url="https://github.com/acme/churn-model.git",
+            )
+            print(project.id, project.scaffold_command)
+        ```
 
-    ```bash
-    curl -s -X POST "$KIONGA_URL/api/v1/projects" \
-      -H "Authorization: Bearer $KIONGA_TOKEN" \
-      -H 'Content-Type: application/json' \
-      -d '{"name": "churn-model", "template": "production-ml",
-           "framework": "xgboost", "accelerator": "cpu",
-           "requested_profile": "team"}'
-    ```
+    === "API"
+
+        ```bash
+        curl -s -X POST "$KIONGA_URL/api/v1/projects" \
+          -H "Authorization: Bearer $KIONGA_TOKEN" \
+          -H 'Content-Type: application/json' \
+          -d '{"name": "churn-model", "template": "production-ml",
+               "framework": "xgboost", "accelerator": "cpu",
+               "requested_profile": "team"}'
+        ```
+
+2. Copy the scaffold command from the project page, the SDK's
+   `project.scaffold_command` or the `scaffold_command` field of the response.
 
 The gateway checks every rule again, whatever client you use: an unsupported
 combination returns `422`, and a missing service, a profile larger than your
 grant, or too few GPUs returns `403` with the reason.
-
-**Verify:** the project opens with a **Generate the starter code** panel that
-shows the scaffold command, for example:
-
-```bash
-kionga scaffold churn-model --template production-ml --template-version 1.0.0 \
-  --framework xgboost --accelerator cpu --profile team
-```
 
 ## Create a GPU training project
 
@@ -185,9 +183,6 @@ than the grant provides. Multi-node training runs on Kubernetes with a GPU
 operator, a suitable storage class and a workload scheduler. Creating a
 `multi-gpu` project on a laptop records the intent; it does not create GPUs.
 
-**Verify:** the project record shows **Accelerator** `multi-gpu` and **Requested
-profile** `custom`.
-
 ## Create an agent project
 
 Use `production-agent` for a LangGraph agent you plan to deploy.
@@ -223,11 +218,6 @@ invocation routes, container packaging, golden evaluation cases and a
 deployable agent manifest. Provider keys stay in your environment, never in the
 generated code.
 
-**Verify:** the project page shows `PROJECT · production-agent v1.0.0`. After
-you scaffold it, install the project with `python -m pip install -e ".[dev]"`
-and run `pytest -q` in the generated folder: the tests use an offline model and
-need no provider keys.
-
 ## What the scaffold generates
 
 Every template generates a typed package, `pyproject.toml`, a Dockerfile,
@@ -261,8 +251,44 @@ The API accepts some older template names and stores the canonical ID instead:
 
 Use the canonical IDs in new automation.
 
-## Next steps
+## Verify
+
+1. **List:** `GET /api/v1/project-templates` returns `"total": 5` with the five
+   templates in the catalog above, and `kionga templates` prints one line for
+   each, in the form `<id>  <version>  <name> (default: <framework>/<profile>)`.
+2. **Create:** the project record has the `template`, `template_version`,
+   `framework`, `accelerator` and `requested_profile` you chose, and a
+   `scaffold_command` such as:
+
+    ```bash
+    kionga scaffold churn-model --template production-ml --template-version 1.0.0 \
+      --framework xgboost --accelerator cpu --profile team
+    ```
+
+    In the console, the project page shows the same command under **Generate
+    starter code**.
+3. **GPU project:** the project record shows `"accelerator": "multi-gpu"` and
+   `"requested_profile": "custom"`.
+4. **Agent project:** after you scaffold it, install the project with `python -m
+   pip install -e ".[dev]"` and run `pytest -q` in the generated folder. The
+   tests use an offline model and need no provider keys.
+
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| `403 quota_exceeded`, `no project capacity has been provisioned` or `project quota reached (<n>)` | Your resource grant has no project slot free. | Delete a project, or ask an administrator to raise the project quota. |
+| `403 resource_not_provisioned`, `the <service> service is required by template <id> but is not provisioned` | Your grant lacks a service the template requires. | Ask an administrator for the service, or choose a template that needs fewer. The catalog lists each template's required services. |
+| `403 resource_not_provisioned`, `template <id> requests the <profile> profile, which exceeds the provisioned compute or storage grant` | The requested profile is larger than your grant. | Choose a smaller profile. |
+| `403 resource_not_provisioned`, `template <id> requests <accelerator> but the grant provides <n> GPUs` | The accelerator needs more GPUs than your grant has. | Choose `cpu`, or ask an administrator for GPUs. |
+| `403 access_denied`, `Git service access is required to connect a repository` | You gave a repository URL without the `git` service. | Leave the repository empty and [connect Git](distributed-workspaces.md#connect-a-project-to-git) later, or ask for the `git` service. |
+| `422 validation_error`, `framework is not supported by the selected template` or `accelerator is not supported by the selected template` | The template does not offer that framework or accelerator. | Pick a combination from the catalog table. |
+| `422 validation_error`, `scikit-learn production projects support only the cpu accelerator` | You chose `scikit-learn` with a GPU in `production-ml`. | Use `cpu`, or choose `xgboost` or `pytorch`. |
+| `422 validation_error`, `unknown project template` | The template ID does not exist. | Use a canonical ID from the catalog or an [alias](#template-aliases). |
+
+## Related pages
 
 - [Scaffold the project](scaffolding.md) into your workspace.
 - [Connect the project to Git](distributed-workspaces.md#connect-a-project-to-git).
 - [Build and deploy an agent](agents.md) from a `production-agent` project.
+- [Define a pipeline](pipelines.md#plan-heavy-and-distributed-training) for distributed training.

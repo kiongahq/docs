@@ -5,7 +5,6 @@
 # file only shrinks. When you fix a page, delete its lines in the same change.
 
 # Missing section: before you begin
-guides/langflow.md section:before-you-begin
 operations/kubernetes-prerequisites.md section:before-you-begin
 operations/managed-operations.md section:before-you-begin
 operations/production-operations.md section:before-you-begin
@@ -26,10 +25,6 @@ guides/distributed-workspaces.md section:related-pages
 guides/engineering-blog.md section:related-pages
 guides/feature-stores.md section:related-pages
 guides/features.md section:related-pages
-guides/langflow.md section:related-pages
-guides/project-templates.md section:related-pages
-guides/scaffolding.md section:related-pages
-guides/workbench.md section:related-pages
 operations/external-storage.md section:related-pages
 operations/kubernetes-prerequisites.md section:related-pages
 operations/local.md section:related-pages
@@ -57,9 +52,6 @@ guides/distributed-workspaces.md section:troubleshooting
 guides/engineering-blog.md section:troubleshooting
 guides/feature-stores.md section:troubleshooting
 guides/features.md section:troubleshooting
-guides/langflow.md section:troubleshooting
-guides/project-templates.md section:troubleshooting
-guides/workbench.md section:troubleshooting
 operations/external-storage.md section:troubleshooting
 operations/kubernetes-prerequisites.md section:troubleshooting
 operations/local.md section:troubleshooting
@@ -88,10 +80,6 @@ guides/distributed-workspaces.md section:verify
 guides/engineering-blog.md section:verify
 guides/feature-stores.md section:verify
 guides/features.md section:verify
-guides/langflow.md section:verify
-guides/project-templates.md section:verify
-guides/scaffolding.md section:verify
-guides/workbench.md section:verify
 operations/kubernetes-prerequisites.md section:verify
 operations/managed-operations.md section:verify
 operations/production-operations.md section:verify

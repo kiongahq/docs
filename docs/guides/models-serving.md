@@ -187,7 +187,7 @@ A version that was never promoted has no previous stage, and rollback returns
 
 A model trained with one library version can fail to load under another. The
 default serving image matches the [Jupyter workbench](workbench.md) pins
-(`scikit-learn==1.7.0`, `mlflow==3.16.1`), so scikit-learn models trained there
+(`scikit-learn==1.7.0`, `mlflow==3.17.2`), so scikit-learn models trained there
 serve as they are.
 
 For `xgboost`, PyTorch and other frameworks, register a `serving_image` with each
