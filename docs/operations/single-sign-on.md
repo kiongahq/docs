@@ -222,7 +222,7 @@ and `/api/v1/me` reports `connector` and the latest `access_request` status.
    token roles, as for any user.
 5. On a person's first sign-in, [sign-up](#sign-up) decides whether they get an
    account.
-6. **Log out** ends the Kionga session (and workspace sessions) for both local
+6. **Log out** in the console header, or **Sign out** on the **Settings** page, ends the Kionga session (and workspace sessions) for both local
    and single sign-on users.
 
 ## Production checklist

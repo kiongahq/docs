@@ -29,7 +29,7 @@ deployments replace all of them; see [Choose a deployment](../operations/index.m
 | Console redirect (`/` goes to the console) | `http://localhost:8080` | `http://gateway:8080` | None |
 | Console and API | `http://localhost:8080/console` | `http://gateway:8080` | `admin` / `kionga-local` (role from `KIONGA_LOCAL_ROLE`), or single sign-on |
 | Dex (single sign-on) | `http://localhost:5556/dex` | `http://dex:5556/dex` | Test directory password `kionga-sso-dev` |
-| Jupyter workbench | `http://localhost:8080/workspace?tool=workbench` | `http://jupyter:8888` | Your console session. For diagnostics only: `http://127.0.0.1:8888/workspaces/workbench/` with token `kionga-local` (`JUPYTER_TOKEN`). |
+| JupyterLab workbench | `http://localhost:8080/workspace?tool=workbench` | `http://jupyter:8888` | Your console session. For diagnostics only: `http://127.0.0.1:8888/workspaces/workbench/` with token `kionga-local` (`JUPYTER_TOKEN`). |
 | Browser IDE (optional) | `http://localhost:8080/workspace?tool=ide` | `http://ide:8080` | Your console session; no published port |
 | Langflow canvas (optional) | `http://localhost:8080/console/langflow` | `http://langflow:7860` | Your Kionga console session; no published port |
 | MLflow | `http://localhost:15000` | `http://mlflow:5000` | None |
