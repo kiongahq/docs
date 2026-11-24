@@ -182,7 +182,7 @@ Kionga's full end-to-end smoke test on those hosts.
 
     ```text
     Kionga is ready.
-      Console:  http://localhost:8080
+      Console:  http://127.0.0.1:8080
       Login:    admin / kionga-local
     ```
 
@@ -372,7 +372,7 @@ bash deploy/scripts/container.sh compose -f deploy/compose.yaml up -d gateway
 ```
 
 Recreating the gateway ends existing local sessions; sign in again to get the
-new role. An access profile for the `admin` subject under **Users & access**
+new role. An access profile for the `admin` subject under **Access**
 takes precedence over this role.
 
 ## Connect OpenFaaS functions

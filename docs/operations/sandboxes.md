@@ -205,8 +205,8 @@ KIONGA_SANDBOX_ALLOW_UNSAFE_RUNTIME=1
 ```
 
 Sandbox code then shares the host kernel, so a kernel exploit escapes the sandbox. Use this only
-with code and input you trust. The manager logs a warning on every create, the run view shows a
-banner, and the manager refuses the flag when `KIONGA_ENVIRONMENT` is `production`.
+with code and input you trust. The manager logs a warning on every create, the run view shows the
+banner **Sandbox runtime is not isolated as required**, and the manager refuses the flag when `KIONGA_ENVIRONMENT` is `production`.
 
 ## Limits
 
@@ -240,13 +240,13 @@ banner, and the manager refuses the flag when `KIONGA_ENVIRONMENT` is `productio
     The sandbox manager makes the same kind of check. At startup and before each create, it
     confirms the runtime and that a probe reports gVisor's kernel.
 
-2. Check a real sandbox. Start a team run with an agent whose workspace is
-   **Sandbox**. Its first `exec` call returns output rather than
+2. Check a real sandbox. Start a team run with an agent definition whose
+   **Workspace** is **Sandbox**. Its first `exec` call returns output rather than
    `sandbox_unavailable`.
 
 ## Troubleshooting
 
-Look for the banner in the run view, then read the manager's state.
+Look for the **Sandbox unavailable** banner at the top of the run view, then read the manager's state.
 
 ```bash
 # Single server
@@ -282,7 +282,7 @@ means creates return 503.
 | `sandbox.allowUnsafeRuntime is not supported: the unsafe runtime is for local development only` (Kubernetes) | The values set the unsafe runtime | Remove the value. The chart has no setting for it. |
 
 Workers that hit `sandbox_unavailable` report it to the coordinator. After you fix the cause,
-resume the run from the run view.
+select **Resume failed workers** in the run view.
 
 !!! danger "Do not use the unsafe runtime to fix a production problem"
     Production refuses it, and it removes the isolation that sandboxes rely on.
