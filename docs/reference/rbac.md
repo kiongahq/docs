@@ -51,7 +51,7 @@ limited to the services it names.
 | `platform` | Connections, component health and log export status (read) |
 | `functions` | Serverless functions |
 | `applications` | Applications on Kubernetes |
-| `workbench` | Opening the Jupyter workbench |
+| `workbench` | Opening JupyterLab |
 | `ide` | Opening the browser IDE |
 
 ## Access profiles
@@ -70,9 +70,9 @@ profile sets:
 | `compute` | A resource profile, or custom limits: `vcpus`, `memory_gb`, `gpus`, `gpu_type`, `max_vms`, `max_projects`, `max_concurrent_runs`, `max_functions` |
 | `disabled` | Suspends the person immediately |
 
-Administrators manage profiles in **Users & access** or with
+Administrators manage profiles in **Access** (the **Users** tab) or with
 `PUT /api/v1/admin/users/{subject}`. A person without a profile can ask for
-services from **My access → Request access**. Kionga blocks duplicate pending
+services from **My access**, with **Request access**. Kionga blocks duplicate pending
 requests, and records the reviewer and outcome of each approval or rejection in
 the audit log.
 
@@ -150,8 +150,8 @@ When the person has an access profile, its role, services and projects replace
 the ones from the credential. API keys and the `service` role keep their own
 scopes.
 
-Anonymous `/api/` requests get `401`; other pages redirect to sign-in. Signing out
-also ends the session for API calls.
+Anonymous `/api/` requests get `401`; other pages redirect to sign-in. **Log out**
+in the console also ends the session for API calls.
 
 Local sign-in is throttled per account: after 5 failed attempts, each further
 attempt waits twice as long as the previous one (1 s, 2 s, 4 s, up to 60 s), and
@@ -230,9 +230,10 @@ examples.
 ```
 
 The response also includes `local_accounts`, `connector`, `access_request` and
-`entitlements`. In the console, **My access** shows your role, services,
-projects, buckets, compute allocation, quotas, and whether your account is
-provisioned or suspended.
+`entitlements`. In the console, **My access** shows your role and sign-in mode,
+the account status (`active`, `not provisioned`, or the status in
+`entitlements`), your **Assigned services**, your **Resource allocation** (the
+`entitlements` object) and your **Access requests**.
 
 ## Try a role locally
 

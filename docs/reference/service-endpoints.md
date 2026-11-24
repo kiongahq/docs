@@ -49,7 +49,7 @@ deployments replace all of them; see [Choose a deployment](../operations/index.m
 
 ## Connect from the Jupyter workbench
 
-Open the workbench from the console sidebar (**Jupyter workbench**). It includes:
+Open the workbench from the console sidebar (**JupyterLab**). It includes:
 
 - The Python SDK (`kionga`) with the `agents` and `huggingface` extras, and
   Kionga's example modules (`pipelines`, `features`, `realtime`, `agents`).
@@ -81,10 +81,12 @@ Notebooks are stored in the `jupyter-data` volume and survive restarts. See
 
 ## Register connections in the console
 
-A connection tells Kionga to health-check a service. Open **Platform**, click
-**Add infrastructure**, and enter the service, a name, its address and a
-credential reference. Kionga tests it immediately and again whenever you click
-**Test**.
+A connection tells Kionga to health-check a service. Open **Platform**, select
+**Add connection** in the **Components** section, and in the **Connect
+infrastructure** dialog enter the **Service**, a **Connection name**, its
+**Service address** and a **Credential reference**. **Save and test** saves the
+connection and tests it at once. To test it again, select **Test** on the
+connection in the **Connected infrastructure** section.
 
 Kionga runs the check from inside the stack, so use the inside-the-stack
 addresses:
@@ -120,10 +122,12 @@ addresses:
 - Creating, testing and activating connections needs the `infra:Provision`
   permission, which `admin` and `operator` have.
 
-**Onboarding readiness** on the Overview page turns green when a project exists
-and healthy `mlflow`, storage (`s3` or `rustfs`), `kafka` and `kubernetes`
-connections are registered. The local stack has no Kubernetes cluster, so that
-item stays pending unless you connect one, for example a Kind cluster.
+The **Production readiness** section of the **Platform** page lists five checks:
+**Create a workspace**, **Connect Kubernetes**, **Connect MLflow**, **Connect
+object storage** and **Connect Kafka**. A check shows `ready` when a project
+exists, or when a healthy `kubernetes`, `mlflow`, storage (`s3` or `rustfs`) or
+`kafka` connection is registered. The local stack has no Kubernetes cluster, so
+that check stays `pending` unless you connect one, for example a Kind cluster.
 
 ## Connect more services
 

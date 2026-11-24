@@ -33,8 +33,10 @@ interoperability API, Ceph RGW, RustFS, Wasabi or Cloudflare R2.
 
 ## Register a bucket
 
-1. In the console, open **Platform**. Under **Feature stores and object
-   storage**, select **＋ Object storage**.
+1. In the console, open **Platform** (in the **Operate** group). Under
+   **Object storage connections**, select **Add object storage**. The
+   **Connect object storage** dialog opens, and **Save and test** creates the
+   connection and tests it in one step.
 
     Or call the API with an administrator session (see
     [Authentication](../reference/api.md#authentication) for how to get
@@ -53,22 +55,25 @@ interoperability API, Ceph RGW, RustFS, Wasabi or Cloudflare R2.
       }'
     ```
 
-2. Fill in the fields:
+2. Fill in the fields. The console labels the API fields as the second column
+    shows:
 
-    | Field | Rules |
-    | --- | --- |
-    | `name` | 2 to 63 lowercase letters, digits and hyphens; unique |
-    | `endpoint` | `http(s)://host[:port]`, with no path, query or embedded credentials |
-    | `region` | Lowercase letters, digits and hyphens. Requests are signed for `us-east-1` when empty |
-    | `bucket` | A valid S3 bucket name. Buckets with dots need `path_style` over HTTPS, because wildcard certificates do not cover them |
-    | `path_style` | `true` for RustFS, Ceph and dotted bucket names; `false` for virtual-hosted Amazon S3 |
-    | `ca_bundle` | PEM CA certificates, added to the system roots, for a private CA. Private keys are rejected |
-    | `secret_ref` | `env:VARIABLE`, naming a permitted gateway variable that holds `ACCESS_KEY_ID:SECRET_ACCESS_KEY` |
-    | `allowed_projects` | IDs of the projects that may use the connection. Each project must exist |
+    | Field | Console label | Rules |
+    | --- | --- | --- |
+    | `name` | **Name** | 2 to 63 lowercase letters, digits and hyphens; unique |
+    | `endpoint` | **S3 endpoint** | `http(s)://host[:port]`, with no path, query or embedded credentials |
+    | `region` | **Region** | Lowercase letters, digits and hyphens. Requests are signed for `us-east-1` when empty |
+    | `bucket` | **Bucket** | A valid S3 bucket name. Buckets with dots need `path_style` over HTTPS, because wildcard certificates do not cover them |
+    | `path_style` | **Path-style addressing** | `true` for RustFS, Ceph and dotted bucket names; `false` for virtual-hosted Amazon S3. The console selects it by default |
+    | `ca_bundle` | **Custom CA bundle** | PEM CA certificates, added to the system roots, for a private CA. Private keys are rejected |
+    | `secret_ref` | **Secret reference** | `env:VARIABLE`, naming a permitted gateway variable that holds `ACCESS_KEY_ID:SECRET_ACCESS_KEY` |
+    | `allowed_projects` | **Allowed project IDs** | IDs of the projects that may use the connection, separated by commas. Each project must exist |
 
     A new connection starts as `configured`.
 
-3. Select **Test**, or call the test endpoint with the connection's `id`:
+3. In the console, **Save and test** already ran the test. To test again later,
+   select **Test** on the connection. With the API, call the test endpoint with
+   the connection's `id`:
 
     ```bash
     curl -b kionga.cookies -X POST "$GATEWAY/api/v1/admin/storage-connections/<id>/test"
@@ -77,7 +82,7 @@ interoperability API, Ceph RGW, RustFS, Wasabi or Cloudflare R2.
 ## Verify
 
 1. Read the result of the test from step 3. The response holds `health.state`
-   and `health.detail`, and the console shows the same on the connection. The
+   and `health.detail`, and the **Health** column of the connection shows the same. The
    test sends a SigV4-signed `HEAD` request for the bucket and records one of
    these states with a reason:
 
