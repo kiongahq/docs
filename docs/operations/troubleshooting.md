@@ -9,6 +9,16 @@ Find the symptom you see, then follow the fix. Entries are grouped by
 deployment: [local stack](#local-stack), [single server](#single-server) and
 [Kubernetes](#kubernetes).
 
+## Before you begin
+
+- Know which deployment you run: the local stack, a single server or
+  Kubernetes. Each has its own commands below.
+- Have shell access to the machine that runs the stack or the server, or a
+  `kubectl` context for the cluster. On Kubernetes, you also need access to the
+  release namespace, `kionga-system` by default.
+- Have the failing command or the page that shows the problem open, so you can
+  match its exact message with an entry.
+
 ## First checks
 
 For the local stack, start with the state of every service, the logs of the
@@ -54,13 +64,14 @@ startup logs.
 
 ### Startup says a port is in use
 
-**Symptom.** `make -C deploy local-up` prints
-`<service> port <port> is in use. Set <VARIABLE> to a free port`, or says that
-the port and its fallbacks are occupied.
+**Symptom.** `make -C deploy local-up` stops with
+`Kionga startup failed: <service> port <port> is in use and <VARIABLE>=<port>
+was set for this command`, or with `<service> port <port> and every fallback
+are occupied; set <VARIABLE> to a free port.`
 
 **Cause.** A busy default port moves automatically to default + 10000 (5432
 becomes 15432). The command stops instead when you set the port yourself, or
-when all five fallback ports are taken. A native PostgreSQL or Redis is the
+when the fallback ports are taken. A native PostgreSQL or Redis is the
 usual cause.
 
 **Fix.** Find the process that owns the port, then stop it or choose another
@@ -147,7 +158,7 @@ docker compose -f deploy/compose.yaml up -d mlflow
 
 **Cause.** Usually training-serving skew: the model was trained with different
 library versions than the serving image. The trainer, the serving image and
-the workbench must pin the same versions (`mlflow==3.16.1`,
+the workbench must pin the same versions (`mlflow==3.17.2`,
 `scikit-learn==1.7.0`).
 
 **Fix.** Check the logs:
@@ -312,7 +323,7 @@ exactly `https://` followed by `domain`.
 empty, readable by everyone, or unreadable by the user running the installer.
 
 **Fix.** Have your secret agent write the file, then set ownership and modes
-as in [Deliver the secret files](public-vm.md#steps). Never print secret
+as in [Deliver the secret files](public-vm.md#install-kionga). Never print secret
 contents while you diagnose this.
 
 ### `Could not pull the pinned images`
@@ -395,7 +406,7 @@ missing from the namespace or from `imagePullSecrets`.
 
 **Fix.** Create the pull Secret in both the release namespace and the
 workload namespace, and set `imagePullSecrets: [{name: ghcr-pull}]` in your
-values; see [Deploy on Kubernetes](managed-kubernetes.md#steps). Platform pods
+values; see [Deploy on Kubernetes](managed-kubernetes.md#install-the-chart). Platform pods
 and the workspace and agent pods the operator creates use the same Secret
 name.
 
@@ -423,3 +434,48 @@ mount.
 
 **Fix.** Add the chart's `storageClass` to the allowlist, or remove the
 allowlist; see [Tenant storage on Kubernetes](external-storage.md#tenant-storage-on-kubernetes).
+
+## Verify
+
+After you apply a fix, confirm that the deployment is healthy.
+
+1. Check that the gateway reports ready. It answers `{"status":"ready"}` when it
+   can reach PostgreSQL, and `503` with code `not_ready` when it cannot:
+
+    === "Local stack"
+
+        ```bash
+        export GATEWAY="${GATEWAY:-http://localhost:8080}"
+        curl -s "$GATEWAY/api/v1/ready"
+        ```
+
+    === "Single server"
+
+        ```bash
+        curl -s https://<your-domain>/api/v1/ready
+        ```
+
+    === "Kubernetes"
+
+        ```bash
+        kubectl --context CONTEXT -n kionga-system get pods
+        kubectl --context CONTEXT -n kionga-system rollout status deployment/kionga-gateway
+        ```
+
+2. Run the deeper check for your deployment:
+
+    - Local stack: `make -C deploy smoke`. The stack is healthy when there are
+      zero failures.
+    - Single server: sign in and sign out, as in [Verify](public-vm.md#verify).
+    - Kubernetes: `deploy/scripts/verify-production.py`, as in
+      [Verify](managed-kubernetes.md#verify).
+
+## Related pages
+
+- [Run locally](local.md)
+- [Single server](public-vm.md)
+- [Deploy on Kubernetes](managed-kubernetes.md)
+- [Production readiness](production-operations.md)
+- [Updates and rollback](updates.md)
+- [Sandboxes and gVisor](sandboxes.md#troubleshooting)
+- [Service endpoints](../reference/service-endpoints.md)

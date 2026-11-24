@@ -100,7 +100,7 @@ is the base64 encoding of exactly 32 bytes (`openssl rand -base64 32`); keep it
 stable across replicas and restarts, because it encrypts users' stored personal
 credentials.
 
-## Steps
+## Install the chart
 
 1. **Bootstrap the namespace and custom resources.** With the
    cluster-administrator identity:
@@ -234,8 +234,8 @@ credentials.
     kubectl --context CONTEXT -n kionga-system get externalsecrets
     ```
 
-    Every pod is `Running` and ready, and every ExternalSecret reports
-    `SecretSynced`. The gateway is ready only when it can reach PostgreSQL; the
+    Every pod is `Running` and ready, and every ExternalSecret has the
+    `Ready` condition set to `True`. The gateway is ready only when it can reach PostgreSQL; the
     integration worker is ready only after a recent successful poll.
 
 2. Run the production verifier. It needs an ID token for an administrator and
@@ -339,11 +339,36 @@ In CI, deploy with short-lived cloud credentials (OIDC federation) or a GitOps
 controller rather than long-lived `kubeconfig` files or cloud keys. Never pass
 secret values with `helm --set`: Helm stores release values.
 
-## Next steps
+## Troubleshooting
 
-- [Kubernetes prerequisites](kubernetes-prerequisites.md) for applications,
+Helm renders the chart before it installs anything, so a value the chart
+refuses stops `deploy-kubernetes.sh` at the lint step with the message below.
+The full catalog is in [Troubleshooting](troubleshooting.md#kubernetes).
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| `images.<name> must be an immutable repository@sha256:digest` | An image uses a tag | Pin every image, including `jupyter` and `ide`, by digest |
+| `storageClass must be explicitly configured` | `storageClass` is empty | Set `storageClass` |
+| `production mode is required` | `config.KIONGA_ENVIRONMENT` is not `production` | Keep `config.KIONGA_ENVIRONMENT: production` |
+| `components.<name>.replicas must be at least 2` | A component has fewer than two replicas | Use two or more replicas |
+| `workspaceIngress.baseDomain must match config.KIONGA_WORKSPACE_BASE_DOMAIN` | The two base domains differ | Set both to the same base domain |
+| `workspaceIngress must be enabled when KIONGA_WORKSPACE_BASE_DOMAIN is configured` | A base domain is set without the workspace ingress | Enable `workspaceIngress`, or clear the base domain |
+| `isolated workspace ingress requires the trusted same-origin proxy disabled` | `config.KIONGA_TRUSTED_WORKSPACE_PROXY` is `"true"` | Set it to `"false"` |
+| `workspaceNamespace must differ from the control-plane namespace` | Both names are the same | Use a separate workload namespace |
+| `agentDesigner.replicas must be at least 2` or `agentDesigner.secretName is required` | The designer runner is enabled with one replica or without its token Secret | Set `replicas` to 2 or more and name the Secret, as in [Enable the Agent Designer runner](#enable-the-agent-designer-runner) |
+| The script stops at the namespace check or at a `NotFound` error for a custom resource definition | `deploy-kubernetes.sh` checks that the namespace, the Kionga custom resource definitions and, when your values need them, the External Secrets and Prometheus Operator definitions exist | Complete step 1 with a cluster-administrator identity, and install External Secrets Operator or the Prometheus Operator if your values need them. Then run the script again |
+| `helm upgrade --install` fails and Helm rolls the release back | `--atomic --wait` with a 15-minute timeout: a pod did not become ready in time, or a hook failed | Read the events and pod logs in the release namespace, fix the cause and run step 6 again |
+| Pods stay in `ImagePullBackOff` or `ErrImagePull` | The pull Secret is missing from the release namespace, the workload namespace or `imagePullSecrets` | Create `ghcr-pull` in both namespaces, as in step 2, and set `imagePullSecrets` |
+| Gateway pods are not ready | The gateway reports ready only when it can reach PostgreSQL, and the network policy denies external traffic that `networkPolicy.externalEgress` does not allow | Read the gateway log, check the ExternalSecrets and add the database address and port to `networkPolicy.externalEgress` |
+| The verifier prints `Acceptance failed: ExternalSecret <name> is not ready` | The secret manager integration does not sync | Check the store you applied in step 3 and the identity's read access |
+| The verifier prints `Acceptance failed: <component> replicas are not ready` or `fewer than three ready nodes` | A component has fewer ready replicas than desired, or the cluster has fewer than three Ready nodes | Read the pod events, and add capacity |
+| The verifier prints `Acceptance failed: ... ingress has no TLS` or `TLS Secret <name> is incomplete` | The ingress or its certificate Secret has no `tls.crt` and `tls.key` | Create or issue the certificate Secret named in `ingress.tlsSecretName` and the workspace ingress |
+
+## Related pages
+
+- [Kubernetes prerequisites](kubernetes-prerequisites.md): applications,
   functions and model endpoints.
-- [Deploy applications](../guides/applications.md).
+- [Deploy applications](../guides/applications.md)
 - [Managed operations](managed-operations.md): let Kionga's team run the
   install for you (Enterprise plan).
 - [Production readiness](production-operations.md): monitoring, backups,
@@ -351,10 +376,9 @@ secret values with `helm --set`: Helm stores release values.
 - [Single sign-on](single-sign-on.md) and [Permissions](../reference/rbac.md):
   map identity provider groups to roles and provision users by OIDC subject.
 - [External object storage](external-storage.md) and
-  [Log export](log-export.md).
-- [Troubleshooting](troubleshooting.md#kubernetes).
-
-Related: [Kubernetes Secret good practices](https://kubernetes.io/docs/concepts/security/secrets-good-practices/),
-[Network policies](https://kubernetes.io/docs/concepts/services-networking/network-policies/),
-[Pod security standards](https://kubernetes.io/docs/concepts/security/pod-security-standards/),
-[Helm upgrade](https://helm.sh/docs/helm/helm_upgrade/).
+  [Log export](log-export.md)
+- [Troubleshooting](troubleshooting.md#kubernetes)
+- [Kubernetes Secret good practices](https://kubernetes.io/docs/concepts/security/secrets-good-practices/)
+- [Network policies](https://kubernetes.io/docs/concepts/services-networking/network-policies/)
+- [Pod security standards](https://kubernetes.io/docs/concepts/security/pod-security-standards/)
+- [Helm upgrade](https://helm.sh/docs/helm/helm_upgrade/)

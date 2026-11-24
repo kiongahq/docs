@@ -171,3 +171,12 @@ def test_every_baseline_line_names_a_real_page_and_a_known_rule() -> None:
         page, rule = entry.split(" ", 1)
         assert (DOCS_REPO / "docs" / page).is_file(), entry
         assert rule in known, entry
+
+
+def test_a_page_titled_troubleshooting_does_not_need_a_troubleshooting_section() -> None:
+    page = HOW_TO.replace("# Deploy an application", "# Troubleshooting").replace("## Troubleshooting\n\nIf the address does not answer, check the status.\n\n", "")
+    assert "## Troubleshooting" not in page
+    assert rules("operations/troubleshooting.md", page) == set()
+    # Any other page still needs the section.
+    other = page.replace("# Troubleshooting", "# Deploy an application")
+    assert rules("operations/upgrade.md", other) == {"section:troubleshooting"}

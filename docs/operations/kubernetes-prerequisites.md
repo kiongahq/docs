@@ -30,6 +30,18 @@ You need each add-on only for the features you turn on:
     add-ons yourself, apply the resource definitions from the platform
     release, and set the variables named on each page.
 
+## Before you begin
+
+- A Kubernetes cluster that meets the requirements in
+  [Deploy on Kubernetes](managed-kubernetes.md#before-you-begin), and
+  `kubectl` and Helm on the machine you work from.
+- A cluster-administrator identity. Installing resource definitions and
+  cluster-wide add-ons needs it.
+- For applications: DNS you control, so you can create a wildcard record, and a
+  base domain that differs from the console host and the workspace domain.
+- For applications built from Git: a container registry you can push to.
+- For model endpoints: an S3-compatible object store.
+
 ## Cert-manager
 
 [cert-manager](https://cert-manager.io/) issues the wildcard certificate for
@@ -141,21 +153,74 @@ or the wildcard TLS Secret.
     `helm template` has no cluster to read, so it skips the check unless you
     ask it to use the API versions you pass with `--api-versions`.
 
-Until then, check by hand:
+Until then, check by hand, as described in [Verify](#verify).
 
-```bash
-kubectl get crd | grep -E 'keda.sh|http.keda.sh|serving.kserve.io|cert-manager.io|kionga.dev'
-kubectl get clusterissuer
-kubectl -n kionga-workloads get secret <wildcard-tls-secret>
-```
+## Verify
 
-**Verify:** the first command lists the resource definitions for KEDA, the KEDA
-HTTP add-on, KServe, cert-manager and Kionga, including `kiongaapplications`,
-`kiongafunctions` and `kiongamodeldeployments`.
+1. Check that the cluster serves the resource definitions:
 
-## Next steps
+    ```bash
+    kubectl get crd | grep -E 'keda.sh|http.keda.sh|serving.kserve.io|cert-manager.io|kionga.dev'
+    ```
 
-- [Deploy on Kubernetes](managed-kubernetes.md).
-- [Deploy applications](../guides/applications.md).
-- [Run functions on Kubernetes](../guides/functions.md).
-- [Deploy and canary models on Kubernetes](../guides/models-kubernetes.md).
+    The output lists the resource definitions for KEDA, the KEDA HTTP add-on,
+    KServe, cert-manager and Kionga, including `kiongaapplications`,
+    `kiongafunctions` and `kiongamodeldeployments`.
+
+2. Check the certificate issuer and the wildcard certificate Secret:
+
+    ```bash
+    kubectl get clusterissuer
+    kubectl -n kionga-workloads get secret <wildcard-tls-secret>
+    ```
+
+    The first command lists your `ClusterIssuer`. The second shows a Secret of
+    type `kubernetes.io/tls`.
+
+3. Check that the KEDA HTTP add-on interceptor exists at the address Kionga
+   expects:
+
+    ```bash
+    kubectl -n keda get service keda-add-ons-http-interceptor-proxy
+    ```
+
+    The Service listens on port 8080. If you installed it elsewhere, you set
+    `KIONGA_KEDA_HTTP_INTERCEPTOR` and `KIONGA_KEDA_INTERCEPTOR_URL`, so check
+    that Service instead.
+
+4. After you deploy an application, read its conditions:
+
+    ```bash
+    kubectl -n kionga-workloads get kiongaapplications
+    kubectl -n kionga-workloads get kiongaapplication <name> -o yaml
+    ```
+
+    In `status.conditions`, `ScalingReady` is `True` with the reason
+    `RequestsScaling` when request scaling works. `Ready` is `True` when the
+    workload serves traffic.
+
+## Troubleshooting
+
+Read the reason in `status.conditions` of the workload, as in
+[Verify](#verify) step 4.
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| `ScalingReady` is `False` with reason `KEDAHTTPAddonMissing` and the message `requests scaling needs the KEDA HTTP add-on, which this cluster does not serve; using CPU scaling with at least one replica` | The operator did not find the KEDA HTTP add-on. It looks once, at startup | Install KEDA and its HTTP add-on, then restart the operator. Until then the workload keeps at least one pod |
+| `Ready` is `False` with reason `BuildNotConfigured` and the message `source builds need KIONGA_BUILD_REGISTRY on the operator` | An application uses a Git source, and no registry is set | Set `KIONGA_BUILD_REGISTRY` and the push Secret, as in [Registry for builds](#registry-for-builds) |
+| Reason `UnsupportedSource` with `source.git must be a public https:// URL without credentials` | The Git URL is not a public `https://` URL, or it embeds credentials | Use a public `https://` repository URL without credentials |
+| Reason `KServeNotInstalled` with `this cluster does not serve serving.kserve.io/v1beta1 InferenceService; install KServe in RawDeployment mode` | A model deployment exists, and the operator did not find KServe | Install KServe in RawDeployment mode and restart the operator |
+| Reason `StorageCredentialsMissing` with `object store Secret <name> does not exist in <namespace>` or `has no AWS_ACCESS_KEY_ID` | The Secret that holds the object store keys is missing, or lacks `AWS_ACCESS_KEY_ID` or `AWS_SECRET_ACCESS_KEY` | Create the Secret in the workload namespace with both keys. See [Set up model serving](../guides/models-kubernetes.md#set-up) |
+| `IngressReady` is `False` with reason `SSOUpstreamNotConfigured` and `visibility sso needs KIONGA_SSO_UPSTREAM; the host is not served` | An application uses `sso` visibility, and the operator does not know the gateway address | Set `KIONGA_SSO_UPSTREAM` on the operator to the gateway's `host:port` |
+| Application URLs start with `http://` | The operator does not know the wildcard certificate Secret | Set `KIONGA_APPLICATIONS_TLS_SECRET`, as in [Cert-manager](#cert-manager) |
+| Git builds fail at pod admission | The build namespace enforces the `baseline` or `restricted` Pod Security level | Run builds in a namespace that enforces `privileged` or no level. See [Pod security for builds](#pod-security-for-builds) |
+| `helm install` fails with `preflight: <value> needs <apiVersion/Kind>, which this cluster does not serve` | A prerequisite for a feature you turned on is not installed. Available with the chart release that adds the preflight | Install the named prerequisite, or turn the feature off |
+| `helm install` fails with `preflight: applications.tls.clusterIssuer names ClusterIssuer <name>, which does not exist` | The `ClusterIssuer` is missing. Available with the chart release that adds the preflight | Create a DNS-01 `ClusterIssuer` for the wildcard domain, or name the correct one |
+| `helm install` fails with `preflight: applications.tls.secretName <name> is missing in namespace <namespace>` | The wildcard TLS Secret is missing. Available with the chart release that adds the preflight | Create the `kubernetes.io/tls` Secret in that namespace, or set `applications.tls.clusterIssuer` |
+
+## Related pages
+
+- [Deploy on Kubernetes](managed-kubernetes.md)
+- [Deploy applications](../guides/applications.md)
+- [Run functions on Kubernetes](../guides/functions.md)
+- [Deploy and canary models on Kubernetes](../guides/models-kubernetes.md)

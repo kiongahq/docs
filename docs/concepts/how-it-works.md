@@ -75,14 +75,14 @@ client of that same API, and so are the Python SDK, the `kionga` CLI, and your
 own scripts. Anything you can do in the console you can automate. See the
 [REST API reference](../reference/api.md).
 
-For every request, the API:
+For every request, the API goes through four stages in this order:
 
-1. Identifies the caller (see [Identity and access](#identity-and-access)).
-2. Checks the caller's role, service grants, project scope and policies.
-3. For a change, checks quotas and resource limits, records the change, and
-   writes an audit event.
-4. Calls the engine that does the work, such as the pipeline engine for a run or
-   the serving manager for a model deployment.
+| Stage | What the API does |
+| --- | --- |
+| Identify | Identifies the caller (see [Identity and access](#identity-and-access)) |
+| Authorize | Checks the caller's role, service grants, project scope and policies |
+| Record | For a change, checks quotas and resource limits, records the change, and writes an audit event |
+| Execute | Calls the engine that does the work, such as the pipeline engine for a run or the serving manager for a model deployment |
 
 If an engine rejects the work, Kionga records the failure (for example, the run
 is marked `failed`) instead of reporting success. The console stays current
@@ -155,11 +155,11 @@ internal service token that can only report status.
 
 Access is deny by default and has three layers:
 
-1. **Role**: `admin`, `operator`, `engineer`, `user`, or `viewer`.
-2. **Access profile**: for a normal `user`, the services, projects, storage
-   buckets and compute quotas an administrator grants.
-3. **Policies**: optional allow and deny statements on specific actions and
-   resources. An explicit deny always wins.
+- **Role**: `admin`, `operator`, `engineer`, `user`, or `viewer`.
+- **Access profile**: for a normal `user`, the services, projects, storage
+  buckets and compute quotas an administrator grants.
+- **Policies**: optional allow and deny statements on specific actions and
+  resources. An explicit deny always wins.
 
 The console hides what you cannot use, but the API enforces every rule. See
 [Permissions](../reference/rbac.md) and

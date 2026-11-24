@@ -49,8 +49,9 @@ Python SDK and the REST API. All three call the same API, so you can mix them.
 
 ## Step 1: Sign in
 
-Open <http://localhost:8080/console> and sign in with the local account
-`admin` and password `kionga-local`.
+1. Open <http://localhost:8080/console>. If the stack started on a different
+   port, open the console URL that `make -C deploy local-up` printed.
+2. Sign in with the local account `admin` and password `kionga-local`.
 
 The console opens on **Overview**.
 

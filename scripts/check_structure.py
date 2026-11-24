@@ -12,6 +12,7 @@ check, so structure does not depend on a reviewer remembering it:
   explanation  no numbered step lists
   reference    at least one table
 
+A page titled Troubleshooting is the troubleshooting content, so it does not repeat the section.
 Section landing pages (index.md) and the generated changelog are checked only for
 the rules that apply to every page. Section headings must match the standard
 exactly, so every page of a type reads the same way.
@@ -151,13 +152,16 @@ def check_page(relative: Path, text: str) -> list[Finding]:
 
     if kind in ("tutorial", "how-to"):
         h2 = [title for level, title in headings if level == 2]
-        positions = [h2.index(name) if name in h2 else -1 for name in REQUIRED_SECTIONS[kind]]
-        for name, position in zip(REQUIRED_SECTIONS[kind], positions):
+        h1 = next((title for level, title in headings if level == 1), "")
+        # A page titled Troubleshooting is the troubleshooting content, so it needs no section of that name.
+        required = [name for name in REQUIRED_SECTIONS[kind] if not (name == TROUBLESHOOTING and h1 == TROUBLESHOOTING)]
+        positions = [h2.index(name) if name in h2 else -1 for name in required]
+        for name, position in zip(required, positions):
             if position < 0:
                 add(f"section:{slug(name)}", f"missing the H2 '{name}'")
         present = [p for p in positions if p >= 0]
         if present != sorted(present):
-            add("section-order", "required sections must appear in this order: " + ", ".join(REQUIRED_SECTIONS[kind]))
+            add("section-order", "required sections must appear in this order: " + ", ".join(required))
         if not NUMBERED.search(plain):
             add("steps", f"a {kind} needs numbered steps")
     if kind == "explanation" and NUMBERED.search(plain):

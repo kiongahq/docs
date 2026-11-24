@@ -76,15 +76,20 @@ interoperability API, Ceph RGW, RustFS, Wasabi or Cloudflare R2.
 
 ## Verify
 
-The test sends a SigV4-signed `HEAD` request for the bucket and records the
-result with a reason:
+1. Read the result of the test from step 3. The response holds `health.state`
+   and `health.detail`, and the console shows the same on the connection. The
+   test sends a SigV4-signed `HEAD` request for the bucket and records one of
+   these states with a reason:
 
-| State | Meaning |
-| --- | --- |
-| `healthy` | The bucket answered `200` within 3 seconds |
-| `degraded` | The bucket answered slowly (more than 3 seconds), returned `5xx`, or redirected to another region (the reason names the bucket's real region) |
-| `unavailable` | The endpoint is unreachable, TLS verification failed (add `ca_bundle`), access was denied (`403`: wrong or expired credentials, or missing `s3:ListBucket`) or the bucket does not exist (`404`) |
-| `configured` | Saved, but the `secret_ref` variable is not set on the gateway |
+    | State | Meaning |
+    | --- | --- |
+    | `healthy` | The bucket answered `200` within 3 seconds |
+    | `degraded` | The bucket answered slowly (more than 3 seconds), returned `5xx`, or redirected to another region (the reason names the bucket's real region) |
+    | `unavailable` | The endpoint is unreachable, TLS verification failed (add `ca_bundle`), access was denied (`403`: wrong or expired credentials, or missing `s3:ListBucket`) or the bucket does not exist (`404`) |
+    | `configured` | Saved, but the `secret_ref` variable is not set on the gateway |
+
+2. Confirm that the state is `healthy`. For any other state, follow the
+   matching entry in [Troubleshooting](#troubleshooting).
 
 Credentials never appear in responses, stored records or check reasons.
 
@@ -97,6 +102,11 @@ Credentials never appear in responses, stored records or check reasons.
   and prefix.
 - `allowed_projects` records which projects may use a connection. Grant users
   access to buckets through Kionga's bucket grants.
+- On Kubernetes, prefer short-lived cloud credentials (IRSA on EKS, Workload
+  Identity on GKE and AKS) for buckets. The storage proxy currently uses the
+  mounted `S3_ACCESS_KEY` and `S3_SECRET_KEY`. Give the gateway a `secret_ref`
+  variable through `components.gateway.extraEnv` with `valueFrom.secretKeyRef`,
+  never as a plain value or from a ConfigMap.
 
 ## Plan for consistency and performance
 
@@ -112,18 +122,6 @@ Credentials never appear in responses, stored records or check reasons.
 - Online feature lookups are served from Redis and never read object storage.
 - For large datasets in jobs, read with `pyarrow` or `fsspec` directly; mounted
   buckets are convenient for browsing but slow for random access.
-
-## Recover from failures
-
-| Failure | Effect | Recovery |
-| --- | --- | --- |
-| Endpoint down | Test reports `unavailable`; materialization runs fail and are recorded in lineage, and the feature view goes stale after its TTL | Online serving continues from Redis. Run materialization again when the store is back |
-| Credentials rotated | Test reports `unavailable` with `403` | Update the gateway variable, restart the gateway and test again |
-| Bucket deleted or emptied | Test reports `unavailable` with `404` | Restore from versioning or a replica; lineage records which `offline_uri` each feature view version used |
-| Bucket moved to another region | Test reports `degraded` with the real region | Update `region` |
-
-Enable bucket versioning so that you can roll back a bad materialization to the
-`offline_uri` recorded for an earlier run.
 
 ## Tenant storage on Kubernetes
 
@@ -148,18 +146,29 @@ StorageClass. Access then follows the driver's identity binding, not node
 paths. The allowlist applies to the whole operator; to give groups of tenants
 different classes, run one installation per group.
 
-## Related
+## Troubleshooting
 
-- On Kubernetes, prefer short-lived cloud credentials (IRSA on EKS, Workload
-  Identity on GKE and AKS) for buckets. The storage proxy currently uses the
-  mounted `S3_ACCESS_KEY` and `S3_SECRET_KEY`,. Give the gateway a
-  `secret_ref` variable through `components.gateway.extraEnv` with
-  `valueFrom.secretKeyRef`, never as a plain value or from a ConfigMap.
+Each entry starts with what the test or the API reports. Enable bucket
+versioning so that you can roll back a bad materialization to the
+`offline_uri` recorded for an earlier run.
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| `configured` with `Credentials are not available: set the secret_ref environment variable on the gateway to ACCESS_KEY_ID:SECRET_ACCESS_KEY` | The variable named in `secret_ref` is not set on the gateway, or is empty | Set the variable as described in [Before you begin](#before-you-begin), restart the gateway and test again |
+| `unavailable` with `Endpoint unreachable: ...` | The endpoint is down, or the gateway cannot reach it. Materialization runs fail and are recorded in lineage, and the feature view goes stale after its TTL | Restore the network path or the store. Online serving continues from Redis. Run materialization again when the store is back |
+| `unavailable` with `TLS verification failed: ... Provide the endpoint's CA in ca_bundle.` | The endpoint uses a certificate from a private CA | Set `ca_bundle` to the PEM CA certificates. Certificate verification cannot be turned off |
+| `unavailable` with `Access denied to bucket <name>: the credentials are wrong, expired, or lack s3:ListBucket` | The store answered `403`, for example after the credentials rotated | Update the gateway variable, restart the gateway and test again. Check that the key pair has `s3:ListBucket` on the bucket |
+| `unavailable` with `Bucket <name> does not exist at this endpoint` | The store answered `404`: the bucket was deleted, or `endpoint` or `bucket` is wrong | Correct the connection, or restore the bucket from versioning or a replica. Lineage records which `offline_uri` each feature view version used |
+| `degraded` with `Bucket <name> lives in region <region>, not "<region>"; update the region` | The bucket moved to another region, or `region` was set wrong | Update `region` |
+| `degraded` with `Bucket check returned ...; check region and path_style` | The store redirected or rejected the request | Check `region` and `path_style` |
+| `degraded` with `Object store returned ...` | The store answered `5xx` | Wait for the store to recover, then test again |
+| `unavailable` with `buckets containing dots need path_style over https ...` or another validation message | A field fails the rules in the table in step 2 | Correct the field with `PUT` on the connection |
+| `503` with `connection_unavailable`, and `secret_present` is `false` | The `secret_ref` variable is outside the permitted names, so the connection stops authenticating | Use a permitted variable and update the connection with `PUT`. See [Migrate a stored reference](production-operations.md#migrate-a-stored-reference) |
+| A workspace is `Failed` with reason `StorageNotAllowed` (Kubernetes) | The storage class is not on `WORKSPACE_ALLOWED_STORAGE_CLASSES`, or a volume uses a source that tenants may not mount | Add the class to the allowlist, or remove the allowlist. See [Tenant storage on Kubernetes](#tenant-storage-on-kubernetes) |
+
+## Related pages
+
 - [Feature store integrations](../guides/feature-stores.md)
 - [Deploy on Kubernetes](managed-kubernetes.md)
-
-## Existing connections
-
-A saved connection whose variable is outside this scope stops authenticating, with a 503
-`connection_unavailable`, and `secret_present` is false. You can correct it with `PUT`. See
-[Migrate a stored reference](production-operations.md#migrate-a-stored-reference).
+- [Secret references](../reference/configuration.md#secret-references)
+- [Migrate a stored reference](production-operations.md#migrate-a-stored-reference)
