@@ -47,7 +47,8 @@ The IDE has no published port. It opens only through the gateway, which signs
 you in with your console session. Never publish its internal port.
 
 **Verify:** in the console, **Settings > Developer workspaces** shows **Browser
-IDE** as `Ready · uses your Kionga session` instead of `IDE is offline`.
+IDE** as a link. When the IDE is offline, it shows a disabled **Browser IDE:
+offline** button instead.
 
 To stop the IDE without deleting any files, run `make -C deploy ide-down`.
 
@@ -55,13 +56,14 @@ To stop the IDE without deleting any files, run `make -C deploy ide-down`.
 
 1. Sign in to the console.
 2. Open the IDE in one of these ways:
-    - In the sidebar, click **IDE workspace ↗**.
-    - Open a project and click **Open in IDE ↗** to open its folder,
+    - In the sidebar, click **Browser IDE**.
+    - Open a project and click **Open IDE** to open its folder,
       `/workspace/projects/<namespace>`.
 
 The IDE opens at `/workspace?tool=ide`. The workspace toolbar switches to
-JupyterLab and back to the console. If the link says the IDE is offline, an
-operator runs `make -C deploy ide-up`, and then you click the link again.
+JupyterLab and back to the console. If the IDE is offline, a project's **Open IDE** button and the **Browser IDE**
+button under **Settings > Developer workspaces** are disabled. An operator runs
+`make -C deploy ide-up`, and then you click the button again.
 
 **Verify:** the IDE opens with `/workspace` or the project folder in the
 explorer.
@@ -170,8 +172,54 @@ your project files.
 - On Compose, all users share one IDE and one workspace volume, so the paths
   above are shared. On Kubernetes, each user's workspace has its own volume.
 
-## Next steps
+## Verify
 
-- [Scaffold a project](scaffolding.md) from the console.
-- [Connect a project to Git](distributed-workspaces.md#connect-a-project-to-git).
-- [Work in the Jupyter workbench](workbench.md).
+1. In the console, open **Settings > Developer workspaces**. **Browser IDE** is a
+   link when the IDE answers.
+2. In the IDE terminal, check the coding agents:
+
+    ```bash
+    kionga agents
+    ```
+
+    The command prints one line each for `codex` and `claude`, with `installed` or
+    `missing`, then `configured` (the API key is set) or `login or API key required`.
+    The `custom` line shows `configured` or `not configured`.
+3. Generate a starter. The command prints `Created <folder>` for the new project, and
+    prints `Starter generated without an agent` when you pass `--agent none`.
+4. List installed extensions:
+
+    ```bash
+    code-server --list-extensions --show-versions
+    ```
+
+## Troubleshooting
+
+- *The **Browser IDE** button is disabled and its hover text reads "IDE is offline. Run
+  make -C deploy ide-up from the Kionga workspace folder, then retry."* The IDE
+  container is not running. Run `make -C deploy ide-up`, then open the link again. In a production install the
+  message reads "Workspace is offline. Ask your administrator to start it."
+- *An extension install fails with `EAI_AGAIN`.* The workspace cannot resolve
+  `open-vsx.org` or `openvsx.eclipsecontent.org`. Retry when the workspace has
+  internet access.
+- *`kionga scaffold --agent codex` fails with "codex CLI is not installed."* The
+  IDE terminal has no coding agent tools unless you start the agents image
+  (`claude` gives the same error for `claude CLI is not installed`). Run
+  `make -C deploy ide-agents-up`, or run the command in the Jupyter workbench,
+  which includes both.
+- *`kionga agents` shows `login or API key required`.* The agent has no API key
+  in the environment. An operator sets `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`
+  in `deploy/.env`, or you sign in to the agent in a terminal.
+- *`kionga scaffold --agent custom` fails with "KIONGA_CUSTOM_AGENT_COMMAND is not
+  configured."* Export `KIONGA_CUSTOM_AGENT_COMMAND` before you run the command, as
+  shown in [Use another command-line agent](#use-another-command-line-agent).
+- *`kionga scaffold` fails with "target already exists and is not empty."* The
+  folder named by your project exists and holds files. Choose another name, or
+  empty the folder.
+
+## Related pages
+
+- [Scaffold a project](scaffolding.md) from the console
+- [Connect a project to Git](distributed-workspaces.md#connect-a-project-to-git)
+- [Work in the Jupyter workbench](workbench.md)
+- [Create a project from a template](project-templates.md)
