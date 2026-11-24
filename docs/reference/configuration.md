@@ -142,7 +142,7 @@ Each secret variable can instead be read from a file named by `<NAME>_FILE`
 (set only one of the two): `DATABASE_URL`, `OIDC_CLIENT_SECRET`,
 `KIONGA_INTERNAL_TOKEN`, `KIONGA_CREDENTIAL_KEY`, `S3_ACCESS_KEY`,
 `S3_SECRET_KEY`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `REDIS_URL`,
-`KAFKA_REST_TOKEN`, `KFP_TOKEN`, `MLFLOW_TOKEN`, `OPENFAAS_PASSWORD`,
+`KAFKA_REST_TOKEN`, `MLFLOW_TOKEN`, `OPENFAAS_PASSWORD`,
 `LANGFUSE_SECRET_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`,
 `LLM_UPSTREAM_API_KEY`, `KIONGA_JUPYTER_TOKEN`, `KIONGA_IDE_PASSWORD`,
 `TRACE_SINK_TOKEN`, `KIONGA_LOCAL_PASSWORD`, `TRACE_PROXY_KEYS`.
@@ -260,7 +260,7 @@ record's scope. No scope can read the variables of another.
 | Agent API connection | `KIONGA_CONNECTION_SECRET_*` | `KIONGA_AGENT_API_TOKEN` | `KIONGA_CONNECTION_SECRET_REFS` |
 | Feature store | `KIONGA_FEATURE_SECRET_*` | `FEAST_TOKEN` | `KIONGA_FEATURE_SECRET_REFS` |
 | Storage connection | `KIONGA_STORAGE_SECRET_*` | `LAKE_CREDENTIALS` | `KIONGA_STORAGE_SECRET_REFS` |
-| Platform connection | `KIONGA_PLATFORM_SECRET_*` | By type: `OPENFAAS_PASSWORD` (OpenFaaS), `MLFLOW_TOKEN` (MLflow), `KFP_TOKEN` (KFP) | `KIONGA_PLATFORM_SECRET_REFS` |
+| Platform connection | `KIONGA_PLATFORM_SECRET_*` | By type: `OPENFAAS_PASSWORD` (OpenFaaS), `MLFLOW_TOKEN` (MLflow) | `KIONGA_PLATFORM_SECRET_REFS` |
 
 The allowlists are comma-separated names. The gateway's own secrets are refused even when you
 allowlist them; the by-type names above are the only exception, and only on a connection of that
@@ -392,7 +392,7 @@ PostgreSQL, the object store and Jupyter start.
 | `KIONGA_IDE_UPSTREAM` | `http://ide:8080` in Compose | Internal address, accessed through the authenticated gateway |
 | `KIONGA_JUPYTER_UPSTREAM` | `http://jupyter:8888` in Compose | Internal Jupyter address, using base URL `/workspaces/workbench/` |
 | `KIONGA_JUPYTER_TOKEN` | `JUPYTER_TOKEN` in Compose | Upstream credential injected by the gateway, never returned to the browser |
-| `KIONGA_WORKSPACE_NAMESPACE` | `default` in Kubernetes manifests | Discover the subject's KiongaWorkspace and generated credential in this namespace |
+| `KIONGA_WORKSPACE_NAMESPACE` | `default` in Kubernetes manifests | Discover the subject's KiongaWorkspace and generated credential in this namespace. After platform v0.2.1, the console and API can start and stop developer workspaces only when it is set; otherwise the start and stop routes return `409` with `not_configured` |
 | `KIONGA_IDE_AUTH_MODE` | `password`; `none` inside Compose | Compose authenticates through the gateway and does not publish the IDE port; Kubernetes retains its generated password |
 | `KIONGA_CUSTOM_AGENT_COMMAND` | *(unset)* | Optional non-interactive coding-agent command used by the scaffolder |
 

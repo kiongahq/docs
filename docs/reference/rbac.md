@@ -79,8 +79,9 @@ buckets**, **vCPU**, **Memory GB**, **GPUs**, **GPU type**, **Maximum
 workspaces** (`max_vms`), **Maximum projects**, **Concurrent pipeline runs**
 (`max_concurrent_runs`), **Maximum functions** and **Suspend account**, and
 **Save access** stores them. The dialog also has **Local password** when local
-sign-in is on. Its **Role** list offers `user`, `viewer`, `operator` and
-`admin`; to give the `engineer` role, use the API. A person without a profile can ask for
+sign-in is on. Its **Role** list offers `user`, `viewer`, `engineer`, `operator` and
+`admin`, never `service`. In platform v0.2.1 and earlier the list omits
+`engineer`; to give that role with those versions, use the API. A person without a profile can ask for
 services from **My access**, with **Request access**. Kionga blocks duplicate pending
 requests, and records the reviewer and outcome of each approval or rejection in
 the audit log.
@@ -239,7 +240,7 @@ examples.
 ```
 
 The response also includes `local_accounts`, `connector`, `access_request` and
-`entitlements`. In the console, **My access** shows your role and sign-in mode,
+`entitlements`, and `defaults.agent_image`, the agent runtime image that the console enters in the deploy agent form (empty when the install sets none). In the console, **My access** shows your role and sign-in mode,
 the account status (`active`, `not provisioned`, or the status in
 `entitlements`), your **Assigned services**, your **Resource allocation** (the
 `entitlements` object) and your **Access requests**.

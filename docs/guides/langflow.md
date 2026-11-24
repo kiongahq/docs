@@ -11,7 +11,7 @@ Open a Langflow canvas in a project-scoped workspace, build a flow with Kionga r
 
 - You need the `langflow` service, project access, and workspace capacity. Ask an administrator for them. Operators and administrators can manage workspaces without a user grant.
 - To publish a flow as a managed agent, you also need the `agents` service, and the install must run on Kubernetes.
-- To register datasets, knowledge bases, or external agent APIs, you need the administrator role.
+- To register datasets, knowledge bases, object storage, or external agent APIs, you need the `admin` or `operator` role.
 
 ## Open a workspace
 
@@ -48,7 +48,10 @@ The components call a loopback helper in the same workspace pod. The helper hold
 
 An administrator can select **Register** in the **Project datasets** section of the **Langflow** page. The form takes a **Project**, **Name**, **Bucket**, **Object prefix**, and **Description**. The API equivalent is `POST /api/v1/admin/datasets`. Kionga lists a dataset only when the user has both project access and a grant for its bucket. Browsing appends a relative prefix, and object previews cannot read a key outside the registered prefix. The gateway uses the existing storage proxy; credentials never enter the Langflow flow.
 
-The **Registered storage** section of the **Langflow** page lists the object storage connections that an administrator registered under **Platform > Object storage connections** (**Add object storage**). The section is read-only. An administrator assigns projects in that connection's **Allowed project IDs** field, which is `allowed_projects` in the API. The Langflow components call `GET /api/v1/registered-storage` and its object routes through the gateway; the response contains source IDs, names, and buckets, never endpoints or secret references. The gateway resolves the source credential for each request, signs S3 reads, and caps text previews at 64 KiB. This also supports external S3-compatible data sources without entering credentials in a flow.
+The **Registered storage** section of the **Langflow** page lists the object storage connections that a project can use. An administrator or operator selects **Register storage** to open the **Connect object storage** dialog, the same dialog that **Add object storage** opens under **Platform > Object storage connections**, and **Save and test** saves the connection and checks it. The dialog fills in **Allowed project IDs** with the project you selected in the console. A connection is visible only to the projects listed in **Allowed project IDs**, which is `allowed_projects` in the API, and an empty list makes it visible to no project. To change a connection later, select **Edit** in its row under **Platform > Object storage connections**; the **Secret reference** field shows the stored `env:VARIABLE` reference, and credentials are never returned. The Langflow components call `GET /api/v1/registered-storage` and its object routes through the gateway; the response contains source IDs, names, and buckets, never endpoints or secret references. The gateway resolves the source credential for each request, signs S3 reads, and caps text previews at 64 KiB. This also supports external S3-compatible data sources without entering credentials in a flow. For the fields, see [Connect external object storage](../operations/external-storage.md).
+
+!!! info "Available in a later release"
+    In platform v0.2.1 and earlier, the **Registered storage** section is read-only and the storage connection dialog cannot edit a saved connection. Register and change connections under **Platform > Object storage connections**, or call `PUT /api/v1/admin/storage-connections/{id}`.
 
 ## Capture a flow
 
@@ -75,7 +78,7 @@ The managed image executes the exported JSON with LFX 1.13.x and pinned OpenAI, 
 
 ## Monitor a published flow
 
-Kionga records execution summaries and LFX component durations through its agent tracing path. Open **Agents** and read the **Recent traces** table to inspect status, duration, tokens, and **Component timing**. The console shows `Unavailable` for tokens when the LFX result does not provide usage metadata. Component timing traces contain names and durations, not flow inputs or outputs. On Kubernetes, the **Resource usage** column of the agent list shows live CPU, memory, and pod count for the runtime containers when metrics-server is available, and `Unavailable` otherwise. The console does not show GPU utilization. The gateway reports it through the agent metrics API when it has a Prometheus GPU telemetry source.
+Kionga records execution summaries and LFX component durations through its agent tracing path. Open **Agents** and read the **Recent traces** table to inspect status, duration, tokens, and **Component timing**. The console shows `Unavailable` for tokens when the LFX result does not provide usage metadata. Component timing traces contain names and durations, not flow inputs or outputs. On Kubernetes, the **Resource usage** column of the agent list shows live CPU, memory, and pod count for the runtime containers when metrics-server is available, and `Unavailable` otherwise. For an agent that requests at least one GPU, the column also shows `GPU` and a percentage when the gateway has a GPU sample, and `GPU utilization unavailable` when it has none. Agents that request no GPU show no GPU text. The gateway reports a sample through the agent metrics API when it has a Prometheus GPU telemetry source.
 
 To report GPU utilization:
 
@@ -84,7 +87,10 @@ To report GPU utilization:
 3. If your exporter uses another Prometheus metric name with the same 0–100 percentage meaning, set `KIONGA_GPU_METRIC_NAME`.
 4. Read the value with `GET /api/v1/agents/{id}/metrics`. The response has `gpu_utilization_available` and `gpu_utilization_percent`.
 
-Keep the Prometheus endpoint on a trusted internal network. When it is absent or has no samples, `gpu_utilization_available` is `false` instead of reporting zero.
+Keep the Prometheus endpoint on a trusted internal network. When it is absent or has no samples, `gpu_utilization_available` is `false` instead of reporting zero. The gateway reports a sample only when `KIONGA_GPU_METRICS_URL` is set and Prometheus returns exactly one valid sample for the agent's pods, a percentage from 0 to 100.
+
+!!! info "Available in a later release"
+    In platform v0.2.1 and earlier, the **Resource usage** column does not show GPU utilization. Read it with `GET /api/v1/agents/{id}/metrics`.
 
 ## Configure project knowledge bases
 

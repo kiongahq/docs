@@ -58,13 +58,19 @@ the caller, and every policy attached to a group the caller belongs to.
    **Review and provision** on a request under **Access requests**.
 2. Enter the **Account subject** (the identity provider's `sub` claim, or the
    local username), an optional **Email**, and choose a **Role**: `user`, `viewer`,
-   `operator` or `admin`. The `engineer` role is set through
-   `PUT /api/v1/admin/users/{subject}`.
+   `engineer`, `operator` or `admin`. The list shows a short description of each
+   role. The console never offers `service`, because it is the machine identity
+   of Kionga's own services and not a role for people.
 3. Under **Assigned services**, select only the services the person needs, and
    enter the **Assigned project IDs**.
 4. Choose a **Resource profile**, or **Custom allocation** to set each limit, and
    enter any **Granted buckets**.
 5. Click **Save access**.
+
+!!! info "Available in a later release"
+    The **Role** list in platform v0.2.1 and earlier offers only `user`,
+    `viewer`, `operator` and `admin`. To give the `engineer` role with those
+    versions, call `PUT /api/v1/admin/users/{subject}`.
 
 For the resource profiles, see
 [Provision a teammate's workspace](distributed-workspaces.md#provision-a-teammates-workspace).

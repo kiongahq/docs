@@ -13,7 +13,7 @@ interoperability API, Ceph RGW, RustFS, Wasabi or Cloudflare R2.
 
 ## Before you begin
 
-- An administrator account in Kionga.
+- An administrator or operator account in Kionga.
 - A bucket and an access key pair scoped to it: `s3:ListBucket` on the bucket,
   and `s3:GetObject` and `s3:PutObject` on the prefix Kionga uses. Never use
   root or account-wide keys.
@@ -67,7 +67,7 @@ interoperability API, Ceph RGW, RustFS, Wasabi or Cloudflare R2.
     | `path_style` | **Path-style addressing** | `true` for RustFS, Ceph and dotted bucket names; `false` for virtual-hosted Amazon S3. The console selects it by default |
     | `ca_bundle` | **Custom CA bundle** | PEM CA certificates, added to the system roots, for a private CA. Private keys are rejected |
     | `secret_ref` | **Secret reference** | `env:VARIABLE`, naming a permitted gateway variable that holds `ACCESS_KEY_ID:SECRET_ACCESS_KEY` |
-    | `allowed_projects` | **Allowed project IDs** | IDs of the projects that may use the connection, separated by commas. Each project must exist |
+    | `allowed_projects` | **Allowed project IDs** | IDs of the projects that may use the connection, separated by commas. Each project must exist. A project sees the connection only when its ID is in this list, so an empty list makes the connection visible to no project |
 
     A new connection starts as `configured`.
 
@@ -78,6 +78,23 @@ interoperability API, Ceph RGW, RustFS, Wasabi or Cloudflare R2.
     ```bash
     curl -b kionga.cookies -X POST "$GATEWAY/api/v1/admin/storage-connections/<id>/test"
     ```
+
+## Edit a connection
+
+To change a connection, for example to move it to another secret reference or
+to give another project access, select **Edit** in the connection's row under
+**Object storage connections** on **Platform**. The **Edit object storage**
+dialog shows the saved values. The **Secret reference** field shows the stored
+`env:VARIABLE` reference. It never shows the credential, because Kionga does not
+return credentials. **Save and test** replaces the
+connection with `PUT /api/v1/admin/storage-connections/{id}` and then runs the
+test, so the **Health** column shows the result of the change.
+
+!!! info "Available in a later release"
+    **Edit** and the **Register storage** action on the **Langflow** page are
+    not in platform v0.2.1 or earlier. With those versions, change a connection
+    with `PUT /api/v1/admin/storage-connections/{id}`, using the same fields as
+    the table in [Register a bucket](#register-a-bucket).
 
 ## Verify
 
@@ -168,8 +185,8 @@ versioning so that you can roll back a bad materialization to the
 | `degraded` with `Bucket <name> lives in region <region>, not "<region>"; update the region` | The bucket moved to another region, or `region` was set wrong | Update `region` |
 | `degraded` with `Bucket check returned ...; check region and path_style` | The store redirected or rejected the request | Check `region` and `path_style` |
 | `degraded` with `Object store returned ...` | The store answered `5xx` | Wait for the store to recover, then test again |
-| `unavailable` with `buckets containing dots need path_style over https ...` or another validation message | A field fails the rules in the table in step 2 | Correct the field with `PUT` on the connection |
-| `503` with `connection_unavailable`, and `secret_present` is `false` | The `secret_ref` variable is outside the permitted names, so the connection stops authenticating | Use a permitted variable and update the connection with `PUT`. See [Migrate a stored reference](production-operations.md#migrate-a-stored-reference) |
+| `unavailable` with `buckets containing dots need path_style over https ...` or another validation message | A field fails the rules in the table in step 2 | Correct the field with **Edit** on the connection, or with `PUT` |
+| `503` with `connection_unavailable`, and `secret_present` is `false` | The `secret_ref` variable is outside the permitted names, so the connection stops authenticating | Use a permitted variable and update the connection with **Edit** or `PUT`. See [Migrate a stored reference](production-operations.md#migrate-a-stored-reference) |
 | A workspace is `Failed` with reason `StorageNotAllowed` (Kubernetes) | The storage class is not on `WORKSPACE_ALLOWED_STORAGE_CLASSES`, or a volume uses a source that tenants may not mount | Add the class to the allowlist, or remove the allowlist. See [Tenant storage on Kubernetes](#tenant-storage-on-kubernetes) |
 
 ## Related pages

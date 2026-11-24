@@ -210,10 +210,21 @@ passes run parameters through unchecked, with a preflight warning.
 ## Watch a run
 
 1. Under **Run history**, select **Open run** in a run's row. The row shows the
-   run's trigger, status, progress and start time. The run dialog shows its
-   status, run ID, project, engine run ID, execution mode, progress and
-   provenance (the flow revision and hash, the overrides and the policy
-   decision), and the **Execution graph**.
+   run's **Trigger**, status, progress and start time. The run dialog shows its
+   status, run ID, project, owner, trigger, engine run ID, execution mode,
+   progress and provenance (the flow revision and hash, the overrides and the
+   policy decision), and the **Execution graph**.
+
+    - **Owner** is your email address for a run you started, and the owner's
+      subject for a run that someone else started.
+    - **Trigger** and the **Trigger** column of **Run history** use the same
+      labels: `Manual`, `Schedule`, `API`, `Event` or `Retry`.
+    - A run that has no recorded owner or trigger shows `Unknown`.
+
+    !!! info "Available in a later release"
+        In platform v0.2.1 and earlier, the run dialog shows neither an owner
+        nor a trigger, and the **Trigger** column shows the stored value, for
+        example `manual`.
 2. Select a node, or select **Inspect node** in its row, to see its timing,
    attempt, dependencies, and its logs and events under **Node logs**. You can
    filter by severity and source, search, load earlier lines, and follow the live

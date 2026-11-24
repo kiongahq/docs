@@ -42,7 +42,7 @@ The gateway, operator, integration worker, feature gateway, storage proxy,
 serving manager and trace proxy read secret files for these names:
 `DATABASE_URL`, `OIDC_CLIENT_SECRET`, `KIONGA_INTERNAL_TOKEN`,
 `KIONGA_CREDENTIAL_KEY`, `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `AWS_ACCESS_KEY_ID`,
-`AWS_SECRET_ACCESS_KEY`, `REDIS_URL`, `KAFKA_REST_TOKEN`, `KFP_TOKEN`,
+`AWS_SECRET_ACCESS_KEY`, `REDIS_URL`, `KAFKA_REST_TOKEN`,
 `MLFLOW_TOKEN`, `OPENFAAS_PASSWORD`, `LANGFUSE_SECRET_KEY`, `OPENAI_API_KEY`,
 `ANTHROPIC_API_KEY`, `LLM_UPSTREAM_API_KEY`, `KIONGA_JUPYTER_TOKEN`,
 `KIONGA_IDE_PASSWORD` and `TRACE_SINK_TOKEN`. The gateway also reads
@@ -223,6 +223,17 @@ change. Kionga does not change the record, and sends the credential nowhere.
 | Feature store | Health is `configured` with `not permitted`, and `secret_present` is false |
 | Storage connection | 503 `connection_unavailable`, and `secret_present` is false |
 
+!!! info "Available in a later release"
+    A later platform release and chart no longer treat `KFP_TOKEN` as a Kionga
+    secret name, because Kionga no longer uses Kubeflow Pipelines. After you
+    upgrade, a stored connection of type `kfp` stays readable, but a reference
+    such as `env:KFP_TOKEN` on it is refused like any other variable outside the
+    connection's scope, and the gateway logs `secret reference refused` for it at
+    startup. The chart rejects `KFP_TOKEN` in `secretReferences.names` unless
+    the name is in an allowlist, so remove it from your values file before you
+    upgrade. The gateway no longer reads `KFP_TOKEN_FILE`. Platform v0.2.1 and
+    chart v0.2.0 still accept `KFP_TOKEN`.
+
 To find affected records before anyone hits them, search the gateway's startup logs for
 `secret reference refused`. Each line gives the record's kind, ID and variable name, never its value.
 
@@ -233,7 +244,7 @@ Then fix each record:
 2. **A gateway secret**, such as `env:DATABASE_URL`: you cannot allowlist it. The endpoint that record
    names has received that secret, so consider rotating it. Issue a dedicated credential if you can,
    set it as `KIONGA_<SCOPE>_SECRET_<NAME>`, and register the record again. You can update a storage
-   connection with `PUT`. The other record types have no update route, so create a new record and
+   connection with **Edit** on **Platform** or with `PUT`. The other record types have no update route, so create a new record and
    move its users to it.
 
 !!! warning "A reference is not bound to its endpoint"

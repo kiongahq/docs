@@ -108,10 +108,12 @@ addresses:
 - The credential reference is `none` or `env:VARIABLE`, naming a gateway variable
   that starts with `KIONGA_PLATFORM_SECRET_` or is listed in
   `KIONGA_PLATFORM_SECRET_REFS`. An OpenFaaS connection can also use
-  `OPENFAAS_PASSWORD`, an MLflow connection `MLFLOW_TOKEN`, and a KFP connection
-  `KFP_TOKEN`. A KFP connection is a health-checked service only: on Kubernetes,
-  Kionga runs container pipelines as Kubernetes Jobs, not on Kubeflow. Other names return a 422, and a saved connection that uses one fails
-  its test with `not permitted`; see
+  `OPENFAAS_PASSWORD`, and an MLflow connection `MLFLOW_TOKEN`. A KFP connection has no
+  credential of its own: it is a health-checked service only, and `KFP_TOKEN` is
+  not a Kionga secret name. On Kubernetes, Kionga runs container pipelines as
+  Kubernetes Jobs, not on Kubeflow. Platform v0.2.1 and earlier still accept
+  `KFP_TOKEN` on a KFP connection. Other names return a 422, and a saved
+  connection that uses one fails its test with `not permitted`; see
   [Migrate a stored reference](../operations/production-operations.md#migrate-a-stored-reference).
   Kionga sends the value as a bearer token. Never paste a secret into the form;
   Kionga stores only the reference.
