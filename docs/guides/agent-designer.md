@@ -21,7 +21,7 @@ call.
 - You need the `agents` service and access to the project. Viewers can open
   designs but cannot change or run them.
 - The playground and evaluations need the designer runner. The local stack
-  (`make local-up`) starts it as `agent-designer-runner`. If it is missing, **Run**
+  (`make local-up`) starts it as `agent-designer-runner`. If it is missing, **Run agent**
   reports *The agent designer runner is not configured*.
 - Without provider keys, the stack uses the deterministic `mock` chat model. To
   use a real model, set `KIONGA_LLM_BACKEND` and the provider key (see
@@ -30,15 +30,17 @@ call.
 
 ## 1. Build a prompt → model → output agent
 
-1. Open **Agents → Agent designer**.
-2. Choose **New design**, then a project.
+1. Open **Agent designer** under **Models and data**.
+2. In the **Design** list choose **New design**, then choose the **Project** and
+   enter a **Name**.
 3. Add a **Prompt** node and set its template to `Answer briefly: {input}`.
 4. Add a **Model** node. **Platform chat model** (`llm`) uses the runtime's
    configured model. A Kionga model ID calls that deployed model instead.
 5. Connect **Input → Prompt → Model → Output**. Select a node's output port (on
    its right edge), then the next node's input port.
-6. Select **Validate**. The **Validation** tab lists any errors, and badges
-   appear on the affected nodes. Select **Show node** to jump to one.
+6. On the **Validation** tab, select **Validate graph**. The tab lists any
+   errors, and badges appear on the affected nodes. Select **Show node** to jump
+   to one.
 7. Select **Save revision**.
 
 ![The customer-support template on the canvas: a condition routes refund requests to a dedicated prompt (T) and everything else to a support prompt (F); the model has an error port (!) for fallbacks.](../assets/agent-designer/canvas.png)
@@ -56,7 +58,7 @@ scanned again for placeholders.
 
 ## 2. Build a RAG assistant with a knowledge base and RustFS
 
-1. Under **Start from**, choose **RAG assistant**.
+1. In **Template (optional)**, choose **RAG assistant**.
 2. On the **Search knowledge** node, choose a knowledge base. The list shows only
    the bases in your project. Queries are embedded with the SDK `HashingEmbedder`
    at the base's dimensions, so add chunks with the same `HashingEmbedder`.
@@ -79,7 +81,7 @@ scanned again for placeholders.
 3. **Kionga tool** nodes invoke a registered tool's serverless function in the
    same way.
 4. Tool and API calls can change external systems. In the playground, select
-   **Allow tools and API calls that change external systems** before you run.
+   **Allow side effects** before you run.
    Without it, the node fails with `side_effects_not_approved` and Kionga makes
    no call.
 
@@ -99,10 +101,10 @@ the runner.
 | `side_effects_not_approved` | A tool or API node ran without approval. | Allow side effects for the run. |
 | `timeout` | A node exceeded its timeout, or the run exceeded `timeout_seconds`. | Raise the run limit, or simplify the node. |
 | `budget_exceeded` | The run went over `max_steps` or `max_tokens`, or the runner is at capacity. | Raise the budget, or wait and run again. |
-| `invalid_graph` | A setting is missing or invalid at run time. | Select **Validate**. |
+| `invalid_graph` | A setting is missing or invalid at run time. | On the **Validation** tab, select **Validate graph**. |
 
-To isolate a node, select it and choose **Test up to this node**. Kionga runs
-the node and everything upstream of it, then stops. **Cancel** stops a running
+To isolate a node, choose it in **Stop after node** before you run. Kionga runs
+the node and everything upstream of it, then stops. **Cancel run** stops a running
 graph, and its run credential stops working at once. Previous runs are listed
 under the design (the newest 50 are kept).
 
@@ -152,7 +154,8 @@ approval. Flows can nest 3 levels deep, using at most 10 versions per run.
 
 A **Human approval** node pauses the run and shows its request message (rendered
 with `{input}`, `{context}` or `{node-id}`). In the playground the request
-appears in the chat with **Approve** and **Reject**. Anyone in the project with
+appears as **Approval required**, with a **Decision** (`approve` or `reject`), a
+**Comment** and **Submit decision**. Anyone in the project with
 agents write access can decide it from there, or through
 `/api/v1/agent-approvals`, including for deployed agents. The value continues
 through **✓** (approved) or **✗** (rejected). A request nobody decides within
@@ -168,12 +171,12 @@ output, so intermediate drafts never reach users.
 
 ## 5. Use templates, groups and revisions
 
-- **Start from** opens a template as a new, unsaved design. **Import** loads a
-  graph that was exported with **Export JSON**.
+- **Template (optional)** opens a template as a new, unsaved design. **Import
+  graph** loads a graph that was exported with **Export graph**.
 - To organize a large canvas, give nodes a **Group** label. Groups are visual
-  only. Use **Fit**, the zoom buttons and the **Overview** map to navigate, and
-  **Search components** to find a node type. **Snap to grid** aligns moved nodes.
-- Shift-click to select several nodes, then drag or use the arrow keys to move
+  only. Use **Fit graph** and the zoom buttons to navigate, and
+  **Find component** to find a node type. **Snap to grid** aligns moved nodes.
+- Select several nodes, then drag or use the arrow keys to move
   them together. Ctrl+C and Ctrl+V copy them with the connections between them,
   and Delete removes them. **Undo** and **Redo** (Ctrl+Z / Ctrl+Shift+Z) cover
   graph edits.
@@ -186,13 +189,13 @@ output, so intermediate drafts never reach users.
 
 ## 6. Run evaluations, compare versions and enforce gates
 
-1. In the playground, choose **Save as test case** after a good run. You can also
-   add cases in **Test cases**. A case lists text the reply must contain or must
-   not contain, and optionally an exact reply, a regular expression or a maximum
-   latency. Matching ignores case. Save the cases.
-2. In **Evaluations**, choose the saved revision or a published version, set the
-   quality gate (the percentage of cases that must pass), and select **Run
-   evaluation**. Cases run one at a time in the runner.
+1. In the playground, choose **Save last run as test case** after a good run. You can also
+   select **Add test case** on the **Tests** tab. A case lists text the reply
+   must contain (**Contains**) or **Must not contain**, and optionally an
+   **Exact output**, an **Output pattern** or a **Maximum latency (ms)**. Matching ignores case. Save the cases.
+2. On the **Evaluations** tab, choose the saved revision or a published version
+   in **Evaluate**, set the **Quality gate (%)** (the percentage of cases that
+   must pass), and select **Run evaluation**. Cases run one at a time in the runner.
 3. The table shows the pass rate, whether the gate passed, P95 latency, cost and
    failure reasons. Select **View** to see each case's reply and the assertion it
    failed. Select two evaluations, then **Compare selected**, to see which cases
@@ -202,14 +205,14 @@ output, so intermediate drafts never reach users.
 
 ### Judged metrics, tool accuracy and slices
 
-- **Judge criteria** asks the runner's model to score the reply from 0 to 1 for
+- **Judge criteria (JSON)** asks the runner's model to score the reply from 0 to 1 for
   groundedness (against the text the run retrieved), task completion (optionally
-  against a reference answer), relevance and safety. A score below **Min score**
+  against a reference answer), relevance and safety. A score below `min_score`
   (default 0.7) fails the case. If the judge cannot score, for example under the
   `mock` model used when no provider key is set, the case fails with `judge_unavailable` instead of
   passing. Each result records the judge model and rubric version, and its
   reasons appear when you hover over a score.
-- **Must call** lists tool or API node IDs that must complete; the evaluation
+- **Required node calls** lists tool or API node IDs that must complete; the evaluation
   reports tool accuracy.
 - **Tags** group cases. The case detail shows a heat table of pass rate and mean
   judge scores per tag.
@@ -226,24 +229,25 @@ version cites.
 
 ## 7. Publish, deploy, canary, monitor and roll back
 
-1. In **Versions**, select **Publish**. A version is an immutable snapshot that
+1. On the **Versions** tab, add optional **Version notes** and select **Publish
+   version**. A version is an immutable snapshot that
    records the saved graph, a behavior hash, the component registry version,
    the source revision and you as the author.
 2. To gate the release, choose a passing evaluation of this exact revision under
-   **Quality gate**. Kionga refuses the evaluation if it did not pass or if it
+   **Passing evaluation**. Kionga refuses the evaluation if it did not pass or if it
    tested different behavior.
 3. Moving nodes or renaming them does not change behavior. Publishing again
    without other changes returns the existing version.
-4. **Run** on a version executes it independently of the draft.
+4. **Run version** executes it independently of the draft.
 
     ![Version 1, published from revision 1 with a passing evaluation, showing its behavior hash, Run and Deploy.](../assets/agent-designer/versions.png)
 
 5. **Deploy** creates a managed agent on the Kubernetes agent runtime. Kionga
    mounts the version read-only, and the runtime refuses to start if the
    behavior hash does not match. To require a passing evaluation at deploy time,
-   select **Only deploy versions published with a passing evaluation**. In the
+   select **Require a passing evaluation to deploy**. In the
    local Compose profile, Deploy reports that a managed runtime is required; use
-   **Run** on the version instead.
+   **Run version** instead.
 6. Watch the deployment in the **Operations** tab. Pick a deployment and a window
    (1 hour to 7 days) to see status, requests, success rate, P95, tokens and
    cost. The tab charts requests, errors, latency (P50/P95/P99) and cost, and
@@ -325,10 +329,9 @@ components, API routes, limits and security.
   with it.
 - *Deploy fails with `managed_runtime_unavailable`: "Deploying native agents requires
   a Kubernetes managed agent runtime."* The deployment has no managed agent runtime,
-  as in the local Compose profile. Select **Run** on the version instead, or deploy
+  as in the local Compose profile. Select **Run version** instead, or deploy
   on Kubernetes. If the message is `quality_gate_failed` with "This version has no
-  passing evaluation", you selected **Only deploy versions published with a passing
-  evaluation**: publish the version with a passing evaluation.
+  passing evaluation", you selected **Require a passing evaluation to deploy**: publish the version with a passing evaluation.
 - *An evaluated case fails with `judge_unavailable`.* The runner could not score the
   case, for example because it uses the `mock` model. Set a real model as described
   in [Build agents](agents.md#using-a-real-llm) and run the evaluation again.

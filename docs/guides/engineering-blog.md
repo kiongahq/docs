@@ -47,8 +47,8 @@ publish without an editorial role.
 
 ## Write a post
 
-1. Open `/studio`, or in the console open **Engineering blog** and click
-   **Open editorial workspace**.
+1. Open `/studio`, or in the console open **Publishing** and click
+   **Writing studio**.
 2. Click **New post**. Type a title (the slug follows it until you edit the slug),
    a one-line summary, and the body.
     - Press **Tab** or **+** to add headings, lists (bulleted, numbered,
@@ -62,7 +62,7 @@ publish without an editorial role.
 5. Click **Preview** to see the post as readers will, at desktop width or phone
    width.
 6. Click **Submit for review**. The post becomes read-only for you until an editor
-   publishes it or requests changes. Click **Withdraw** to take it back.
+   publishes it or requests changes. Click **Withdraw from review** to take it back.
 
 Changes save automatically, and Ctrl+S (⌘+S on macOS) saves at once. The status
 next to the post badge shows whether the post is saving, saved, or kept locally

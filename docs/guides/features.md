@@ -35,9 +35,10 @@ a feature store you already run, such as Feast, see
 
 === "Console"
 
-    Open **Features**. Each feature view card shows its schema, TTL, online
-    entity count, version, store location, freshness and recent failures. Use
-    **Search feature views** to filter by name or tag.
+    Open **Feature stores**. The **Feature views** table shows each view's
+    entity, version, store, freshness, online entities and failures. Use
+    **Search feature views** to filter by name or tag, and select **Schema and
+    lineage** on a row to read its versions and lineage.
 
 === "API"
 
@@ -124,8 +125,8 @@ Applying a definition that changed (entity, fields, tags, source or TTL) creates
 a new immutable version, `<name>@<n>`. Applying the same definition again
 creates nothing.
 
-**Verify:** the view's card shows a new materialization with its entity count,
-and the history lists the run:
+**Verify:** the view's **Online entities** count in the **Feature views** table
+reflects the run, and the history lists it:
 
 ```bash
 curl -s -H "Authorization: Bearer $KIONGA_TOKEN" \
@@ -197,9 +198,8 @@ when it serves from Feast) is unreachable, and Prometheus metrics at `/metrics`:
 | `kionga_feature_gateway_health_checks_total` | `mode`, `outcome` |
 
 An administrator can check the built-in store from the console: open
-**Platform**, find `kionga-internal` under **Feature stores and object
-storage**, and click **Test**. The result appears as a health message, such as
-`Healthy: ...`.
+**Platform**, find the built-in store under **Feature store connections**, and
+click **Test**. The result appears in the **Health** column.
 
 ## Verify
 

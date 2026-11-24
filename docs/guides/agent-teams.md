@@ -31,18 +31,19 @@ For exact fields, tools and events, see the
 An agent definition is a reusable role. A team references it, and a coordinator
 starts it by name.
 
-1. Open **Agents**, then the agent definitions list, and create an agent.
+1. Open **Agent definitions** under **Models and data** and click **New agent**.
 2. Set **Name**, for example `bug-fixer`. Use lowercase letters, digits and hyphens.
    The name is unique in the project.
 3. Set **When to use**. The coordinator reads this to choose an agent, so describe
    the work the agent suits.
 4. Set **Instructions**, the agent's system prompt.
 5. Set **Model**. `llm` uses the runtime's configured model.
-6. Pick **Tools** from your project's resources. See [Tools](#choose-tools).
+6. Pick **Tools** from your project's resources: registered tools, API
+   connections, knowledge bases, datasets and git repositories. See [Tools](#choose-tools).
 7. Set **Workspace** to **Sandbox** if the agent runs code or uses git, and grant it
-   **Sandbox** or a **Git repository** under **Tools**. The workspace alone exposes no
+   **Code sandbox** or a git repository under **Tools**. The workspace alone exposes no
    sandbox tools. Otherwise leave it at **None**.
-8. Adjust the limits on turns, tokens and time if needed, then save. The default token
+8. Adjust the **Limits for each worker** on turns, tokens and time if needed, then save. The default token
    budget is 1,000,000 per worker and 5,000,000 per team. Budgets count what the provider
    reports, including context re-sent on every turn, so they run out faster than the length
    of a conversation suggests.
@@ -67,7 +68,7 @@ An agent can use only what its definition grants. A git or API connection creden
 
 ## 2. Create the team
 
-1. Open the teams list and create a team. The `code-change` template (coordinator,
+1. Open **Agent teams** and click **New team**, or **Use template**. The `code-change` template (coordinator,
    bug fixer and reviewer) and the `research` template (coordinator, researcher and
    writer) give you a starting point.
 2. Set **Name** and **Description**.
@@ -76,12 +77,12 @@ An agent can use only what its definition grants. A git or API connection creden
 4. Set **Coordinator model**.
 5. Add 1 to 16 members.
 6. Set **Shared brief**, the rules appended to every agent's system prompt.
-7. Set the team limits: total workers, concurrent workers, tokens and time. Save.
+7. Set the **Limits for the whole run**: total workers, concurrent workers, tokens and time. Save.
 
 ## 3. Start a run
 
-1. On the team, select **Start** and enter the task.
-2. Decide whether to allow side effects. If you leave them off, any call to a tool
+1. On the team, select **Start run** and enter the **Task**.
+2. Decide whether to select **Allow side effects**. If you leave them off, any call to a tool
    with an external effect fails with `side_effects_not_approved` and nothing runs.
    See [Approve side effects](#5-approve-side-effects).
 3. Start the run.
@@ -182,7 +183,7 @@ Runs are durable. Kionga handles most interruptions without you:
 | A worker failed with `context_exhausted` | Nothing until you resume. Each resume makes one more attempt. |
 | A tool call was interrupted | A read-only tool runs again. A tool with side effects is never repeated, and the model receives `outcome_unknown`. |
 
-When a worker has failed and you have fixed the cause, select **Resume** in the run
+When a worker has failed and you have fixed the cause, select **Resume failed workers** in the run
 view or call `POST /api/v1/team-runs/{id}/resume`. Failed workers go back in the
 queue with their transcripts.
 

@@ -63,7 +63,7 @@ an agent that references an unregistered tool.
            "tags": ["support"]}'
     ```
 
-The console lists registered tools under **Catalog > Tools**, but you register
+The console lists registered tools under **Catalog**, on the **tool** tab, but you register
 them through the API or the SDK.
 
 **Verify:** `kionga-cli tool list` includes the tool.
@@ -72,21 +72,20 @@ them through the API or the SDK.
 
 === "Console"
 
-    1. Open **Agents** and click **＋ Deploy agent**.
-    2. Optional: under **Load a generated contract**, paste the
-       the generated `agent.json` contract (in the `platform` folder) from a `production-agent` project and click
-       **Load JSON**.
-    3. Under **Identity**, choose the **Project** and enter the **Agent name** and
-       **Version**. Disabled or unassigned projects are not listed.
-    4. Under **Runtime and capacity**, enter the **OCI image**, preferably pinned
-       by digest, and the **Graph module** (`package.module:attribute`). Choose
-       the **LLM backend** and set the replicas, CPU and memory per replica, and
-       any GPUs.
-    5. Under **Tools**, select registered tools.
-    6. Click **Deploy agent**.
-
-    **Example entrypoint** fills in the graph module for LangGraph, Agno, NOOA or
-    a custom adapter. It does not install or start a runtime.
+    1. Open **Agents** and click **Deploy agent**.
+    2. Choose the **Framework**: LangGraph, Agno, NOOA or Custom adapter. The choice
+       fills in the **Graph factory**. It does not install or start a runtime.
+    3. Optional: expand **Import agent contract**, paste the generated `agent.json`
+       contract (in the `platform` folder) from a `production-agent` project and
+       click **Load contract**.
+    4. Choose the **Project** and enter the **Name** and **Version**. Only
+       projects assigned to you are listed.
+    5. Enter the **Image**, preferably pinned by digest, and the **Graph factory**
+       (`package.module:attribute`). Choose the **Model backend**, and set the
+       **Minimum replicas**, **Maximum replicas**, **Scale on** trigger, **CPU per
+       replica**, **Memory per replica** and **GPUs per replica**.
+    6. Under **Registered tools**, select the tools the agent may use.
+    7. Click **Deploy agent**.
 
 === "API"
 
@@ -140,14 +139,13 @@ but not the field rules.
 The agent becomes `ready` only when its runtime answers its health check.
 Until then it is `pending`, and **Chat** stays disabled.
 
-**Verify:** the agent card under **Agents** shows `ready`, and the summary counts
-it as a ready runtime.
+**Verify:** the agent's row under **Agents** shows `ready` in the **Status** column.
 
 ## Chat with an agent
 
 === "Console"
 
-    On a ready agent's card, click **Chat**, type a message and click **Send**.
+    On a ready agent's row, click **Chat**, type a **Message** and click **Send**.
     Each turn shows the reply, the token count and the latency.
 
 === "SDK"
@@ -172,7 +170,7 @@ the session's checkpoint, so conversation state carries across turns in a
 session, runs the graph and its tools, calls the LLM, and reports the session's
 turns, tokens and cost.
 
-**Verify:** the reply appears, and the session shows under **Live sessions**.
+**Verify:** the reply appears, and the session shows under **Sessions**.
 
 On Compose, all agents share one runtime that serves the demo support agent,
 `agents.customer_support.graph:build`, with the tools `feature_store_lookup`
@@ -254,9 +252,11 @@ See [Trace proxy](../reference/configuration.md#trace-proxy) for every setting.
 
 === "Console"
 
-    Open **Agents**. **Live sessions** lists each session with its agent, current
-    node, status, turns, tokens and cost. The **Prompt Library** panel lists your
-    Langfuse prompts. For full traces, open the Langfuse UI (on Compose,
+    Open **Agents**. **Sessions** lists each session with its agent, current
+    node, status, turns, tokens and cost, and **Recent traces** lists traces. The
+    **Prompt catalog** panel lists your Langfuse prompts. **Operations** on an
+    agent's row opens its requests, latency, tokens and cost for a window of 1, 6, 24, 72 or
+    168 hours. For full traces, open the Langfuse UI (on Compose,
     `http://localhost:3000`).
 
 === "API"
@@ -273,8 +273,8 @@ Cost uses the per-1,000-token rates in `KIONGA_COST_PER_1K_INPUT` and
 
 ## Shift canary traffic {#shift-canary-traffic}
 
-1. On the agent card, click **Traffic**.
-2. Set the **Canary weight**, the percentage of requests routed to the canary
+1. On the agent's row, click **Traffic**.
+2. Set the **Canary weight (%)**, the percentage of requests routed to the canary
    version, and click **Update traffic**.
 
 Or call the API:
@@ -289,7 +289,7 @@ curl -s -X PUT "$KIONGA_URL/api/v1/agents/<agent-id>/traffic" \
 On Kubernetes, the operator turns the weight into a stable and canary traffic
 plan.
 
-**Verify:** the agent card shows the new weight, for example `10% canary`.
+**Verify:** the **Canary** column shows the new weight, for example `10%`.
 
 ## Build your own agent
 
@@ -446,11 +446,11 @@ Before you shift traffic to a new agent version:
     The response has `sessions`, `active`, `input_tokens`, `output_tokens` and
     `cost_usd`. `sessions` is at least 1 after your turn.
 4. After a traffic change, the agent's `canary_weight` in the list response matches
-   the weight you set, and its card shows it, for example `10% canary`.
+   the weight you set, and the **Canary** column shows it, for example `10%`.
 
 ## Troubleshooting
 
-- *Chat is disabled, or a turn returns `503` with `agent_not_ready` and "agent
+- *The **Chat** button is disabled, or a turn returns `503` with `agent_not_ready` and "agent
   runtime is not ready."* The runtime did not pass its health check within 3
   seconds, so Kionga did not send the turn. The agent stays `pending` until it
   does. Check that the image can be pulled, that `graph_module` names an attribute

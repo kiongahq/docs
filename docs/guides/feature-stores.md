@@ -34,17 +34,17 @@ can drive in that store:
 
 === "Console"
 
-    1. Open **Platform**. Under **Feature stores and object storage**, click
-       **＋ Feature store**.
-    2. Choose the **Provider** and enter a **Connection name** (2 to 63
+    1. Open **Platform**. Under **Feature store connections**, click
+       **Add feature store**.
+    2. Choose the **Provider** and enter a **Name** (2 to 63
        lowercase letters, digits and hyphens).
-    3. Enter the **Feature server URL**, for example
+    3. Enter the **Provider URL**, for example
        `http://feast-feature-server:6566`.
     4. Optional: enter **Feature services** as a comma-separated list. Feast's HTTP
        server cannot list them itself.
-    5. Optional: enter a **Credential reference** such as `env:FEAST_TOKEN` or
+    5. Optional: enter a **Secret reference** such as `env:FEAST_TOKEN` or
        `env:KIONGA_FEATURE_SECRET_<NAME>`.
-    6. Enter the **Allowed projects** as comma-separated project IDs. Leave it
+    6. Enter the **Allowed project IDs** as a comma-separated list. Leave it
        empty to share the store with every project.
     7. Click **Save and test**.
 
@@ -78,8 +78,8 @@ Kionga validates the connection before saving it:
   report only whether the secret is present.
 - Every project in `allowed_projects` must exist.
 
-**Verify:** the health message reads `Healthy: Feast feature server is serving
-at ...`. Other results mean:
+**Verify:** the **Health** column reads healthy, with the detail `Feast feature
+server is serving at ...`. Other results mean:
 
 | Health | Meaning |
 | --- | --- |
@@ -110,8 +110,8 @@ there you remove the store and connect it again.
 Project members see a store only when it is shared with one of their projects
 (or with every project), and they see only their own project IDs on it.
 
-**Verify:** a project member sees the store in **Features > Feature stores**,
-or in the response of:
+**Verify:** a project member sees the store under **Available stores** on the
+**Feature stores** page, or in the response of:
 
 ```bash
 curl -s -H "Authorization: Bearer $KIONGA_TOKEN" \
@@ -142,7 +142,7 @@ curl -s -X POST "$KIONGA_FEATURE_GATEWAY_URL/get-online-features" \
 
 ## Remove a store
 
-Click **Remove** on the store under **Feature stores and object storage**, or
+Click **Remove** on the store under **Feature store connections**, or
 call `DELETE /api/v1/admin/feature-stores/<store-id>`. The built-in store, with
 the ID `internal`, cannot be edited or removed; its addresses come from
 `KIONGA_FEATURE_GATEWAY_URL` and `KIONGA_FEATURE_OFFLINE_URI` on the gateway.
@@ -160,7 +160,7 @@ the ID `internal`, cannot be edited or removed; its addresses come from
     ```
 
     The shared store is in the response. The console shows the same list under
-    **Features > Feature stores**.
+    **Available stores** on the **Feature stores** page.
 3. If you set `FEAST_URL` on the feature gateway, send a lookup and compare the values
    with what Feast serves:
 
@@ -187,7 +187,7 @@ table under [Connect a Feast feature server](#connect-a-feast-feature-server).
   [Secret references](../reference/configuration.md#secret-references).
 - *Health is `unavailable` with a message that starts "Feast feature server is unreachable:" and gives the
   reason.* The gateway
-  cannot reach the **Feature server URL**. Check the address, the network path and
+  cannot reach the **Provider URL**. Check the address, the network path and
   that the server is running.
 - *Health is `unavailable` with "Feast rejected the credential (`<HTTP status>`); check the secret
   reference."* Feast answered `401`

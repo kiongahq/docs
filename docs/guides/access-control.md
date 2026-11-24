@@ -54,28 +54,30 @@ the caller, and every policy attached to a group the caller belongs to.
 
 ## Provision a user
 
-1. Open **Users & access**. On the **Users** tab, click **＋ Provision user**, or
-   approve a request from **Access requests**.
-2. Under **Identity**, enter the **Identity subject** (the identity provider's
-   `sub` claim, or the local username) and choose a **Role**: **Normal user**,
-   **Engineer**, **Viewer (read-only)** or **Administrator**. The `operator` role
-   is set through `PUT /api/v1/admin/users/{subject}`.
-3. Under **Services and projects**, select only the services the person needs and
+1. Open **Access**. On the **Users** tab, click **Provision user**, or choose
+   **Review and provision** on a request under **Access requests**.
+2. Enter the **Account subject** (the identity provider's `sub` claim, or the
+   local username), an optional **Email**, and choose a **Role**: `user`, `viewer`,
+   `operator` or `admin`. The `engineer` role is set through
+   `PUT /api/v1/admin/users/{subject}`.
+3. Under **Assigned services**, select only the services the person needs, and
    enter the **Assigned project IDs**.
-4. Under **Resource allocation**, choose a resource profile and storage buckets.
+4. Choose a **Resource profile**, or **Custom allocation** to set each limit, and
+   enter any **Granted buckets**.
 5. Click **Save access**.
 
 For the resource profiles, see
 [Provision a teammate's workspace](distributed-workspaces.md#provision-a-teammates-workspace).
 
-**Verify:** the user appears under **Provisioned identities** with the role,
-services and compute you chose.
+**Verify:** the user appears in the **Users and resource grants** table with the
+role, services and capacity you chose.
 
 ## Create a group
 
-1. On the **Groups** tab, click **＋ New group**.
-2. Enter a **Name**, an **ID**, a **Description** and the **Members** (subjects).
-3. Click **Save group**.
+1. On the **Groups** tab, click **New group**.
+2. Enter a **Name**, a **Group ID**, a **Description** and the **Members**
+   (subjects, separated by commas or new lines).
+3. Click **Save**.
 
 Members receive every policy attached to the group on their next request.
 
@@ -83,10 +85,11 @@ Members receive every policy attached to the group on their next request.
 
 ## Write a policy
 
-1. On the **Policies** tab, click **＋ New policy**.
-2. Enter a **Name** and **ID**, then click **＋ Add statement** for each
-   statement: an effect (`allow` or `deny`), actions, resources and optional
-   conditions. Or switch to **JSON** and paste a policy (see
+1. On the **Policies** tab, click **New policy**.
+2. Enter a **Name** and **Policy ID**, then click **Add statement** for each
+   statement: an **Effect** (**Allow** or **Deny**), **Actions**, **Resources**
+   and optional **Conditions**. Or switch from **Form** to **JSON** and paste a
+   policy (see
    [Examples](#examples)).
 3. Click **Save policy**. Validation errors point at the exact field, such as
    `statements[1].actions[0]`.
@@ -98,11 +101,11 @@ baselines are listed here but cannot be edited or attached.
 
 ## Attach a policy
 
-1. On the **Attachments** tab, under **Attach a policy**, choose the **Policy**,
-   the **Principal type** (**User** or **Group**) and the **Principal**.
+1. On the **Attachments** tab, under **Policy attachments**, choose the **Policy**,
+   the **Principal type** (`user` or `group`) and enter the **Subject or group ID**.
 2. Click **Attach policy**.
 
-To remove a grant, detach the policy from the **Attachments** list. Detach a policy
+To remove a grant, click **Detach** on the policy in the **Attachments** list. Detach a policy
 before you delete it.
 
 **Verify:** the attachment appears in the **Attachments** list.
@@ -115,9 +118,7 @@ before you delete it.
 2. Click **Explain access**.
 
 The result shows **Allowed** or **Denied** under **Decision**, the statement that
-decided, every matched statement, and the principal's effective policies. When a request is denied by
-policy anywhere in the console, the error offers **Why?**, which shows the same
-trace.
+decided, every matched statement, and the principal's effective policies.
 
 From the API, `GET /api/v1/iam/explain?principal=&action=&resource=` returns the
 decision; anyone may explain themselves.

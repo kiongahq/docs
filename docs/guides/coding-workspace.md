@@ -47,7 +47,8 @@ The IDE has no published port. It opens only through the gateway, which signs
 you in with your console session. Never publish its internal port.
 
 **Verify:** in the console, **Settings > Developer workspaces** shows **Browser
-IDE** as `Ready · uses your Kionga session` instead of `IDE is offline`.
+IDE** as a link. When the IDE is offline, it shows a disabled **Browser IDE:
+offline** button instead.
 
 To stop the IDE without deleting any files, run `make -C deploy ide-down`.
 
@@ -55,13 +56,14 @@ To stop the IDE without deleting any files, run `make -C deploy ide-down`.
 
 1. Sign in to the console.
 2. Open the IDE in one of these ways:
-    - In the sidebar, click **IDE workspace ↗**.
-    - Open a project and click **Open in IDE ↗** to open its folder,
+    - In the sidebar, click **Browser IDE**.
+    - Open a project and click **Open IDE** to open its folder,
       `/workspace/projects/<namespace>`.
 
 The IDE opens at `/workspace?tool=ide`. The workspace toolbar switches to
-JupyterLab and back to the console. If the link says the IDE is offline, an
-operator runs `make -C deploy ide-up`, and then you click the link again.
+JupyterLab and back to the console. If the IDE is offline, a project's **Open IDE** button and the **Browser IDE**
+button under **Settings > Developer workspaces** are disabled. An operator runs
+`make -C deploy ide-up`, and then you click the button again.
 
 **Verify:** the IDE opens with `/workspace` or the project folder in the
 explorer.
@@ -172,8 +174,8 @@ your project files.
 
 ## Verify
 
-1. In the console, open **Settings > Developer workspaces**. **Browser IDE** shows
-   `Ready · uses your Kionga session` when the IDE answers.
+1. In the console, open **Settings > Developer workspaces**. **Browser IDE** is a
+   link when the IDE answers.
 2. In the IDE terminal, check the coding agents:
 
     ```bash
@@ -193,9 +195,9 @@ your project files.
 
 ## Troubleshooting
 
-- *The IDE link says "IDE is offline. Run make -C deploy ide-up from the Kionga
-  workspace folder, then retry."* The IDE container is not running. Run
-  `make -C deploy ide-up`, then open the link again. In a production install the
+- *The **Browser IDE** button is disabled and its hover text reads "IDE is offline. Run
+  make -C deploy ide-up from the Kionga workspace folder, then retry."* The IDE
+  container is not running. Run `make -C deploy ide-up`, then open the link again. In a production install the
   message reads "Workspace is offline. Ask your administrator to start it."
 - *An extension install fails with `EAI_AGAIN`.* The workspace cannot resolve
   `open-vsx.org` or `openvsx.eclipsecontent.org`. Retry when the workspace has
