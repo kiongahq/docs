@@ -34,14 +34,14 @@ Kionga-native and need no OpenFaaS; see
 An administrator gives each person a role, the services they may use, the
 projects they may see, and a resource profile that bounds their compute.
 
-1. Open **Users & access** and click **＋ Provision user**.
-2. Under **Identity**, enter the **Identity subject**. With single sign-on, it
+1. Open **Access** and click **Provision user**.
+2. Enter the **Account subject**. With single sign-on, it
    must match the identity provider's `sub` claim exactly; with local sign-in, it
    is the username. Choose a **Role**.
-3. Under **Services and projects**, select only the services the person needs
+3. Under **Assigned services**, select only the services the person needs
    (for example `projects`, `pipelines`, `workbench`, `ide`) and enter any
    **Assigned project IDs**. People always see the projects they own.
-4. Under **Resource allocation**, choose a **Resource profile**:
+4. Choose a **Resource profile**:
 
     | Profile | CPU cores | Memory | GPUs | Storage | Projects | Concurrent runs | Functions |
     | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -50,7 +50,7 @@ projects they may see, and a resource profile that bounds their compute.
     | Power | 8 | 16 GB | 0 | 250 GB | 10 | 6 | 25 |
     | GPU | 8 | 32 GB | 1 | 500 GB | 10 | 4 | 15 |
 
-    Choose **Custom** only when no preset fits, and then set each limit. Memory
+    Choose **Custom allocation** only when no preset fits, and then set each limit. Memory
     in the grant is a whole number of GB.
 
 5. Click **Save access**.
@@ -68,7 +68,7 @@ single-user server. Per-user workspaces need Kubernetes.
 The gateway enforces project, service, run, function and bucket limits on every
 API request, whether the person uses the console or the API.
 
-**Verify:** the person appears under **Users** with the role, services and
+**Verify:** the person appears in the **Users and resource grants** table with the role, services and
 compute you set. On Kubernetes, their workspace exists:
 
 ```bash
@@ -85,9 +85,9 @@ that contain credentials.
 === "Console"
 
     1. Open **Projects** and select the project.
-    2. Click **Connect Git repository** (or **Update repository** to change it).
+    2. Click **Connect repository** (it also changes an existing repository).
     3. Enter the **Repository URL** (HTTPS or SSH) and the **Default branch**.
-    4. Click **Connect repository**.
+    4. Click **Connect repository** in the window.
 
     You can also set the repository when you create the project.
 
@@ -104,7 +104,7 @@ that contain credentials.
                               default_branch="main")
     ```
 
-**Verify:** the project's **Repository** field shows the URL and the branch.
+**Verify:** the project's **Project record** panel shows the repository URL and the branch.
 
 ## Sync a project into a workspace
 
@@ -113,7 +113,7 @@ workspace, or fast-forwards an existing clone.
 
 1. Open a terminal in JupyterLab or the browser IDE. Inside a workspace,
    `kionga` calls Kionga as you, with no API key.
-2. Sync into the folder that the console's **Open in Jupyter** and **Open in
+2. Sync into the folder that the console's **Open JupyterLab** and **Open
    IDE** buttons open:
 
     ```bash
@@ -168,18 +168,19 @@ OpenFaaS gateway you provide. Until `OPENFAAS_URL` is set, deploys return
 
     === "Console"
 
-        1. Open **Functions** and click **＋ Deploy function**.
-        2. Choose the **Project**, a **Function name** (lowercase letters,
+        1. Open **Functions** and click **Deploy function**.
+        2. Choose the **Project**, a **Name** (lowercase letters,
            digits and hyphens) and the **OCI image**.
         3. Set **CPU** and **Memory** as Kubernetes quantities, such as `500m`
-           and `512Mi`, and optional **Environment** as a JSON object.
+           and `512Mi`, and optional **Environment variables** as a JSON object.
         4. Choose a **Trigger**:
-            - **HTTP / webhook**: invoke synchronously.
-            - **Asynchronous queue**: queue work and get an OpenFaaS call ID.
-            - **Cron schedule**: a five-field cron expression, run by the
-              OpenFaaS cron connector.
-            - **Kafka topic**: every message on the topic, forwarded by the
-              OpenFaaS Kafka connector.
+            - `http`: invoke synchronously.
+            - `async`: queue work and get an OpenFaaS call ID.
+            - `cron`: enter a five-field cron expression in **Cron expression
+              or Kafka topic**, run by the OpenFaaS cron connector.
+            - `kafka`: enter the topic in **Cron expression or Kafka topic**.
+              Every message on the topic is forwarded by the OpenFaaS Kafka
+              connector.
         5. Click **Deploy function**.
 
     === "CLI"
@@ -210,7 +211,7 @@ license separately. See the OpenFaaS documentation on
 [asynchronous calls](https://docs.openfaas.com/reference/async/) and
 [cron](https://docs.openfaas.com/reference/cron/).
 
-**Verify:** the function card under **Functions** shows its image, resources and
+**Verify:** the function's row under **Functions** shows its image, replicas and
 trigger, and **Invoke** returns the function's response.
 
 ### Compose functions into a pipeline
@@ -231,14 +232,55 @@ spec:
        retry: {max: 1}}
 ```
 
-Save it from **Pipelines > ＋ Define flow** with **Execution** set to
-**Functions · OpenFaaS**, or with `kionga-cli pipeline apply`. Kionga rejects a
+Save it from **Pipelines**: click **Define flow** and set the execution mode to
+**Functions / OpenFaaS**, or with `kionga-cli pipeline apply`. Kionga rejects a
 flow that references a function that is not deployed in the same project. See
 [Define and run pipelines](pipelines.md).
 
-## Next steps
+## Verify
 
-- [Define and run pipelines](pipelines.md).
-- [Manage users, groups and policies](access-control.md).
-- Review the [production readiness checklist](../operations/production-operations.md)
-  before you onboard a team.
+- **Provisioned user:** the person appears under **Users** with the role, services and
+  compute you set. On Kubernetes, their workspace exists:
+
+    ```bash
+    kubectl get kiongaworkspaces -A
+    kubectl get deployment,pvc,service -l app.kubernetes.io/component=workspace -A
+    ```
+
+- **Git connection:** the project's **Project record** panel shows the repository URL and the branch.
+- **Sync:** `kionga project sync` prints `Cloned <url> to <folder> (<branch>)` for a
+  new clone, or `Updated <folder> from <url> (<branch>)` for an existing one.
+- **Function:** the function's row under **Functions** shows its image, replicas and
+  trigger, and **Invoke** returns the function's response.
+
+## Troubleshooting
+
+- *A function deploy returns `409` with `not_configured` and "OPENFAAS_URL is not
+  configured."* The gateway is on Compose or a single server and has no OpenFaaS
+  address. An operator sets `OPENFAAS_URL`, `OPENFAAS_USER` and `OPENFAAS_PASSWORD` on
+  the gateway and restarts it.
+- *Connecting a repository fails with "repository credentials must not be embedded in
+  the URL."* The URL has a user name or token in it. Remove it. Credentials stay in
+  the Git credential helper of each workspace.
+- *`kionga project sync` fails with "project has no Git repository; connect one in the
+  Kionga console."* Connect the repository first, as described in
+  [Connect a project to Git](#connect-a-project-to-git).
+- *`kionga project sync` fails with "workspace origin is `<origin>`, expected `<url>`."*
+  The folder already holds a clone of a different repository. Sync into another folder,
+  or point the project at the repository the folder holds.
+- *`kionga project sync` fails with "target already exists and is not a Git checkout."*
+  The folder has files but is not a clone. Move the files, or sync into an empty folder.
+- *`kionga project sync` fails with "git is not installed in this workspace."* Install
+  `git` in the workspace image.
+- *A person cannot use a service or project they expect.* The gateway enforces
+  services, projects and limits on every request. Check the person's role, services,
+  assigned project IDs and resource profile under **Access**, and see
+  [Manage users, groups and policies](access-control.md).
+
+## Related pages
+
+- [Define and run pipelines](pipelines.md)
+- [Manage users, groups and policies](access-control.md)
+- [Run functions on Kubernetes](functions.md)
+- [Scaffold a project](scaffolding.md)
+- [Production readiness checklist](../operations/production-operations.md)

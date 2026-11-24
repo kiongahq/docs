@@ -152,9 +152,51 @@ keep its Python objects between turns.
   adapter does not make a framework's memory multi-tenant. Map identities and data
   access at your authenticated boundary.
 
-## Related
+## Verify
 
+1. Wait until the agent's `status` is `ready`. `GET /api/v1/agents` returns it in
+   `items`.
+2. Send a turn to the agent:
+
+    ```bash
+    curl -s -X POST "$KIONGA_URL/api/v1/agents/<agent-id>/invoke" \
+      -H "Authorization: Bearer $KIONGA_TOKEN" \
+      -H 'Content-Type: application/json' \
+      -d '{"message": "hello"}'
+    ```
+
+3. Read `reply`. For the adapter in
+   [Write an adapter for your framework](#write-an-adapter-for-your-framework), it is
+   `Received: hello`. For the Agno example, it is the Agno model's answer.
+4. Check `usage_available`. It is `false` for an adapter that does not set
+   `input_tokens` and `output_tokens`, such as the `CallableAdapter` example, and
+   `true` when the adapter reports them.
+
+## Troubleshooting
+
+- *The runtime fails to start with "KIONGA_GRAPH_MODULE is not set."* The runtime has
+  no entry point to load. Set `KIONGA_GRAPH_MODULE` to `package.module:attribute`.
+- *The Agno factory fails with "OPENAI_API_KEY is required for this Agno example."*
+  The example reads the key from the runtime environment, and it is empty. Provide
+  `OPENAI_API_KEY` to the runtime through your deployment's environment or secret
+  manager, and set `AGNO_MODEL`.
+- *A turn returns `409` with "This runtime serves a different entrypoint; deploy a
+  dedicated runtime for this agent."* The Compose runtime serves one factory, and the
+  agent names a different `graph_module`. Set `KIONGA_GRAPH_MODULE` to the agent's
+  module, or give the agent its own runtime on Kubernetes.
+- *`build_nooa` fails with a message that starts "The NOOA example executes
+  model-generated code in the runtime process."* This is intended. The factory refuses to start in every
+  environment, and `KIONGA_ALLOW_CODE_EXECUTION` has no effect. See the warning in
+  [Run a NOOA agent](#run-a-nooa-agent).
+- *The streamed reply arrives as one piece.* Adapters buffer replies: `/stream`
+  announces `streaming_mode=buffered` and sends the completed reply as one delta.
+- *Turns report `usage_available=false`.* The adapter did not set `input_tokens` and
+  `output_tokens`. Set them only when you measured them.
+
+## Related pages
+
+- [Build and deploy an agent](agents.md)
+- [Build agents in the Agent Designer](agent-designer.md)
 - [Agno: running agents](https://docs.agno.com/agents/running-agents) and
   [run metrics](https://docs.agno.com/reference/run/metrics)
 - [NOOA source and safety guidance](https://github.com/NVIDIA-NeMo/labs-OO-Agents)
-- [Build and deploy an agent](agents.md)

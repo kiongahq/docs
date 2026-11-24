@@ -400,24 +400,78 @@ AppArmor profile. A namespace that enforces the Pod Security `baseline` or
 `restricted` level refuses those pods, so builds need a namespace that doesn't.
 See [Kubernetes prerequisites](../operations/kubernetes-prerequisites.md#pod-security-for-builds).
 
+## Verify
+
+1. Read the application:
+
+    ```bash
+    kionga apps get billing
+    ```
+
+    The command prints one line per field: `Name:`, `Project:`, `Phase:`, `URL:`,
+    `Ready:`, `Source:` and `Visibility:`, plus `Scaling:` and `Reason:` when they
+    apply. The deploy worked when `Phase:` is `ready` and `Ready:` shows
+    `<ready pods>/<maximum pods>` with at least one ready pod. An application scaled
+    to zero shows `scaled-to-zero`. See [Check status](#check-status) for every value.
+2. For a `public` application, request the health path on the `URL:` host. A status
+   from 200 to 399 is the range the health check accepts:
+
+    ```bash
+    curl -sI https://billing.<your domain>/healthz
+    ```
+
+3. List recent Kubernetes events if the phase stays `pending`:
+
+    ```bash
+    kionga apps events billing
+    ```
+
+    The table has the columns `TIME`, `TYPE`, `REASON` and `MESSAGE`.
+
 ## Troubleshooting
+
+### Errors from the API and CLI
+
+These come back when you deploy or change an application.
 
 | Symptom | What to check |
 | --- | --- |
 | `409 not_configured` | The install runs on Compose, or the base domain is not set. The reply lists the steps. |
 | `422 validation_error` | The reply lists each invalid field. For example, `image` and `source` together, a reserved name, or a CPU scale with `min` 0. |
 | `409 conflict` | An application with that name exists, or a Kubernetes resource of that name belongs to another project. |
-| Phase `Failed`, `InvalidName` | The name is longer than 45 characters. |
-| Phase `Failed`, `SecretNotAllowed` or `SecretNotFound` | The Secret is missing, or lacks the `kionga.dev/workload-secret=true` label. |
-| Phase `Failed`, `BuildNotConfigured` | The operator has no `KIONGA_BUILD_REGISTRY`. |
-| Phase `Failed`, `UnsupportedSource` | The Git URL isn't a public `https://` URL without credentials. |
-| Stuck in `Progressing`, events show `CreateContainerConfigError` | The image runs as root, or has a non-numeric user. Set `USER 10001` in the Dockerfile. |
-| Stuck in `Progressing`, events show probe failures | The health path doesn't return 200 on your port. |
-| `ScalingReady` is `False` with `KEDAHTTPAddonMissing` | The KEDA HTTP add-on wasn't installed when the operator started. Install it and restart the operator. |
+
+### Status values the CLI and API report
+
+`kionga apps get` prints the status in `Phase:`, and the API returns it in `status`.
+The values are `pending`, `ready`, `scaled-to-zero`, `failed` and `missing`; see
+[Check status](#check-status). When the status is `failed`, `Reason:` holds the
+operator's message.
+
+| Symptom | What to check |
+| --- | --- |
+| `Phase:` stays `pending`, and `kionga apps events` shows `CreateContainerConfigError` | The image runs as root, or has a non-numeric user. Set `USER 10001` in the Dockerfile. |
+| `Phase:` stays `pending`, and the events show probe failures | The health path doesn't return 200 on your port. |
+| `Phase:` is `failed` | Read `Reason:`, then match it to the operator reasons below. |
 | The URL doesn't resolve | The wildcard DNS record is missing, or the application is `internal`. |
 | Browser certificate warning | The wildcard certificate doesn't cover the host, or isn't issued yet. |
 
-## Next steps
+### Reasons the operator reports
+
+The operator sets these reasons on the application's `Ready` condition, which
+`kionga apps get --json` returns under `status.conditions`, and they appear in the
+`Reason:` message of a failed application. The operator's own phase names (`Failed`,
+`Progressing`, `Degraded` and `Ready`) are on the Kubernetes resource, and the gateway
+maps them to the status values above.
+
+| Reason | What to check |
+| --- | --- |
+| `InvalidName` | The name is longer than 45 characters. |
+| `SecretNotAllowed` or `SecretNotFound` | The Secret is missing, or lacks the `kionga.dev/workload-secret=true` label. |
+| `BuildNotConfigured` | The operator has no `KIONGA_BUILD_REGISTRY`. |
+| `UnsupportedSource` | The Git URL isn't a public `https://` URL without credentials. |
+| `KEDAHTTPAddonMissing` (on the `ScalingReady` condition) | The KEDA HTTP add-on wasn't installed when the operator started. Install it and restart the operator. |
+
+## Related pages
 
 - [Self-healing and autoscaling](../concepts/self-healing-and-autoscaling.md).
 - [Deploy on Kubernetes](../operations/managed-kubernetes.md).
