@@ -60,7 +60,10 @@ Open JupyterLab or the browser IDE from any of these places:
   project's folder. A button is disabled, with the reason as its hover text, when
   the workspace is unavailable.
 - **Settings > Developer workspaces**, which lists the workspaces you can open
-  and shows an unavailable one as a disabled button with its state.
+  with a status for each. On Kubernetes it also has **Start** and **Stop**; see
+  [Start and stop your workspace](workbench.md#start-and-stop-your-workspace).
+  In platform v0.2.1 and earlier, it shows an unavailable workspace as a
+  disabled button with its state.
 
 When you open a project, Kionga creates its folder,
 `projects/<namespace>`, if it does not exist. The workspace toolbar keeps the
@@ -145,18 +148,21 @@ their runtime settings stay in your deployment configuration.
 - **Runtime:** on **Platform**, the connection you activated shows `Yes` in the
   **Active runtime** column, and the confirmation reads "Runtime activated for new
   operations."
-- **Workspaces:** under **Settings > Developer workspaces**, an available workspace is
-  a link that opens it. An unavailable one is a disabled button that shows its state.
+- **Workspaces:** under **Settings > Developer workspaces**, a workspace that is
+  `ready` has an **Open** link, such as **Open JupyterLab**. Any other workspace shows its
+  status instead of a link.
 
 ## Troubleshooting
 
 - *A page shows an error and a **Retry** button.* That page failed to load, and the rest
   of the console keeps working. Click **Retry**. If it keeps failing, check the
   gateway's availability.
-- *A workspace button is disabled, with the hover text "IDE is offline. Run make -C deploy
+- *A project's **Open IDE** button is disabled, with the hover text "IDE is offline. Run make -C deploy
   ide-up from the Kionga workspace folder, then retry."* The IDE is not running on Compose. An operator runs
   `make -C deploy ide-up`. In a production install the message reads "Workspace is
   offline. Ask your administrator to start it."
+- *Under **Settings > Developer workspaces**, your workspace shows `stopped`.* On
+  Kubernetes, click **Start** and wait for `ready`.
 - *The project selector does not list a project.* It lists only the projects assigned
   to you or owned by you. Ask an administrator to assign the project; see
   [Manage users, groups and policies](access-control.md).

@@ -392,7 +392,7 @@ PostgreSQL, the object store and Jupyter start.
 | `KIONGA_IDE_UPSTREAM` | `http://ide:8080` in Compose | Internal address, accessed through the authenticated gateway |
 | `KIONGA_JUPYTER_UPSTREAM` | `http://jupyter:8888` in Compose | Internal Jupyter address, using base URL `/workspaces/workbench/` |
 | `KIONGA_JUPYTER_TOKEN` | `JUPYTER_TOKEN` in Compose | Upstream credential injected by the gateway, never returned to the browser |
-| `KIONGA_WORKSPACE_NAMESPACE` | `default` in Kubernetes manifests | Discover the subject's KiongaWorkspace and generated credential in this namespace. After platform v0.2.1, the console and API can start and stop developer workspaces only when it is set; otherwise the start and stop routes return `409` with `not_configured` |
+| `KIONGA_WORKSPACE_NAMESPACE` | `default` in the raw Kubernetes manifests; the Helm chart sets it from `workspaceNamespace` (`kionga-workloads`) | Discover the subject's KiongaWorkspace and generated credential in this namespace. After platform v0.2.1, the console and API can start and stop developer workspaces only when it is set; otherwise the start and stop routes return `409` with `not_configured` |
 | `KIONGA_IDE_AUTH_MODE` | `password`; `none` inside Compose | Compose authenticates through the gateway and does not publish the IDE port; Kubernetes retains its generated password |
 | `KIONGA_CUSTOM_AGENT_COMMAND` | *(unset)* | Optional non-interactive coding-agent command used by the scaffolder |
 
