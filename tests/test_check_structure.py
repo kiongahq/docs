@@ -294,3 +294,35 @@ def test_a_lazy_continuation_line_is_not_a_code_block() -> None:
     body = HOW_TO.replace("Deploy a service so people can reach it.", "Deploy a service so people\n    can reach it.")
     assert rules("guides/deploy.md", body) == set()
 
+
+def test_code_nested_deeper_inside_a_list_tab_or_admonition_is_not_structure() -> None:
+    deep = "        "
+    for opener in ("- Parent", '=== "Compose"', "!!! note"):
+        body = "# Idea\n\n" + opener + "\n\n    A paragraph in the body.\n\n" + deep + "1. literal code\n"
+        assert rules("concepts/idea.md", page(body)) == set(), opener
+        steps = HOW_TO.replace("1. Open **Applications**.\n2. Select **Deploy**.\n", opener + "\n\n    Open Applications.\n\n" + deep + "1. literal code\n")
+        assert rules("guides/deploy.md", steps) == {"steps"}, opener
+        table = "# Settings\n\n" + opener + "\n\n" + deep + "| Name | Value |\n" + deep + "| --- | --- |\n"
+        assert rules("reference/settings.md", page(table)) == {"table"}, opener
+
+
+def test_every_line_of_an_indented_code_block_is_code() -> None:
+    concept = page("# Idea\n\nSample output:\n\n    1. first\n    2. second\n\n    3. after a blank line\n")
+    assert rules("concepts/idea.md", concept) == set()
+    ended = page("# Idea\n\nSample output:\n\n    1. first\n\nBack in the text.\n\n1. A real list again.\n")
+    assert rules("concepts/idea.md", ended) == {"step-list"}
+
+
+def test_nested_bodies_keep_their_own_depth() -> None:
+    nested = page('# Idea\n\n=== "A"\n\n    - item\n\n        1. nested step\n\n            1. deeper step\n')
+    assert rules("concepts/idea.md", nested) == {"step-list"}
+    code_after = page('# Idea\n\n=== "A"\n\n    - item\n\n            1. code inside the item\n')
+    assert rules("concepts/idea.md", code_after) == set()
+    back_out = page('# Idea\n\n=== "A"\n\n    - item\n\n            1. code\n\nA paragraph.\n\n1. A real step.\n')
+    assert rules("concepts/idea.md", back_out) == {"step-list"}
+
+
+def test_a_tab_indented_code_block_is_code() -> None:
+    concept = page("# Idea\n\nSample:\n\n\t1. literal\n")
+    assert rules("concepts/idea.md", concept) == set()
+

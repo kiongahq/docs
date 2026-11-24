@@ -69,8 +69,8 @@ TABLE_SEPARATOR = re.compile(r"^(?=[^\n]*\|)[ \t]*\|?[ \t]*:?-{3,}:?[ \t]*(?:\|[
 SENTENCE_BREAK = re.compile(r"[.!?][\"')\]]*\s+(?=[A-Z0-9`\"(\[])")
 SENTENCE_END = re.compile(r"\.[\"')\]]*$")
 HEADING_ATTRIBUTES = re.compile(r"\s*\{[^}]*\}\s*$")
-# Lines that open an indented body: a list item, a content tab, an admonition or a collapsible block.
-CONTAINER_START = re.compile(r"^[ ]{0,3}(?:[-*+]|\d+\.)[ \t]|^[ ]{0,3}(?:===|\?\?\?\+?|!!!)[ ]")
+# The start of a list item, content tab, admonition or collapsible block, after any indent.
+CONTAINER_START = re.compile(r"(?:[-*+]|\d+\.)[ \t]|(?:===|\?\?\?\+?|!!!)[ ]")
 # Words and initialisms whose full stop does not end a sentence.
 ABBREVIATION = re.compile(r"\b(?:e\.g|i\.e|etc|vs|approx|Inc|Ltd|Dr|Mr|Ms|St|No)\.|\b(?:[A-Za-z]\.){2,}")
 HTML_COMMENT = re.compile(r"<!--.*?-->", re.S)
@@ -106,6 +106,19 @@ def split_front_matter(text: str) -> tuple[dict | None, str]:
     return (data if isinstance(data, dict) else {}), text[match.end():]
 
 
+def indent_width(line: str) -> int:
+    """The indent of a line in columns, with tabs stopping every four columns."""
+    width = 0
+    for char in line:
+        if char == " ":
+            width += 1
+        elif char == "\t":
+            width += 4 - width % 4
+        else:
+            break
+    return width
+
+
 def scan_code(body: str) -> tuple[str, list[str]]:
     """The body reduced to what the site renders as structure, and the language of each fence.
 
@@ -114,15 +127,17 @@ def scan_code(body: str) -> tuple[str, list[str]]:
     recognised, at any indent. A fence closes only with the same character, at least as long,
     and nothing after it. An empty language means none.
 
-    Indentation is structure inside a list item, content tab or admonition, where a body is
-    indented four spaces. Anywhere else, a line indented four spaces or more after a blank line
-    is an indented code block.
+    A list item, content tab or admonition opens a body indented four columns deeper than its
+    first line, and bodies nest. Indentation up to that depth is structure. A line indented four
+    columns beyond the current body, after a blank line, starts an indented code block that
+    runs until a line indented less.
     """
     plain: list[str] = []
     languages: list[str] = []
     open_fence: tuple[str, int] | None = None
     in_comment = False
-    in_container = False
+    bodies: list[int] = []
+    code_indent: int | None = None
     previous_blank = True
     for raw in body.split("\n"):
         line = raw
@@ -145,15 +160,27 @@ def scan_code(body: str) -> tuple[str, list[str]]:
         if start >= 0:
             in_comment = True
             line = line[:start]
-        blank = not line.strip()
-        indented = line[:1] in (" ", "\t") and not blank
-        deep = line.startswith("    ") or line.startswith("\t")
-        if indented and deep and not in_container and previous_blank:
-            plain.append("")  # an indented code block
+        if not line.strip():
+            plain.append("")
+            previous_blank = True
+            continue
+        width = indent_width(line)
+        if code_indent is not None:
+            if width >= code_indent:
+                plain.append("")
+                previous_blank = False
+                continue
+            code_indent = None
+        while bodies and width < bodies[-1]:
+            bodies.pop()
+        base = bodies[-1] if bodies else 0
+        if previous_blank and width >= base + 4:
+            code_indent = base + 4
+            plain.append("")
             previous_blank = False
             continue
-        if not indented and not blank:
-            in_container = bool(CONTAINER_START.match(line))
+        if CONTAINER_START.match(line.lstrip()):
+            bodies.append(width + 4)
         match = FENCE.match(line)
         if match:
             open_fence = (match.group(2)[0], len(match.group(2)))
@@ -166,7 +193,7 @@ def scan_code(body: str) -> tuple[str, list[str]]:
             plain.append("")
         else:
             plain.append(line)
-        previous_blank = blank
+        previous_blank = False
     return "\n".join(plain), languages
 
 
