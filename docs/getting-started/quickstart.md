@@ -14,7 +14,7 @@ Python SDK and the REST API. All three call the same API, so you can mix them.
 
 - Install and start Kionga: follow [Install Kionga](installation.md). The
   console must open at <http://localhost:8080/console>.
-- To use the SDK tabs, open the **Jupyter workbench** from the console sidebar,
+- To use the SDK tabs, open **JupyterLab** from the console sidebar,
   create a notebook, and run the snippets in order. The SDK is installed there and
   already connected to your Kionga, so you do not need an API key.
 - To use the curl tabs, sign in once from a terminal and keep the session cookie:
@@ -34,7 +34,7 @@ Python SDK and the REST API. All three call the same API, so you can mix them.
 
 !!! note "Personal API keys"
     Scripts and tools that run outside Kionga authenticate with a personal API key
-    from **Settings → Personal API keys**, exported as `KIONGA_TOKEN`. A key acts
+    from **Settings > Personal API keys**, exported as `KIONGA_TOKEN`. A key acts
     as a normal `user`, limited to the services and projects it names and to its
     creator's provisioned access profile. The local `admin` account has no access
     profile until an administrator provisions one, so its keys cannot create
@@ -61,10 +61,10 @@ A project owns everything you build in this tutorial.
 
 === "Console"
 
-    1. Open **Projects** and click **＋ New project**.
-    2. Enter the name `churn`.
-    3. Choose the **Production ML system** template, the `scikit-learn`
-       framework, and the `cpu` accelerator.
+    1. Open **Projects** and click **New project**.
+    2. Under **Starting point**, choose the **Production ML system** template.
+    3. Enter the **Project name** `churn`, choose the `scikit-learn`
+       **Framework**, and leave the **Accelerator** on `cpu`.
     4. Click **Create project**.
 
 === "SDK"
@@ -101,10 +101,13 @@ evaluates it, and registers it in your project as `churn-classifier`.
 
 === "Console"
 
-    1. Open **Pipelines** and click **▶ Run pipeline**.
-    2. Select the `churn` project and keep **Built-in training pipeline** as the flow.
-    3. Click **Check run**, then **Start run**.
-    4. Open the run in the **Runs** table to follow each step.
+    1. Open **Pipelines** and click **Run pipeline**.
+    2. Select the `churn` project, enter a **Run name** such as
+       `training-pipeline`, and keep **Built-in training pipeline** as the **Flow
+       definition**.
+    3. Click **Check run**, then **Submit run**.
+    4. Follow each step in the run dialog that opens. To return to it later, click
+       **Open run** in the run's row under **Run history**.
 
 === "SDK"
 
@@ -129,17 +132,18 @@ evaluates it, and registers it in your project as `churn-classifier`.
 
 The run moves through `validate-data`, `train-model`, `evaluate`, and
 `register-model`, then reports `succeeded`. The trained model and its metrics are
-also in MLflow at <http://localhost:15000>. If a step fails, open its log in the
-run view to see the error.
+also in MLflow at <http://localhost:15000>. If a step fails, select its node in the
+run dialog and read **Node logs** to see the error.
 
 ## Step 4: Deploy the model
 
 === "Console"
 
-    1. Open **Models** and find the `churn-classifier` card for your project. Its
-       quality gate shows `passed`.
+    1. Open **Models** and find the `churn-classifier` row for your project in
+       the **Registry** table. Its **Quality gate** shows `passed`.
     2. Click **Promote** to move it to the `production` stage.
-    3. Click **Deploy**.
+    3. Click **Deploy**, leave **Canary weight (%)** at `0`, and click **Deploy**
+       in the dialog.
 
 === "SDK"
 
@@ -162,7 +166,8 @@ run view to see the error.
     ```
 
 Kionga starts a model server for this version. The model's deployment status
-becomes `serving` and the card shows a **live** tag and a **Test** button.
+becomes `serving` in the **Deployment** column, and the row shows a **Test**
+button.
 Kionga deploys only models whose quality gate passed.
 
 ## Step 5: Request a prediction
@@ -171,7 +176,12 @@ The model expects rows of 12 numeric features.
 
 === "Console"
 
-    Click **Test** on the model card and send the sample payload.
+    Click **Test** in the model's row. Replace the **Request payload** with the
+    JSON below and click **Predict**.
+
+    ```json
+    {"inputs": [[0.1,-1.2,0.5,2.0,0.3,-0.7,1.1,0.0,-0.4,0.9,-1.5,0.2]]}
+    ```
 
 === "curl"
 
@@ -197,12 +207,13 @@ it in your project, then talk to it.
 
 === "Console"
 
-    1. Open **Agents** and click **＋ Deploy agent**.
-    2. Select the `churn` project and set the agent name to `customer-support`.
-    3. Keep the default image `kionga/agent-runtime:latest`, graph module
-       `agents.customer_support.graph:build`, and LLM backend **Mock**.
+    1. Open **Agents** and click **Deploy agent**.
+    2. Select the `churn` project, set the **Name** to `customer-support`, and
+       enter `kionga/agent-runtime:latest` as the **Image**.
+    3. Keep the **Graph factory** `agents.customer_support.graph:build` and the
+       **Model backend** `mock`.
     4. Click **Deploy agent**.
-    5. When the agent shows as ready, click **Chat** and ask
+    5. When the agent's **Status** shows `ready`, click **Chat** in its row and ask
        `When are invoices issued?`.
 
 === "SDK"

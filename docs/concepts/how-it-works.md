@@ -121,9 +121,9 @@ Kionga orchestrates proven open-source engines rather than replacing them.
 | Applications | Kionga itself, on Kubernetes only | Deploy from an image or Git, a host name per application, health checks, autoscaling, logs |
 | Real-time | Kafka consumers | Enrichment with online features and scoring with models or agents |
 
-An engine that is not configured shows as **not configured** in the console. For
-example, functions on Compose stay unavailable until an administrator sets
-`OPENFAAS_URL`.
+An engine that is not configured is unavailable. For example, on Compose the
+**Functions** page shows `Runtime: Not configured`, and its **Deploy function**
+button stays disabled, until an administrator sets `OPENFAAS_URL`.
 
 ## Where data lives
 

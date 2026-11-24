@@ -101,7 +101,8 @@ Compare templates before you create a project.
            allocation**. Options that your grant does not cover are disabled and
            labeled, for example `(not provisioned)` or `(exceeds allocation)`.
         5. Optional: enter the **Git repository URL** and the **Default
-           branch**.
+           branch**. The console shows these fields only when you have Git
+           write access.
         6. Click **Create project**.
 
     === "SDK"

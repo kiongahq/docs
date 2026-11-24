@@ -116,9 +116,15 @@ to your repository.
 Each saved change creates an immutable revision with its author, message and
 hash. Saving identical content does not.
 
-1. Open the flow and click **Revisions**.
+1. Open **Pipelines** and select **Edit** in the flow's row. The **Revisions** panel
+   lists each revision with its message, author and save time.
 2. Click **Compare with current** on a revision to see a line diff.
-3. Click **Roll back** to save that revision's content as a new revision.
+3. Click **Roll back** to save that revision's content as a new revision. The
+   console asks you to confirm first. The current revision shows
+   **Current revision** instead of these buttons.
+
+The flow's **Details** dialog also lists the revisions, with **View revision** and
+**Restore revision** buttons.
 
 History is never rewritten, and every run still points at the revision it
 executed. The same operations are available through the API:
@@ -140,9 +146,11 @@ curl -s -X POST -H "Authorization: Bearer $KIONGA_TOKEN" \
    `Africa/Nairobi`. The default timezone is `UTC`.
 3. Save the flow.
 
-The flow list and the **Active schedules** panel show whether the schedule is
-active or paused and when it runs next and last ran. Use **Pause** and
-**Resume** to stop and restart it.
+The **Schedule** column of the flow list shows whether the schedule is active or
+paused and when it runs next. When you edit an existing flow, the **Active
+schedules** panel also shows when it last ran. Use **Pause** and **Resume** in
+that panel, or in the **Schedule** section of the flow's **Details** dialog, to
+stop and restart it.
 
 Scheduled runs behave predictably:
 
@@ -201,16 +209,20 @@ passes run parameters through unchecked, with a preflight warning.
 
 ## Watch a run
 
-1. Click a run under **Run history**. The page shows its status, trigger, owner, flow
-   revision and hash, policy decision and overrides, and the execution graph.
-2. Select a node to see its timing, attempt, exit code, workload, image digest,
-   dependencies, and its logs and events. You can filter by severity and source,
-   search, load earlier lines, and follow the live tail. See
+1. Under **Run history**, select **Open run** in a run's row. The row shows the
+   run's trigger, status, progress and start time. The run dialog shows its
+   status, run ID, project, engine run ID, execution mode, progress and
+   provenance (the flow revision and hash, the overrides and the policy
+   decision), and the **Execution graph**.
+2. Select a node, or select **Inspect node** in its row, to see its timing,
+   attempt, dependencies, and its logs and events under **Node logs**. You can
+   filter by severity and source, search, load earlier lines, and follow the live
+   tail. Select **Show all run logs** to return to the whole run. See
    [Search and stream logs](logs.md).
 
-The graph supports zoom, fit to view and dragging. With the keyboard, the arrow
-keys move between nodes and **Enter** opens one. Status is shown by color, symbol
-and text.
+Drag the graph's background to pan, and use its controls to zoom or fit it to the
+view. Each node is a button, so you can reach it with **Tab** and open it with
+**Enter**. Status is shown by color, symbol and text.
 
 How nodes run:
 
@@ -281,8 +293,8 @@ multi-tenant isolation, use the [Kubernetes executor](#kubernetes).
 
 ## Verify
 
-1. **Define:** the flow appears under **Flow definitions**, and its **Dependency
-   graph** shows the nodes in the stages you expect.
+1. **Define:** the flow appears under **Flow definitions**, and the **Dependency
+   graph** in its editor shows the nodes in the stages you expect.
 2. **Git:** `kionga-cli pipeline validate <file>` prints `valid: <n> stage(s),
    sha256 <hash>`, and `kionga-cli pipeline apply` prints `<definition-id>
    revision <n> (sha256 <hash>)`.

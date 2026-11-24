@@ -5,7 +5,7 @@ description: Deploy a model to a KServe endpoint on Kubernetes, check its status
 
 # Deploy and canary models on Kubernetes
 
-On Kubernetes, **Deploy** on a model card starts a real model server with
+On Kubernetes, **Deploy** in a model version's row on the **Models** page starts a real model server with
 [KServe](https://kserve.github.io/website/) and shows the endpoint only after the
 server is ready. A deploy never reports success for a server that did not start.
 You can also send a share of traffic to a new version first, as a canary.
@@ -43,7 +43,7 @@ API are the same on both.
     === "Console"
 
         Open **Models**, click **Deploy** in the version's row, leave **Canary
-        weight (%)** at `0`, and click **Deploy**.
+        weight (%)** at `0` in the deploy dialog, and click **Deploy**.
 
     === "SDK"
 

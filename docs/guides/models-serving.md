@@ -104,7 +104,7 @@ its endpoint. Deployment also requires a `passed` quality gate.
     === "Console"
 
         Open **Models**, click **Deploy** in the version's row, leave **Canary
-        weight (%)** at `0`, and click **Deploy**.
+        weight (%)** at `0` in the deploy dialog, and click **Deploy**.
 
     === "SDK"
 
