@@ -5,14 +5,12 @@ description: Define a versioned pipeline in the console or YAML, keep it in Git,
 
 # Define and run pipelines
 
-A pipeline (a **flow**) is a versioned directed acyclic graph (DAG) of container
-jobs or deployed functions. A **run** is one execution of a flow. Every run
-records exactly what it executed: the flow revision and its SHA-256, the image
-digests, the parameters and overrides, the policy decision, and the workload that
-ran each node.
-
-This guide covers defining a flow, keeping it in Git, scheduling it, running it,
-watching a run, and rolling back.
+Define a pipeline, keep it in Git, schedule it, run it, watch each node, and roll
+back to an earlier revision. A pipeline (a **flow**) is a versioned directed
+acyclic graph (DAG) of container jobs or deployed functions. A **run** is one
+execution of a flow. Every run records exactly what it executed: the flow
+revision and its SHA-256, the image digests, the parameters and overrides, the
+policy decision, and the workload that ran each node.
 
 ## Before you begin
 
@@ -34,16 +32,19 @@ watching a run, and rolling back.
 
 ## Define a flow
 
-1. Open **Pipelines** and click **＋ Define flow**.
+1. Open **Pipelines** and click **Define flow**.
 2. On the **Form** tab, set the **Project**, the **Execution** mode
-   (**Containers · pipeline runner** or **Functions · OpenFaaS**), a **Name** and
+   (**Containers / pipeline runner** or **Functions / OpenFaaS**), a **Name** and
    a **Version**.
-3. Click **＋ Add node** for each step. A node is a container image or a deployed
+3. Click **Add node** for each step. A node is a container image or a deployed
    function. Set what it runs after, its resources, retries and timeout.
    Dependencies decide what runs in parallel.
-4. Optional: under **Schedule and parameters**, set a schedule, default
-   parameters, and what a manual run may override.
-5. Enter a **Change note** and click **Save flow**.
+4. Optional: set a schedule, default parameters, and what a manual run may
+   override.
+5. Click **Validate**. The editor also validates as you type and shows a status
+   such as `4 nodes, 3 stages, valid`.
+6. When you edit an existing flow, enter a **Revision message**. Click **Save
+   flow**.
 
 The **YAML** tab edits the same definition as a `kionga.dev/v1 Pipeline`
 document. Kionga validates every change as you type and shows each problem
@@ -82,9 +83,6 @@ The JSON Schema for editor tooling is `pipeline/v1.schema.json` in the
 [contracts repository](https://github.com/kiongahq/contracts), with examples in
 `pipeline/examples/`.
 
-**Verify:** the flow appears under **Flows**, and its **Dependency graph** shows
-the nodes in the stages you expect.
-
 ## Keep a flow in Git
 
 Review flows like code: keep them as `pipelines/<name>.kionga.yaml` in the project
@@ -113,8 +111,6 @@ to your repository.
     Omit the definition ID to create a new flow. Applying unchanged YAML creates
     no revision.
 
-**Verify:** `apply` prints `<definition-id> revision <n> (sha256 <hash>)`.
-
 ## Review revisions, compare and roll back {#revisions-diff-and-rollback}
 
 Each saved change creates an immutable revision with its author, message and
@@ -136,18 +132,17 @@ curl -s -X POST -H "Authorization: Bearer $KIONGA_TOKEN" \
   "$KIONGA_URL/api/v1/pipelines/definitions/<id>/revisions/<revision>/rollback"
 ```
 
-**Verify:** the revision list shows a new revision at the top with the old
-content.
-
 ## Schedule a flow
 
-1. In the flow editor, select **Run on a schedule**.
-2. Enter a five-field **Cron** expression and an IANA **Timezone**, such as
+1. In the flow editor, under **Schedule**, select **Enable scheduled
+   execution**.
+2. Enter a five-field **Cron expression** and an IANA **Timezone**, such as
    `Africa/Nairobi`. The default timezone is `UTC`.
 3. Save the flow.
 
-The flow list and detail show whether the schedule is active or paused and when
-it runs next and last ran. Use **Pause** and **Resume** to stop and restart it.
+The flow list and the **Active schedules** panel show whether the schedule is
+active or paused and when it runs next and last ran. Use **Pause** and
+**Resume** to stop and restart it.
 
 Scheduled runs behave predictably:
 
@@ -160,26 +155,25 @@ Scheduled runs behave predictably:
   suspended, the slot is recorded as failed with the reason and the schedule
   moves on.
 
-**Verify:** the flow shows the schedule as active with the next run time.
-
 ## Run a flow
 
-1. Open **Pipelines** and click **▶ Run pipeline**, or click **▶ Run** on a flow.
-2. Choose the **Project** and the **Flow**. Defaults come from the flow's
-   current revision.
+1. Open **Pipelines** and click **Run pipeline**.
+2. Choose the **Project** and the **Flow definition**, and enter a **Run name**.
+   Defaults come from the flow's current revision.
 3. Under **Parameters**, change values for this run. Parameters the flow does not
-   mark as overridable show a lock and the reason.
-4. Under **Nodes**, if the flow allows it:
+   mark as overridable are disabled.
+4. Under **Node overrides**, if the flow allows it:
     - Run a subset of nodes. Kionga adds every node they depend on.
     - Replace a node's image. The image must be pinned by digest, and must come
       from an approved registry when the operator sets
       `KIONGA_IMAGE_REGISTRIES`.
     - Change CPU and memory within your grant, or change retries and timeouts.
-    - Set **Maximum parallel nodes** (default 8, at most 64).
+    - Set **Maximum parallelism** (default 8, at most 64).
 5. Click **Check run**. The preflight checks project access, your concurrent-run
    quota, the capacity of the widest parallel stage, image rules and engine
-   availability, and lists exactly what this run changes.
-6. Click **Start run**. It is enabled only after the checks pass.
+   availability, and lists exactly what this run changes under **Effective run
+   configuration**.
+6. Click **Submit run**. It is enabled only after the checks pass.
 
 To run a flow from a script, use the CLI or the SDK:
 
@@ -198,19 +192,16 @@ allow. The run's trigger is `manual` from the console and `api` from a
 personal API key; the request cannot set it. A flow that declares no parameters
 passes run parameters through unchecked, with a preflight warning.
 
-**Verify:** the run appears under **Runs** with status `queued` or `running`.
-
 ### Rerun from a failure
 
-On a failed run, click **Rerun from failure**. The new run reuses the recorded
-outputs of the nodes that succeeded, and runs the failed node and everything
-after it again. Reused nodes show as skipped, with the run they came from.
-
-To stop a run, click **Cancel run**.
+1. On a failed run, click **Rerun from failure**. The new run reuses the recorded
+   outputs of the nodes that succeeded, and runs the failed node and everything
+   after it again. Reused nodes show as skipped, with the run they came from.
+2. To stop a run, click **Cancel run**.
 
 ## Watch a run
 
-1. Click a run under **Runs**. The page shows its status, trigger, owner, flow
+1. Click a run under **Run history**. The page shows its status, trigger, owner, flow
    revision and hash, policy decision and overrides, and the execution graph.
 2. Select a node to see its timing, attempt, exit code, workload, image digest,
    dependencies, and its logs and events. You can filter by severity and source,
@@ -235,9 +226,6 @@ How nodes run:
 Each node reports its workload: `docker-container` with the container ID for
 local container nodes, `openfaas-call` for function nodes, and `k8s-job` on
 Kubernetes.
-
-**Verify:** the run reaches `succeeded`, and every node shows an exit code and
-the image digest it ran.
 
 ## Run container nodes as Kubernetes Jobs {#kubernetes}
 
@@ -270,9 +258,6 @@ Limits to plan for:
 - The executor is tested against the Kubernetes API, not yet on a live cluster.
   Validate it in a staging cluster first.
 
-**Verify:** `kubectl get jobs -n kionga-pipelines -l kionga.dev/run=<run-id>`
-lists one Job per node attempt.
-
 ## Plan heavy and distributed training
 
 Start with the [`distributed-training`](project-templates.md#create-a-gpu-training-project)
@@ -294,9 +279,52 @@ untrusted tenants. Child containers never receive the socket, and they run with
 all capabilities dropped, `no-new-privileges` and a process limit. For
 multi-tenant isolation, use the [Kubernetes executor](#kubernetes).
 
-## Next steps
+## Verify
+
+1. **Define:** the flow appears under **Flow definitions**, and its **Dependency
+   graph** shows the nodes in the stages you expect.
+2. **Git:** `kionga-cli pipeline validate <file>` prints `valid: <n> stage(s),
+   sha256 <hash>`, and `kionga-cli pipeline apply` prints `<definition-id>
+   revision <n> (sha256 <hash>)`.
+3. **Revisions:** the revision list shows a new revision with the content of the
+   revision you rolled back to.
+4. **Schedule:** the flow shows the schedule as `Active`, with the next run time
+   under **Active schedules**.
+5. **Run:** the run appears under **Run history** with the status `queued` or
+   `running`.
+6. **Watch:** the run reaches `succeeded`, and every node shows an exit code and
+   the image digest it ran.
+7. **Kubernetes Jobs:** `kubectl get jobs -n kionga-pipelines -l
+   kionga.dev/run=<run-id>` lists one Job per node attempt.
+
+## Troubleshooting
+
+A submission that fails the preflight returns `403` or `422` with `"error":
+"preflight_failed"`. The `message` field holds the first failed check, and
+`details` lists every check.
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| `line <n> (node <id>): dependency cycle: a → b → a` from `validate` or **Validate** | The nodes depend on each other in a loop. | Remove one dependency. Other checks print the same way, for example `node "<id>" depends on "<dep>", which does not exist`. |
+| `executionMode must be prefect (containers) or functions (OpenFaaS)` | The `spec.executionMode` value is not one of the two. | Use `prefect` for container nodes or `functions` for function nodes. |
+| `Parameter "<name>" cannot be overridden for this flow.` | The parameter is not listed in `spec.overridable.parameters`. | Add it to `overridable.parameters` and save a new revision, or run with the default. |
+| `Parameter "<name>" is not declared by this flow.` | The run sets a parameter that `spec.parameters` does not declare. | Declare the parameter in `spec.parameters`. |
+| `This flow does not allow image overrides.` (or `resource`, `retry or timeout`, `parallelism`, or `running a subset of nodes`) | The flow does not set that field as overridable. | Set `overridable` for the field in the flow and save a new revision. |
+| `Override images must be pinned by digest (name@sha256:…), so the run is reproducible.` | The override image has no digest. | Use an image reference with an `@sha256:` digest. |
+| `Image registry is not approved. Approved: <list>` | The image is outside `KIONGA_IMAGE_REGISTRIES`. | Use an image from an approved registry, or ask an operator to add the registry. |
+| `403`, `concurrent run quota reached (<n>)` or `no concurrent run capacity has been provisioned` | You reached your concurrent-run quota, or your grant has none. | Wait for a run to finish, or ask an administrator for more capacity. |
+| `403`, `pipeline layer <n> requests <x> CPUs but the grant provides <y>` (or memory, or GPUs) | The widest parallel stage needs more than your grant. | Lower the resources, add dependencies to run fewer nodes at once, or ask for a larger grant. |
+| `No pipeline engine is configured (set PREFECT_API_URL or activate a Prefect connection on the Platform page).` | Container flows have no engine. | Set `PREFECT_API_URL`, or activate a Prefect connection. On Kubernetes, enable the [Jobs executor](#kubernetes). |
+| `OpenFaaS is not configured (set OPENFAAS_URL or activate an OpenFaaS connection on the Platform page).` | A function flow has no function runtime. | Configure OpenFaaS on Compose, or use a Kubernetes install. |
+| `Only failed or cancelled runs can be resumed.` | You started a rerun from a run that did not fail. | Rerun from a failed or cancelled run. |
+| A node fails with `container <name> was killed for exceeding its memory limit (OOMKilled, exit <code>)` | The node's memory limit is too low. | Raise `resources.memory` for the node. |
+| A node fails with `container <name> never started: <reason> <message>` | Kubernetes could not start the container, for example because the image cannot be pulled. | Fix the image reference or the registry access. The same events appear in the node's logs with the source `k8s`. |
+| A node fails with `Job exceeded its timeout (activeDeadlineSeconds) and was stopped` | The node ran longer than its `timeoutSeconds`. | Raise `timeoutSeconds` (at most 24 hours), or make the node faster. |
+
+## Related pages
 
 - [Search and stream logs](logs.md) for a run.
 - [Register and serve the model](models-serving.md) a pipeline trains.
+- [Run container nodes as Kubernetes Jobs](#kubernetes).
 - To write a native Prefect flow, see the pipeline runner in the
   [engineering handbook](https://kiongahq.github.io/docs/engineering-access/).
