@@ -19,6 +19,19 @@ instead. Links within a site are relative; links between sites are absolute URLs
 ## Writing rules
 
 - Front matter with a one-sentence `description:`, one H1, sentence-case headings.
+- Give every page the shape of its type, with these exact H2 headings, in this order:
+
+  | Section | Type | Required headings |
+  | --- | --- | --- |
+  | Get started | Tutorial | Before you begin, numbered steps, Next steps |
+  | Guides, Deploy and operate | How-to guide | Before you begin, numbered steps, Verify, Troubleshooting, Related pages |
+  | Concepts | Explanation | No numbered step lists |
+  | Reference | Reference | At least one table |
+
+  Section landing pages (`index.md`) are exempt from the type shapes. `make docs-check`
+  runs `scripts/check_structure.py`, and the known gaps are in
+  `scripts/structure-baseline.txt`. Fix a page and delete its baseline lines in the same
+  change; the check fails if a listed gap no longer exists.
 - Google developer documentation style: second person, present tense, active voice.
 - No em dashes, no Latin abbreviations, no marketing language.
 - Check every command, path, variable, route and default against the code.

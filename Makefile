@@ -17,8 +17,9 @@ docs-build: docs-ui          ## product documentation only, strict
 	mkdocs build --strict --site-dir site
 	python scripts/check_public_site.py site
 
-docs-check:          ## references against the code; product pages also keep code internals out
+docs-check:          ## references against the code, code internals kept out, and page structure by type
 	python scripts/check_references.py --root $(KIONGA_SRC) --product
+	python scripts/check_structure.py
 
 docs-lint:           ## prose: Google developer documentation style via Vale (errors fail)
 	vale sync >/dev/null
