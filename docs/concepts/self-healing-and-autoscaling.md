@@ -100,7 +100,7 @@ runtime's default seccomp profile, and no Kubernetes API token. Your image must
 set a numeric non-root user (`USER 10001` in a Dockerfile), or Kubernetes
 refuses to start it.
 
-**What you see.** The workload's status reports one phase:
+**What you see.** The workload resource's status reports one phase:
 
 | Phase | Meaning |
 | --- | --- |
@@ -109,6 +109,10 @@ refuses to start it.
 | `Ready` | The current version has the replicas it needs, or it is scaled to zero on purpose. |
 | `Degraded` | No rollout is underway, but fewer replicas are available than the minimum. For example, a pod crashed and is restarting. |
 | `Failed` | The spec is invalid, a referenced Secret is missing, the build or rollout failed, or the rollout exceeded its deadline. The status message gives the reason. |
+
+The console and the API show a simpler status for an application or function:
+`ready`, `scaled-to-zero`, `pending` or `failed`. `Building`, `Progressing` and
+`Degraded` all appear as `pending`, with the phase and its reason in the message.
 
 ## Autoscaling
 

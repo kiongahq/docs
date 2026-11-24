@@ -32,8 +32,8 @@ call the platform from notebooks.
 
 The workbench opens through the gateway at `/workspace?tool=workbench`
 with your console session. You do not need a Jupyter token. The workspace
-toolbar switches between JupyterLab and the browser IDE and takes you back to
-the console.
+toolbar has an **Open in** list that switches between JupyterLab and the browser
+IDE, and a **Back to console** link.
 
 ## Call Kionga from a notebook
 

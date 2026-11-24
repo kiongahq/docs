@@ -22,18 +22,23 @@ tagged with the tenant, project, flow, run, node, attempt and workload.
 
 ## Read the logs of one node
 
-1. Open **Pipelines** and click a run.
-2. Select a node in the execution graph.
-3. Filter by severity and source, search the text, load earlier lines, or turn on
-   the live tail.
+1. Open **Pipelines** and select **Open run** in a run's row.
+2. Select a node in the **Execution graph**.
+3. In **Node logs**, set **Severity** and **Source**, enter text in **Search**,
+   select **Load earlier lines** for older entries, or turn on **Live tail**.
 
 ## Search logs across runs
 
 1. Open **Logs**.
 2. Choose a project with the page's **Project** selector, and optionally enter a
-   **Run ID**, a **Node** and a **Time range**. Click **Apply**.
-3. Filter by source, severity and text. Results are newest first; click **Load
-   earlier lines** for older ones, or **Live tail** to follow new lines.
+   **Run** and a **Node**. The filters apply as you change them. Select
+   **Refresh** to load again.
+3. Set **Time window** (the default is **Last hour**; the other choices are
+   **Last 15 minutes**, **Last day**, **Last week** and **All time**),
+   **Severity** (**All**, **Errors**, **Warnings and errors** or **Info and
+   above**), **Source**, and **Search** text. The table lists lines in time
+   order, oldest first. Select **Load earlier lines** for older ones, or turn on
+   **Live tail** to follow new lines.
 
 From the API:
 
@@ -83,7 +88,7 @@ says otherwise.
 
 ## Verify
 
-1. **Node logs:** the node's lines appear in the run page, newest first, each
+1. **Node logs:** the node's lines appear under **Node logs** in the run page, each
    with its severity and source.
 2. **Search:** the results contain only entries that match your filters. The API
    returns them in an `items` array, and adds `next_before` (descending order) or

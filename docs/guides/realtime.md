@@ -50,9 +50,10 @@ docker compose -f deploy/compose.yaml exec jupyter \
 
     === "Console"
 
-        Open **Real-time**. Each demo card shows `events`, `avg_latency_ms` and,
-        for fraud, `flagged`, with the time of the last update. Reload the page to
-        read the latest figures.
+        Open `Realtime`. Each demo section (**Fraud detection**, **Call-center
+        analysis** and **Recommendations**) shows `events`, `avg_latency_ms` and,
+        for fraud, `flagged`, with the time of the last update. Select
+        **Refresh this page** in the page header to read the latest figures.
 
     === "API"
 
@@ -104,8 +105,8 @@ components:
 1. **Produce:** each `python -m realtime.produce` command prints `produced <n>
    event(s) to <topic>`, for example `produced 5 event(s) to kionga.transactions`.
 2. **Process:** `GET /api/v1/realtime` returns the demo under `demos`, and its
-   `events` count grows by the number of events you produced. On the **Real-time**
-   page, the card replaces `No events processed yet.` with the figures.
+   `events` count grows by the number of events you produced. On the `Realtime`
+   page, the demo section replaces `No events processed yet.` with the figures.
 3. **Consume:** the processor log shows `realtime processor consuming
    ['kionga.transactions', 'kionga.callcenter.transcripts', 'kionga.user.activity']`.
    Read it with `docker compose -f deploy/compose.yaml logs realtime-processor`.
@@ -117,7 +118,7 @@ components:
 
 | Symptom | Cause | Fix |
 | --- | --- | --- |
-| The **Real-time** page shows `No events processed yet.` | The processor is not running, or it has not read your events. | Check that the `realtime-processor` service is running, then produce events again. See [Troubleshooting](../operations/troubleshooting.md). |
+| The `Realtime` page shows `No events processed yet.` | The processor is not running, or it has not read your events. | Check that the `realtime-processor` service is running, then produce events again. See [Troubleshooting](../operations/troubleshooting.md). |
 | `python -m realtime.produce` fails with an `httpx` error | `KAFKA_REST_URL` is unset, so the producer uses `http://localhost:8082`, or the Kafka REST proxy is down. | Run the command where `KAFKA_REST_URL` is set, such as a Jupyter workbench terminal, and check the Kafka REST proxy. |
 | The processor log shows `kafka batch failed (<error>); recreating consumer` once | While Kafka reassigns its consumer group, the processor can time out on a read. | Wait. The processor recreates its consumer, fetches the uncommitted records again and continues, and statistics resume. |
 | The same `kafka batch failed (<error>)` line repeats | The model endpoint or the agent returns an error for an event, so the processor does not commit that batch and fetches it again. | Correct `FRAUD_MODEL_ENDPOINT` or `CALLCENTER_AGENT_ID`, or clear the variable to use the built-in rule, and recreate the processor. |

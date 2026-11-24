@@ -37,7 +37,7 @@ and the scaffold always see the same files.
 
 ## Run the scaffold from the console
 
-1. Open **Projects** and select the project.
+1. Open **Projects** and select **Open project** in the project's row.
 2. In the **Generate starter code** panel, click **Run in workspace**.
 3. Review the **Run scaffold in workspace** dialog. It shows the workspace that
    runs the command, the working and output folders, and the exact command with
@@ -64,7 +64,7 @@ the console does not run for you.
 2. Open a terminal in JupyterLab (**File > New > Terminal**) or in the browser
    IDE.
 3. Run the command with `KIONGA_WORKSPACE=/workspace/projects`, so the files land
-   in the folder that the console's **Open in Jupyter** and **Open in IDE**
+   in the folder that the project page's **Open JupyterLab** and **Open IDE**
    buttons open:
 
     ```bash
@@ -155,7 +155,7 @@ For the full design, see the gateway section of the
 | `This workspace image has no scaffold runner. Rebuild it (make -C deploy local-rebuild) so it includes the Kionga workspace sidecar.` | The workspace image predates the scaffold runner. | An operator rebuilds the workspace images, for example with `make -C deploy local-rebuild`. |
 | `The workspace rejected the scaffold credential. KIONGA_WORKSPACE_JOB_TOKEN must match on the gateway and the workspace.` | The two tokens differ. | An operator sets the same `KIONGA_WORKSPACE_JOB_TOKEN` on the gateway and the workspaces, then restarts them. |
 | `Scaffold jobs need KIONGA_WORKSPACE_JOB_TOKEN set on the gateway and the workspace.` | The token is empty. | An operator sets `KIONGA_WORKSPACE_JOB_TOKEN`. `deploy/scripts/local-up.sh` generates one for local installs; set your own in any shared deployment. |
-| `The workspace did not answer. Make sure it is running, then run the job again.` | The workspace is stopped or unreachable. | Start the workspace from the console, then run the job again. |
+| `The workspace did not answer. Make sure it is running, then run the job again.` | The workspace is stopped or unreachable. | Check the state of the workspace under **Settings > Developer workspaces**, where an unavailable workspace shows as a disabled button with its state. Ask an operator to start it, then run the job again. |
 | `409 conflict`, `a scaffold job is already running for this project` | A job is still queued or running for the project. | Wait for it to finish, then retry. |
 | `The job was interrupted before it reported a result (the gateway restarted or the workspace stopped responding). Run it again.` | The job reported nothing for 5 minutes. | Run the job again. |
 | `404 not_found`, `project not found` | The project does not exist, or you cannot see it. | Check the project ID and your project access. |

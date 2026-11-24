@@ -15,12 +15,12 @@ Open a Langflow canvas in a project-scoped workspace, build a flow with Kionga r
 
 ## Open a workspace
 
-1. Open **Agents > Langflow canvas** or choose **Langflow** in the navigation.
-2. On Kubernetes, choose a project, name, CPU, memory, and storage allocation, then select **Create workspace**. Each instance has its own persistent volume. You can create several within your assigned `max_vms` limit.
-3. When the instance is ready, select **Open canvas**. Kionga signs you in through the workspace session.
-4. To manage the instance, use **Stop**, **Start**, **Restart**, or **Delete** on the instance card. Deleting removes its persistent volume and saved flows.
+1. In the sidebar, open **Langflow** under **Models and data**, or select **Langflow canvas** in the links below the navigation.
+2. On Kubernetes, select **Create workspace**. In the **Create Langflow workspace** dialog, enter a **Name**, choose a **Project**, and set **CPU**, **Memory (GB)**, and **Storage (GB)**, then select **Create workspace**. Each instance has its own persistent volume. You can create several within your assigned `max_vms` limit.
+3. When the instance's **State** is `ready`, select **Open canvas** in its row. Kionga signs you in through the workspace session.
+4. To manage the instance, use **Stop**, **Start**, **Restart**, or **Delete** in its row. **Delete** asks you to confirm and removes the persistent volume and saved flows. Viewers do not see these buttons.
 
-A stopped workspace does not erase its volume. Restarting replaces its pod. The console's project selector filters the instance list.
+A stopped workspace does not erase its volume. Restarting replaces its pod. The console's project selector filters the workspace list.
 
 ## Use Kionga resources in a flow
 
@@ -46,28 +46,28 @@ The Kionga Langflow image includes a **Kionga** component category:
 
 The components call a loopback helper in the same workspace pod. The helper holds the revocable workspace API credential and forwards requests through Kionga's existing authorization checks. A flow contains resource IDs and inputs, not the helper credential. A model must have an active endpoint before inference works; a function needs an active OpenFaaS deployment.
 
-An administrator can open **Langflow > Register dataset** to assign a name, project, bucket, and relative object prefix. The API equivalent is `POST /api/v1/admin/datasets`. Kionga lists a dataset only when the user has both project access and a grant for its bucket. Browsing appends a relative prefix, and object previews cannot read a key outside the registered prefix. The gateway uses the existing storage proxy; credentials never enter the Langflow flow.
+An administrator can select **Register** in the **Project datasets** section of the **Langflow** page. The form takes a **Project**, **Name**, **Bucket**, **Object prefix**, and **Description**. The API equivalent is `POST /api/v1/admin/datasets`. Kionga lists a dataset only when the user has both project access and a grant for its bucket. Browsing appends a relative prefix, and object previews cannot read a key outside the registered prefix. The gateway uses the existing storage proxy; credentials never enter the Langflow flow.
 
-The **Object storage connections** list reuses storage sources registered under **Feature stores > Storage connections**. An administrator assigns projects in that connection's `allowed_projects` list. The Langflow components call `GET /api/v1/registered-storage` and its object routes through the gateway; the response contains source IDs, names, and buckets, never endpoints or secret references. The gateway resolves the source credential for each request, signs S3 reads, and caps text previews at 64 KiB. This also supports external S3-compatible data sources without entering credentials in a flow.
+The **Registered storage** section of the **Langflow** page lists the object storage connections that an administrator registered under **Platform > Object storage connections** (**Add object storage**). The section is read-only. An administrator assigns projects in that connection's **Allowed project IDs** field, which is `allowed_projects` in the API. The Langflow components call `GET /api/v1/registered-storage` and its object routes through the gateway; the response contains source IDs, names, and buckets, never endpoints or secret references. The gateway resolves the source credential for each request, signs S3 reads, and caps text previews at 64 KiB. This also supports external S3-compatible data sources without entering credentials in a flow.
 
 ## Capture a flow
 
 Langflow's canvas supports building and testing flows. Its flow database and configuration are stored on the workspace volume.
 
 1. Save the flow in the Langflow canvas.
-2. Return to **Langflow** in Kionga and select **Capture flow**.
-3. Choose the saved flow and a project. Kionga stores a versioned snapshot and rejects exports that contain embedded credentials.
-4. To save a new revision later, select the existing snapshot and capture again. Kionga retains the current revision and up to 20 earlier revisions.
+2. Return to the **Langflow** page in Kionga and select **Capture flow** in the row of the workspace. If the workspace has no saved flow, the console shows `Save a flow in the Langflow canvas before capturing it.`
+3. In the **Capture saved flow** dialog, choose the **Saved flow** and the **Project**, leave **Snapshot** on **New snapshot**, and select **Save snapshot revision**. Kionga stores a versioned snapshot, lists it under **Flow snapshots**, and rejects exports that contain embedded credentials.
+4. To save a new revision later, capture the same flow again and choose the existing snapshot in **Snapshot**. Kionga retains the current revision and up to 20 earlier revisions.
 
 ## Publish a flow as a managed agent
 
 On Kubernetes, a user with both `langflow` and `agents` access can publish a snapshot.
 
-1. Select **Publish** on a snapshot.
-2. Choose its current or retained earlier revision, and set CPU, memory, and replica limits. Kionga creates a managed agent with an independent flow artifact, API endpoint, autoscaler, and project-scoped resource sidecar.
+1. In **Flow snapshots**, select **Publish** in the snapshot's row. The button appears only for snapshots you own, and only if you can write agents.
+2. In the **Publish flow snapshot** dialog, choose the **Revision** (the current or a retained earlier one) and set **Minimum replicas**, **Maximum replicas**, **CPU**, and **Memory**, then select **Publish**. Kionga creates a managed agent with an independent flow artifact, API endpoint, autoscaler, and project-scoped resource sidecar.
 3. Open **Agents** to check status, invoke the agent, and inspect sessions and usage.
-4. When the deployment is ready, select **Activate revision** beside it. This assigns the stable authenticated path `POST /api/v1/langflow-snapshots/{snapshot-id}/invoke` to that deployment.
-5. To roll back, select a ready older deployment. The same path switches to it.
+4. When the deployment is ready, select **Activate revision N** next to it in the **Deployments** column of **Flow snapshots**, where N is its revision number. This assigns the stable authenticated path `POST /api/v1/langflow-snapshots/{snapshot-id}/invoke` to that deployment.
+5. To roll back, select **Roll back to revision N** next to a ready older deployment. The same path switches to it. The **Stable API** column shows the path, or `Not activated`.
 
 Publishing an earlier revision creates a separate deployment, and activation never sends traffic to an unready runtime. Publish is unavailable in local Compose because that profile has only a shared agent runtime.
 
@@ -75,19 +75,20 @@ The managed image executes the exported JSON with LFX 1.13.x and pinned OpenAI, 
 
 ## Monitor a published flow
 
-Kionga records execution summaries and LFX component durations through its agent tracing path. Open **Agents > Recent turns** to inspect status, duration, token availability, and component timings. Token counts are shown as unavailable when the LFX result does not provide usage metadata. Component timing traces contain names and durations, not flow inputs or outputs. On Kubernetes, agent cards show live CPU and memory use for the runtime containers when metrics-server is available. GPU utilization appears when the gateway has a Prometheus GPU telemetry source.
+Kionga records execution summaries and LFX component durations through its agent tracing path. Open **Agents** and read the **Recent traces** table to inspect status, duration, tokens, and **Component timing**. The console shows `Unavailable` for tokens when the LFX result does not provide usage metadata. Component timing traces contain names and durations, not flow inputs or outputs. On Kubernetes, the **Resource usage** column of the agent list shows live CPU, memory, and pod count for the runtime containers when metrics-server is available, and `Unavailable` otherwise. The console does not show GPU utilization. The gateway reports it through the agent metrics API when it has a Prometheus GPU telemetry source.
 
-To show GPU utilization:
+To report GPU utilization:
 
 1. Deploy a DCGM exporter scraped by Prometheus with `namespace` and `pod` labels.
 2. Set the gateway's `KIONGA_GPU_METRICS_URL` to that Prometheus base URL. The gateway queries `DCGM_FI_DEV_GPU_UTIL` for pods owned by the agent and reports the average percentage across their GPUs.
 3. If your exporter uses another Prometheus metric name with the same 0–100 percentage meaning, set `KIONGA_GPU_METRIC_NAME`.
+4. Read the value with `GET /api/v1/agents/{id}/metrics`. The response has `gpu_utilization_available` and `gpu_utilization_percent`.
 
-Keep the Prometheus endpoint on a trusted internal network. When it is absent or has no samples, Kionga displays **GPU utilization unavailable** instead of zero.
+Keep the Prometheus endpoint on a trusted internal network. When it is absent or has no samples, `gpu_utilization_available` is `false` instead of reporting zero.
 
 ## Configure project knowledge bases
 
-An administrator can register a Qdrant or pgvector backend for a project in **Langflow > Register knowledge base** or through `POST /api/v1/admin/knowledge-bases`. Set the credential on the **gateway** first. Kionga stores only an `env:VARIABLE` reference and keeps the endpoint and credential out of the project-facing catalog and flow JSON. Use a separate Qdrant API key or PostgreSQL role with the minimum access needed for each deployment.
+An administrator can register a Qdrant or pgvector backend for a project with **Register** in the **Knowledge bases** section of the **Langflow** page, or through `POST /api/v1/admin/knowledge-bases`. The form has a **Project** selector, a **Backend** selector (**Qdrant** or **PostgreSQL pgvector**) and the fields **Name**, **Dimensions**, **Qdrant endpoint**, **Qdrant secret reference**, and **PostgreSQL DSN reference**. Set the credential on the **gateway** first. Kionga stores only an `env:VARIABLE` reference and keeps the endpoint and credential out of the project-facing catalog and flow JSON. Use a separate Qdrant API key or PostgreSQL role with the minimum access needed for each deployment.
 
 Use a variable named `KIONGA_KB_SECRET_<NAME>`, or the existing `KIONGA_QDRANT_KEY` or `KIONGA_KNOWLEDGE_DSN`. Kionga refuses any other name with a 422 unless an operator allowlists it. To supply the value, see [Secret references](../reference/configuration.md#secret-references). To fix a saved record that uses another name, see [Migrate a stored reference](../operations/production-operations.md#migrate-a-stored-reference). The Langflow editor and agent runtime do not need the backend credentials.
 
@@ -139,7 +140,7 @@ The gateway checks the caller's current project grant on every list, write, and 
 An administrator can assign a fixed HTTPS POST operation to a project.
 
 1. Set the credential variable on the gateway before you invoke the operation.
-2. Open **Langflow > Register agent API**. The form accepts a name, description, full operation URL, and a credential reference such as `env:KIONGA_CONNECTION_SECRET_SUPPORT` or `env:KIONGA_AGENT_API_TOKEN`; use `none` for an unauthenticated service. The API equivalent is `POST /api/v1/admin/agent-api-connections`:
+2. In the **Approved API connections** section of the **Langflow** page, select **Register**. The form accepts a **Project**, **Name**, **Endpoint** (the full operation URL), **Secret reference**, and **Description**. Use a credential reference such as `env:KIONGA_CONNECTION_SECRET_SUPPORT` or `env:KIONGA_AGENT_API_TOKEN`; use `none` for an unauthenticated service. The API equivalent is `POST /api/v1/admin/agent-api-connections`:
 
     ```json
     {
@@ -194,9 +195,9 @@ Kionga enables Langflow's API auto-login mode so its gateway can capture saved f
 
 ## Verify
 
-1. **Workspace:** on Kubernetes, `GET /api/v1/langflow-workspaces` returns `"mode": "kubernetes"` and your instance in `items` with `"ready": true`, and the instance card offers **Open canvas**. On local Compose, the call returns `"mode": "local"` and, for the local administrator, one item named `Local Langflow` with the state `configured`.
+1. **Workspace:** on Kubernetes, `GET /api/v1/langflow-workspaces` returns `"mode": "kubernetes"` and your instance in `items` with `"ready": true`, and the row of the workspace offers **Open canvas**. On local Compose, the call returns `"mode": "local"` and, for the local administrator, one item named `Local Langflow` with the state `configured`.
 2. **Capture:** the snapshot appears in `GET /api/v1/langflow-snapshots`, and its revision number grows each time you capture the same flow again.
-3. **Publish:** the new deployment appears under **Agents**. After you select **Activate revision**, `POST /api/v1/langflow-snapshots/{snapshot-id}/invoke` returns the agent's reply.
+3. **Publish:** the new deployment appears under **Agents**. After you select **Activate revision N**, `POST /api/v1/langflow-snapshots/{snapshot-id}/invoke` returns the agent's reply.
 4. **Compose:** after `make langflow-up`, `http://localhost:8080/console/langflow` loads the Langflow page.
 5. **Kubernetes setup:** for each instance, the workload namespace holds one Deployment, Service, Secret, and persistent volume claim.
 
@@ -218,7 +219,7 @@ Kionga enables Langflow's API auto-login mode so its gateway can capture saved f
 | `422 validation_error`, `flow exceeds the 512 KiB managed deployment limit` | The flow JSON is larger than 512 KiB. | Split the flow or remove unused components. |
 | `403 access_denied`, `Agent deployment service is not assigned` | You have `langflow` but not `agents`. | Ask an administrator for the `agents` service. |
 | `503 agent_not_ready`, `Wait for this deployment to pass its runtime health check` | You activated a deployment that is not ready. | Wait until the deployment is ready, then activate it. |
-| `503 deployment_inactive`, `Activate a ready deployment before invoking this flow` | No deployment is active for the snapshot. | Select **Activate revision** on a ready deployment. |
+| `503 deployment_inactive`, `Activate a ready deployment before invoking this flow` | No deployment is active for the snapshot. | Select **Activate revision N** on a ready deployment. |
 | `422 invalid_request`, `Qdrant requires an HTTP(S) endpoint and none or a permitted env: API-key reference (KIONGA_KB_SECRET_*)` (or the pgvector equivalent) | The secret reference uses a name that the gateway does not permit. | Use `KIONGA_KB_SECRET_<NAME>`, `KIONGA_QDRANT_KEY` or `KIONGA_KNOWLEDGE_DSN`. See [Secret references](../reference/configuration.md#secret-references). |
 
 ## Related pages

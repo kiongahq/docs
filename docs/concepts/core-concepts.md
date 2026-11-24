@@ -49,8 +49,9 @@ for new operations.
 
 On the local stack, Kionga runs the check from inside the stack, so connection
 addresses use service names such as `http://mlflow:5000/health`. The
-**onboarding readiness** score on the Overview page is based on these
-connections and on having at least one project. See
+**Production readiness** section of the **Platform** page shows the percentage of
+checks that are ready. It is based on healthy Kubernetes, MLflow, object storage
+and Kafka connections and on having at least one project. See
 [Service endpoints](../reference/service-endpoints.md).
 
 ## Quality gates and promotion
@@ -87,7 +88,7 @@ Anthropic directly, so the trace proxy does not capture those calls.
 
 On the local stack, all agents share one runtime. On Kubernetes, each agent gets
 its own runtime, and an agent with a replica range scales automatically. The
-console enables **Chat** only when the agent's runtime passes a live health check.
+console enables **Chat** only when the agent's status is `ready`.
 
 ## Online and offline features
 
@@ -105,8 +106,8 @@ entity counts back to Kionga. You can also connect external feature stores; see
 The real-time processor consumes Kafka topics, enriches each event with online
 features, scores it with a model or an agent, and publishes the result. It ships
 with three examples: fraud detection, call-center analysis and personalized
-recommendations. The console's **Real-time** page shows throughput, latency and
-recent scored events. See [Real-time processing](../guides/realtime.md).
+recommendations. The console's `Realtime` page shows each example's event count and
+average latency, and the number of flagged events for fraud detection. See [Real-time processing](../guides/realtime.md).
 
 ## Serverless functions
 
@@ -115,8 +116,8 @@ audit, the console, and their use as pipeline steps. On Kubernetes, Kionga runs
 functions itself and scales them to zero when idle; see
 [Run functions on Kubernetes](../guides/functions.md). On Compose and
 single-server installs, functions run on an OpenFaaS gateway (or faasd) that an
-administrator provides and connects with `OPENFAAS_URL`. Until then, functions
-show as not configured.
+administrator provides and connects with `OPENFAAS_URL`. Until then, the
+**Functions** page shows `Runtime: Not configured`.
 
 ## Roles
 
