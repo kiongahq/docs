@@ -115,7 +115,10 @@ jobs:
       contents: read
       pages: write
       id-token: write
-    if: github.event_name != 'pull_request'
+    # The github-pages environment accepts deployments from main only, so a
+    # release (whose ref is its tag) never deploys here: redeploy-from-main
+    # starts this workflow on main instead.
+    if: github.event_name != 'pull_request' && github.event_name != 'release'
     needs: build
     runs-on: ubuntu-latest
     environment:
@@ -124,3 +127,16 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4
+
+  # A published release should reach the changelog without waiting for the
+  # hourly run. Its own run cannot deploy (the ref is the tag), so it starts
+  # this workflow on main, which builds and deploys under the environment rule.
+  redeploy-from-main:
+    if: github.event_name == 'release'
+    permissions:
+      actions: write
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run pages.yml --ref main --repo "$GITHUB_REPOSITORY"
