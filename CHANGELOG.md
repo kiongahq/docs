@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.0.1](https://github.com/kiongahq/docs/compare/v2.0.0...v2.0.1) (2026-11-25)
+
+
+### Documentation
+
+* applications, functions, model canary, prerequisites and managed operations on Kubernetes ([#69](https://github.com/kiongahq/docs/issues/69)) ([3611b2e](https://github.com/kiongahq/docs/commit/3611b2e16fe64d05d0517e13d141666de8ec6952))
+* container user, rebuild status, sign-in, model input example and SDK updates ([a7a4207](https://github.com/kiongahq/docs/commit/a7a4207a23636401df2c5359883fffa42c037c35))
+* correct two notes about platform v0.2.1 behaviour ([309eaed](https://github.com/kiongahq/docs/commit/309eaed78123ab66325388170d02a0e0beb9f286))
+* describe the console changes for roles, storage, workspaces, runs and agents ([661fccb](https://github.com/kiongahq/docs/commit/661fccbfb1ae385e275c1e89b5999ca447d4c953))
+* **guides:** add verify, troubleshooting and related pages to the agent and platform guides ([2fe197e](https://github.com/kiongahq/docs/commit/2fe197edd2d5e88554600c06e6acdeac87003521))
+* **guides:** add verify, troubleshooting and related pages to the model, pipeline and workspace guides ([74d8815](https://github.com/kiongahq/docs/commit/74d881591b50fbe3170589e0e81284efeff5bfc9))
+* match console labels in the remaining guides, getting started and concepts ([7671865](https://github.com/kiongahq/docs/commit/7671865e9a6ea46993795da4d55388a19ba17117))
+* **operations:** add verify, troubleshooting and related pages to the operations guides, quickstart steps and how-it-works ([dbf9547](https://github.com/kiongahq/docs/commit/dbf954774e63790248dfa259f6b440c4e68be595))
+* **operations:** match console labels in operations and reference pages ([00fd0dd](https://github.com/kiongahq/docs/commit/00fd0dd257fddcaa60ee26055380649de85d216f))
+* **structure:** check every page against the shape of its type ([#71](https://github.com/kiongahq/docs/issues/71)) ([f337802](https://github.com/kiongahq/docs/commit/f3378029bacce007e34b6af7258b8f97d443e8b8))
+* **structure:** close the bypasses a review found in the structure check ([f78b456](https://github.com/kiongahq/docs/commit/f78b4565a1e4c04d8f369fa32db2abd0a547c292))
+
 ## [2.0.0](https://github.com/kiongahq/docs/compare/v1.1.0...v2.0.0) (2026-11-23)
 
 
