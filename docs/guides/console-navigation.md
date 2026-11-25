@@ -125,6 +125,12 @@ restarting the gateway.
 6. In the **Connected infrastructure** table, click **Use for new operations** on
    the connection's row.
 
+To change a connection later, click **Edit** in its row. The service of an
+active runtime can't change, and Kionga checks a new address or credential
+before it saves it; see
+[Register connections in the console](../reference/service-endpoints.md#register-connections-in-the-console).
+Editing a connection is not in platform v0.2.1 or earlier.
+
 Kionga refuses to switch while any pipeline run is queued or running, so a run
 never changes its destination. When several connections of a type have been
 activated, the most recent one wins. Register your Prefect workers and

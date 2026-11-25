@@ -244,7 +244,11 @@ and `/api/v1/me` reports `connector` and the latest `access_request` status.
   `KIONGA_ENVIRONMENT=production` the gateway refuses to start when that password
   is shorter than 16 characters or contains `local`, `change-me`, or `password`.
   Failed local sign-ins are throttled per account (a doubling delay after 5
-  failures, up to 60 s). While local sign-in is on, administrators can also issue
+  failures, up to 60 s). Each gateway replica counts failures by itself, so
+  several replicas allow more attempts in total. Local sessions are stored in
+  PostgreSQL as a hash, work on every gateway replica, and end everywhere on
+  sign-out; see [Configuration](../reference/configuration.md#rbac). While
+  local sign-in is on, administrators can also issue
   local passwords to provisioned users; turn it off (`KIONGA_LOCAL_LOGIN` unset)
   when the identity provider must own every credential.
 - Map groups to the least privileged roles, and grant project and service access
@@ -293,8 +297,18 @@ and `/api/v1/me` reports `connector` and the latest `access_request` status.
 | Gateway exits with `KIONGA_SSO_PROVIDERS is not a JSON list of {id, name, type}` or `KIONGA_SSO_GROUP_ROLES maps "<group>" to unknown role "<role>"` | The value is not valid JSON, or a group maps to a role that does not exist. The valid roles are `admin`, `operator`, `engineer`, `user` and `viewer` |
 | Gateway exits with `requires KIONGA_LOCAL_PASSWORD` | `KIONGA_LOCAL_LOGIN=true` next to SSO needs an explicit break-glass password |
 | Gateway exits with `must be at least 16 characters and not a development default` | Production mode rejects a short or default break-glass password; set a long random `KIONGA_LOCAL_PASSWORD` (or `KIONGA_LOCAL_PASSWORD_FILE`) |
-| Local form says "Too many failed attempts for this account" | After 5 failures each attempt waits up to 60 s; wait, then use the correct password. Failures reset after 15 minutes or on success |
+| Local form says "Too many failed attempts for this account" | After 5 failures each attempt waits up to 60 s; wait, then use the correct password. Failures reset after 15 minutes or on success. Each gateway replica keeps its own count |
+| Local sign-in returns `503` with `could not create session` | The gateway could not store the session, so it issued none. Check that the gateway can reach PostgreSQL, then sign in again |
+| Sign-out returns `503` with `could not end the session` | The gateway could not revoke the session and kept the cookie. Check that the gateway can reach PostgreSQL, then sign out again |
+| A local session is signed out on some requests | On platform v0.2.1 and earlier with two or more gateway replicas, a local session is known only to the replica that issued it. Later releases store sessions in PostgreSQL |
+| An application shows `Sign-in link expired, already used or invalid. Open the application again.` (`401`) | The sign-in link for an `sso` application works once and for 60 seconds. Open the application's address again to start a new sign-in; don't reload or share the link |
+| An application shows `Sign-in is temporarily unavailable. Open the application again.` (`503`) | The gateway could not record the sign-in link as used, so it refused it. Check that the gateway can reach PostgreSQL, then open the application again |
 | SSO works on this machine but not from another | Ports bind to `127.0.0.1` by default, and the browser is sent to `localhost`. Set `KIONGA_BIND_ADDRESS`, `KIONGA_GATEWAY_URL`, and `DEX_ISSUER` as in [Network exposure](local.md#network-exposure) |
+
+!!! info "Available in a later release"
+    Local sessions in PostgreSQL, the two `503` answers for local sign-in and
+    sign-out, and the application sign-in messages are not in platform v0.2.1
+    or earlier.
 
 ## Related pages
 

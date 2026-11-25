@@ -367,13 +367,39 @@ A normal user sees only the buckets in their access profile.
 | Method | Path | Access | Service | Purpose |
 | --- | --- | --- | --- | --- |
 | `GET` | `/api/v1/connections` | read | `platform` | List connections |
-| `POST` | `/api/v1/connections` | admin | | Create a connection: `name`, `type`, `endpoint`, `secret_ref` (`none` or `env:VARIABLE`) |
+| `POST` | `/api/v1/connections` | admin | | Create a connection: `name`, `type`, `endpoint`, `secret_ref` (`none` or `env:VARIABLE`). A name that another connection uses returns `409 conflict`. |
+| `PUT` | `/api/v1/connections/{id}` | admin | | Replace a connection's `name`, `type`, `endpoint` and `secret_ref`, under the rules of create |
 | `POST` | `/api/v1/connections/{id}/test` | admin | | Health-check a connection now |
 | `POST` | `/api/v1/connections/{id}/activate` | admin | | Use a Prefect or OpenFaaS connection for new operations |
 | `GET` | `/api/v1/components` | read | `platform` | Live health of each platform component |
 | `GET` | `/api/v1/observability/log-export` | read | `platform` | Log exporter state ([Log export](../operations/log-export.md)) |
 | `GET` | `/api/v1/catalog` | read | `catalog` | Shared catalog; `kind` filter: `model`, `feature`, `agent`, `tool` |
 | `GET` | `/api/v1/prompts` | read | `catalog` | Langfuse prompt library |
+
+`PUT /api/v1/connections/{id}` follows these rules, and a refused update saves
+nothing:
+
+| Case | Response |
+| --- | --- |
+| The new `name` belongs to another connection | `409 conflict` |
+| The connection was never activated, and its `type`, `endpoint` or `secret_ref` changes | Saved, with the status `pending` until the next test |
+| The connection is an active runtime, and `type` changes | `409 active_runtime` |
+| The connection is an active runtime, and `endpoint` or `secret_ref` changes | Saved only after the checks that activation runs. A failed check returns the same error as activation: `422 credential_unavailable`, `409 runs_active` or `422 connection_failed`. |
+
+`POST /api/v1/connections/{id}/test` and `POST /api/v1/connections/{id}/activate`
+return `409 connection_changed` when the connection was edited while the check
+ran. Send the request again.
+
+`GET /api/v1/registered-storage` lists the object storage connections that the
+caller can use, each with `id`, `name`, `bucket` and `project_ids`. `project_ids`
+holds the projects the connection is shared with that the caller can reach, and
+never a project outside the caller's own scope. It is a `read` route of the
+`langflow` service.
+
+!!! info "Available in a later release"
+    `PUT /api/v1/connections/{id}`, `409 connection_changed` and `project_ids`
+    are not in platform v0.2.1 or earlier. In those versions a PostgreSQL
+    install also accepts a second connection with a name that is in use.
 
 ## Applications
 

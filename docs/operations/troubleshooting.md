@@ -253,7 +253,8 @@ attempts, each further attempt waits a doubling delay (1, 2, 4 seconds and so
 on, up to 60 seconds).
 
 **Fix.** Wait a minute and use the correct password. Failures are forgotten
-after 15 minutes, after a successful sign-in, or when the gateway restarts.
+after 15 minutes, after a successful sign-in, or when the gateway restarts. Each
+gateway replica keeps its own count.
 
 ### The stack is broken after an update
 
@@ -425,6 +426,39 @@ port to `networkPolicy.externalEgress`:
 kubectl --context CONTEXT -n kionga-system logs deployment/kionga-gateway --tail 100
 kubectl --context CONTEXT -n kionga-system get externalsecrets
 ```
+
+### An application's sign-in link is refused
+
+**Cause.** The gateway signs people in to an `sso` application with a link
+that works once, for 60 seconds, for that application only. The messages are:
+
+| Status | Message | Cause |
+| --- | --- | --- |
+| `401` | `Sign-in link expired, already used or invalid. Open the application again.` | The link was used before, is older than 60 seconds, or was changed. A reload of the link, or a second person who opens it, gets this answer. |
+| `503` | `Sign-in is temporarily unavailable. Open the application again.` | The gateway could not reach its database to record the link as used, so it refused the link. |
+
+**Fix.** Open the application's address again, which starts a new sign-in. For
+`503`, first check that the [gateway pods are ready](#gateway-pods-are-not-ready)
+and can reach PostgreSQL. See
+[Sign-in for single sign-on applications](../guides/applications.md#application-sign-in).
+
+!!! info "Available in a later release"
+    Sign-in on an application's host is not in platform v0.2.1 or earlier.
+
+### Local sign-in or sign-out returns `503`
+
+**Cause.** The gateway keeps local sessions in PostgreSQL. When it can't store
+a new session, sign-in returns `503` with `could not create session` and issues
+no session. When it can't revoke a session, sign-out returns `503` with `could
+not end the session` and keeps the cookie, so the session is not reported as
+ended while it is still valid.
+
+**Fix.** Check that the gateway can reach PostgreSQL, then sign in or sign out
+again.
+
+!!! info "Available in a later release"
+    In platform v0.2.1 and earlier, each gateway replica keeps local sessions
+    in its own memory, and these two answers don't occur.
 
 ### A workspace is `Failed` with reason `StorageNotAllowed`
 

@@ -104,6 +104,20 @@ forgotten after 15 minutes or on a successful sign-in. The local session cookie
 is HttpOnly and SameSite=Lax, and Secure when the gateway is reached over HTTPS
 (directly or with `X-Forwarded-Proto: https`).
 
+A local session lasts 8 hours. With `DATABASE_URL` set, the gateway keeps local
+sessions in PostgreSQL, so a session works on every gateway replica and signing
+out ends it on all of them. The database holds only a SHA-256 hash of the cookie
+value, with the account and the expiry, never the cookie value itself. When the
+gateway uses the local JSON file, sessions stay in the memory of the one
+gateway process. Failed attempts are counted in each replica's memory, so with
+several replicas the throttle applies per replica.
+
+!!! info "Available in a later release"
+    In platform v0.2.1 and earlier, every local session stays in the memory of
+    the gateway replica that issued it. With two or more replicas, requests
+    that reach another replica are signed out, and signing out reaches one
+    replica only.
+
 See [RBAC & security](rbac.md) for the full model and
 [Single sign-on](../operations/single-sign-on.md) for LDAP, SAML and OAuth providers.
 
@@ -178,7 +192,7 @@ Used by the agent runtime and trace proxy.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `KIONGA_LLM_BACKEND` | `mock` | `openai` \| `anthropic` \| `openai-compatible` \| `mock` |
+| `KIONGA_LLM_BACKEND` | `mock` | `openai` \| `anthropic` \| `openai-compatible` \| `self-hosted` \| `mock`. `self-hosted` is another name for `openai-compatible`. |
 | `KIONGA_LLM_MODEL` | *(empty)* | Model name for the chosen backend |
 | `KIONGA_LLM_BASE_URL` | `http://trace-proxy:8081/v1` | Base URL for the `openai` and `openai-compatible` backends; Compose points it at the trace proxy for capture |
 | `OPENAI_API_KEY` | *(empty)* | The key the `openai` and `openai-compatible` backends send. Behind the trace proxy this is your Kionga project key, not a provider key; see [Project keys](../guides/agents.md#project-keys) |

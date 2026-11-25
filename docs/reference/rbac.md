@@ -206,7 +206,7 @@ examples.
 | `feature:Read` | `kionga:feature/<name>` | Seeing feature views |
 | `feature:Write` | `kionga:feature/<name>` | Applying feature views and reporting materializations |
 | `secret:Read` | `kionga:connection/<id>` | Reserved; Kionga never returns secrets |
-| `infra:Provision` | `kionga:connection/<id>` | Creating, testing and activating connections |
+| `infra:Provision` | `kionga:connection/<id>` | Creating, editing, testing and activating connections |
 | `blog:Write` | `kionga:blog/<id>` | Creating and editing blog drafts |
 | `blog:Publish` | `kionga:blog/<id>` | Publishing a blog post |
 | `policy:Read` | `kionga:policy/<id>`, `kionga:user/<subject>` | Reading policies, groups and attachments; explaining another person's access |

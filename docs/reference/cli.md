@@ -161,6 +161,7 @@ with the `not_configured` reply and its steps.
 | `kionga apps list [--project <id>]` | List applications with phase, replicas and URL | `GET /api/v1/applications` |
 | `kionga apps get <name>` | Show one application with its status | `GET /api/v1/applications/{name}` |
 | `kionga apps logs <name> [--tail N] [--container NAME]` | Print recent logs of each pod, 1 to 2000 lines (default 200) | `GET /api/v1/applications/{name}/logs` |
+| `kionga apps logs <name> --follow [--since TIME]` | Print new lines as the pods write them, until you press Ctrl-C. `--since` takes an RFC 3339 time or an age such as `30s`, `10m`, `2h` or `1d`, and needs `--follow`. | `GET /api/v1/applications/{name}/logs` with `follow=true` |
 | `kionga apps events <name>` | Print Kubernetes events, newest first | `GET /api/v1/applications/{name}/events` |
 | `kionga apps redeploy <name>` | Restart the pods, and rebuild a Git source | `POST /api/v1/applications/{name}/redeploy` |
 | `kionga apps delete <name> [-y]` | Delete the application, after confirmation unless `-y` | `DELETE /api/v1/applications/{name}` |
@@ -177,8 +178,17 @@ with the `not_configured` reply and its steps.
 | `--min-replicas`, `--max-replicas` | The replica range. A minimum of 0 scales to zero. |
 | `--scale-on requests\|cpu` with `--target N` | The autoscaling trigger and its target. Pass both. |
 | `--health-path` | The health check path. Default `/`. |
-| `--visibility public\|sso` | Who can reach it. Default `sso`. |
+| `--visibility public\|sso\|internal` | Who can reach it. Default `sso`. `internal` gives the application no host. |
+| `--run-as-user UID` | The numeric user that the containers run as, from 1 to 2147483647, for an image that runs as root or names its user. |
+| `--no-run-as-user` | `update` only. Removes the user, so the image's own user applies. |
 | `--wait`, `--timeout SECONDS`, `--json` | Wait until ready (default 600 seconds), and print JSON instead of a table. |
 
-`kionga apps logs --follow` arrives in a later SDK release. To follow logs now, use
-the [streaming log API](../guides/applications.md#logs).
+`kionga apps update` keeps the settings that you don't pass, the user set with
+`--run-as-user` included. A followed log stream resumes after a dropped
+connection without repeating or missing lines, and ends with status 0 on Ctrl-C.
+
+!!! info "Available in a later release"
+    `--follow`, `--since`, `--run-as-user`, `--no-run-as-user` and the
+    `internal` visibility are not in SDK v0.3.2 or earlier. To follow logs with
+    those versions, use the
+    [streaming log API](../guides/applications.md#logs).

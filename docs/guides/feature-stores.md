@@ -89,23 +89,42 @@ server is serving at ...`. Other results mean:
 
 ## Share a store with projects
 
-To change which projects can use a store after you connect it, send the full
-connection with the new `allowed_projects` list. The console has no edit form;
-there you remove the store and connect it again.
+To change which projects can use a store after you connect it, edit the
+connection. The same steps change its name, URL, feature services or secret
+reference.
 
 1. Update the connection:
 
-    ```bash
-    curl -s -b kionga.cookies -X PUT \
-      "$KIONGA_URL/api/v1/admin/feature-stores/<store-id>" \
-      -H 'Content-Type: application/json' \
-      -d '{"provider": "feast", "name": "team-feast",
-           "config": {"url": "http://feast-feature-server:6566"},
-           "secret_ref": "env:FEAST_TOKEN",
-           "allowed_projects": ["prj-123", "prj-456"]}'
-    ```
+    === "Console"
 
-2. Test it again, because saving resets its health to `configured`.
+        1. Open **Platform**. Under **Feature store connections**, click
+           **Edit** in the store's row. The built-in `internal` store has no
+           **Edit** button.
+        2. The **Edit feature store** dialog opens with the stored settings.
+           **Secret reference** shows the name of the gateway variable, never
+           the credential.
+        3. Change **Allowed project IDs**, and click **Save and test**.
+
+    === "API"
+
+        Send the full connection with the new `allowed_projects` list:
+
+        ```bash
+        curl -s -b kionga.cookies -X PUT \
+          "$KIONGA_URL/api/v1/admin/feature-stores/<store-id>" \
+          -H 'Content-Type: application/json' \
+          -d '{"provider": "feast", "name": "team-feast",
+               "config": {"url": "http://feast-feature-server:6566"},
+               "secret_ref": "env:FEAST_TOKEN",
+               "allowed_projects": ["prj-123", "prj-456"]}'
+        ```
+
+2. Test it again, because saving resets its health to `configured`. In the
+   console, **Save and test** runs the test for you.
+
+!!! info "Available in a later release"
+    In platform v0.2.1 and earlier, the console has no **Edit** button for a
+    feature store. Use the API, or remove the store and connect it again.
 
 Project members see a store only when it is shared with one of their projects
 (or with every project), and they see only their own project IDs on it.
