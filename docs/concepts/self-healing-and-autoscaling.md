@@ -96,23 +96,38 @@ would block node drains.
 
 **Locked-down pods.** Application and function pods run as a non-root user with
 all Linux capabilities dropped, privilege escalation off, the container
-runtime's default seccomp profile, and no Kubernetes API token. Your image must
-set a numeric non-root user (`USER 10001` in a Dockerfile), or Kubernetes
-refuses to start it.
+runtime's default seccomp profile, and no Kubernetes API token. Kubernetes
+refuses to start an image that runs as root or names its user instead of
+numbering it. Either build the image with a numeric non-root user (`USER 10001`
+in a Dockerfile), or set the workload's
+[`run_as_user`](../guides/applications.md#container-user) to a numeric user ID
+that the image can run as. A refused image makes the workload `Failed` with the
+reason `ImageRunsAsRoot` or `ImageUserNotNumeric`.
+
+!!! info "Available in a later release"
+    `run_as_user` and the two reasons are not in platform v0.2.1 or earlier. In
+    those versions the image must set the numeric user itself, and a refused
+    image shows only as a rollout that doesn't finish.
 
 **What you see.** The workload resource's status reports one phase:
 
 | Phase | Meaning |
 | --- | --- |
-| `Building` | A Git source is building for the first time. Nothing runs yet. |
+| `Building` | The build for the current Git source, or for a redeploy of it, is running. On the first build nothing runs yet. On a later build, the pods of the previous build keep running. |
 | `Progressing` | A rollout is underway, or the first pods are starting. |
-| `Ready` | The current version has the replicas it needs, or it is scaled to zero on purpose. |
+| `Ready` | The current version has the replicas it needs, or it is scaled to zero on purpose. For a Git source, the pods run the image built for the current configuration. |
 | `Degraded` | No rollout is underway, but fewer replicas are available than the minimum. For example, a pod crashed and is restarting. |
-| `Failed` | The spec is invalid, a referenced Secret is missing, the build or rollout failed, or the rollout exceeded its deadline. The status message gives the reason. |
+| `Failed` | The spec is invalid, a referenced Secret is missing, the build or rollout failed, Kubernetes refused the image's user, or the rollout exceeded its deadline. The status message gives the reason. After a failed rebuild, the previous build stays deployed. |
 
 The console and the API show a simpler status for an application or function:
 `ready`, `scaled-to-zero`, `pending` or `failed`. `Building`, `Progressing` and
 `Degraded` all appear as `pending`, with the phase and its reason in the message.
+
+!!! info "Available in a later release"
+    In platform v0.2.1 and earlier, `Building` covers only the first build. A
+    workload whose previous build is healthy stays `Ready` while a rebuild runs
+    and after a rebuild fails. See
+    [Status during a rebuild](../guides/applications.md#rebuild-status).
 
 ## Autoscaling
 

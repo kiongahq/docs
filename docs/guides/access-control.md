@@ -182,7 +182,7 @@ scoped per principal at evaluation time.
 | `feature:Read` | See feature views | feature list and the events digest |
 | `feature:Write` | Apply feature views, report materializations | `POST /api/v1/features` |
 | `secret:Read` | Reserved; the gateway never returns secrets today | not yet enforced |
-| `infra:Provision` | Create, test and activate connections | connection writes |
+| `infra:Provision` | Create, edit, test and activate connections | connection writes |
 | `blog:Write` | Reserved | not enforced; the engineering blog uses [editorial roles](engineering-blog.md#roles) |
 | `blog:Publish` | Reserved | not enforced; the engineering blog uses editorial roles |
 | `policy:Read` | Read IAM objects; explain another principal | `/api/v1/admin/iam/*` reads, `explain`/`effective` for others |
@@ -192,6 +192,10 @@ scoped per principal at evaluation time.
 
 Models, agents, functions, storage and the catalog are governed by the coarse
 gate plus project assignment; they have no policy actions yet.
+
+!!! info "Available in a later release"
+    Editing a connection, which `infra:Provision` also governs, is not in
+    platform v0.2.1 or earlier.
 
 ### Resources
 

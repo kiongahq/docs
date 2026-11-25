@@ -215,8 +215,11 @@ passes run parameters through unchecked, with a preflight warning.
    progress and provenance (the flow revision and hash, the overrides and the
    policy decision), and the **Execution graph**.
 
-    - The `owner` fact is your email address for a run you started, and the
-      owner's subject for a run that someone else started.
+    - The `owner` fact is your email address for a run you started. For a
+      run that someone else started, an administrator or operator sees the
+      owner's email address, and everyone else sees the owner's subject. An
+      owner without an email address on their access profile shows as the
+      subject.
     - The `trigger` fact and the **Trigger** column of **Run history** use the
       same labels: `Manual`, `Schedule`, `API`, `Event` or `Retry`.
     - A run that has no recorded owner or trigger shows `Unknown`.
@@ -224,7 +227,8 @@ passes run parameters through unchecked, with a preflight warning.
     !!! info "Available in a later release"
         In platform v0.2.1 and earlier, the run dialog shows neither an owner
         nor a trigger, and the **Trigger** column shows the stored value, for
-        example `manual`.
+        example `manual`. The API's `owner_label` field, which carries the
+        email address or subject described here, is not in those versions.
 2. Select a node, or select **Inspect node** in its row, to see its timing,
    attempt, dependencies, and its logs and events under **Node logs**. You can
    filter by severity and source, search, load earlier lines, and follow the live

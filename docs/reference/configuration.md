@@ -104,6 +104,20 @@ forgotten after 15 minutes or on a successful sign-in. The local session cookie
 is HttpOnly and SameSite=Lax, and Secure when the gateway is reached over HTTPS
 (directly or with `X-Forwarded-Proto: https`).
 
+A local session lasts 8 hours. With `DATABASE_URL` set, the gateway keeps local
+sessions in PostgreSQL, so a session works on every gateway replica and signing
+out ends it on all of them. The database holds only a SHA-256 hash of the cookie
+value, with the account and the expiry, never the cookie value itself. When the
+gateway uses the local JSON file, sessions stay in the memory of the one
+gateway process. Failed attempts are counted in each replica's memory, so with
+several replicas the throttle applies per replica.
+
+!!! info "Available in a later release"
+    In platform v0.2.1 and earlier, every local session stays in the memory of
+    the gateway replica that issued it. With two or more replicas, requests
+    that reach another replica are signed out, and signing out reaches one
+    replica only.
+
 See [RBAC & security](rbac.md) for the full model and
 [Single sign-on](../operations/single-sign-on.md) for LDAP, SAML and OAuth providers.
 
@@ -178,10 +192,10 @@ Used by the agent runtime and trace proxy.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `KIONGA_LLM_BACKEND` | `mock` | `openai` \| `anthropic` \| `openai-compatible` \| `mock` |
+| `KIONGA_LLM_BACKEND` | `mock` | `openai` \| `anthropic` \| `openai-compatible` \| `self-hosted` \| `mock`. `self-hosted` is another name for `openai-compatible`. |
 | `KIONGA_LLM_MODEL` | *(empty)* | Model name for the chosen backend |
-| `KIONGA_LLM_BASE_URL` | `http://trace-proxy:8081/v1` | Base URL for the `openai` and `openai-compatible` backends; Compose points it at the trace proxy for capture |
-| `OPENAI_API_KEY` | *(empty)* | The key the `openai` and `openai-compatible` backends send. Behind the trace proxy this is your Kionga project key, not a provider key; see [Project keys](../guides/agents.md#project-keys) |
+| `KIONGA_LLM_BASE_URL` | `http://trace-proxy:8081/v1` | Base URL for the `openai`, `openai-compatible` and `self-hosted` backends; Compose points it at the trace proxy for capture |
+| `OPENAI_API_KEY` | *(empty)* | The key the `openai`, `openai-compatible` and `self-hosted` backends send. Behind the trace proxy this is your Kionga project key, not a provider key; see [Project keys](../guides/agents.md#project-keys) |
 | `ANTHROPIC_API_KEY` | *(empty)* | Provider key for the `anthropic` backend, which calls Anthropic directly (env-only; never logged or traced) |
 | `LLM_UPSTREAM_URL` | `https://api.openai.com` | Where the trace proxy forwards calls |
 | `LLM_UPSTREAM_API_KEY` | *(empty)* | Provider key the trace proxy sends upstream |
@@ -446,11 +460,13 @@ Applications, functions and model endpoints on Kubernetes. See
 
 ## Kubernetes scale path (optional)
 
-Read by the operator and integration worker only:
+Read by the operator and integration worker, except where a row names the
+gateway:
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `MLFLOW_URL` | in-cluster MLflow | Model lifecycle integration |
+| `MLFLOW_URL` | in-cluster MLflow | Model lifecycle integration. The gateway also reads it, to return a model's [input example](../guides/models-serving.md#input-example); without it, that route returns `409 not_configured`. |
+| `MLFLOW_TOKEN` | *(unset)* | Bearer token for MLflow, when MLflow requires one. Read by the operator and by the gateway. Deliver it as a secret, for example with `MLFLOW_TOKEN_FILE`. |
 | `WORKBENCH_IMAGE` | `ghcr.io/kiongahq/jupyter:latest` | Image for provisioned Jupyter containers |
 | `IDE_IMAGE` | `ghcr.io/kiongahq/ide:latest` | Image for provisioned IDE containers |
 | `KIONGA_IMAGE_PULL_SECRETS` | unset | Comma-separated Secret names referenced by every workspace and agent pod (private registries). The Secrets must exist in the workload namespace. Helm sets it from `imagePullSecrets` |
@@ -461,6 +477,15 @@ Read by the operator and integration worker only:
 | `KIONGA_TARGET_NAMESPACE` | `default` | Namespace where lifecycle CRDs, workspaces and the application, function and model deployment resources are created |
 | `KIONGA_AGENT_NAMESPACE` | `default` | Namespace the gateway uses for ID-derived agent Service DNS; keep equal to the agent lifecycle target namespace |
 | `TRACE_PROXY_IMAGE` | `ghcr.io/kiongahq/trace-proxy:latest` | Sidecar image reconciled into every Kubernetes agent pod |
+
+The Helm chart delivers `config.MLFLOW_URL` to the gateway and the operator in
+one shared configuration file. When MLflow needs a token, give `MLFLOW_TOKEN`
+to both components as a secret.
+
+!!! info "Available in a later release"
+    The gateway does not read `MLFLOW_URL` or `MLFLOW_TOKEN` in platform v0.2.1
+    or earlier. The Compose stack in deploy v0.2.0 and earlier does not set
+    `MLFLOW_URL` on the gateway.
 
 These configure the Kubernetes fidelity path and are not needed for local or
 single-VM use. If `AGENT_RUNTIME_URL` remains set in a Kubernetes gateway it

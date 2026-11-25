@@ -88,6 +88,25 @@ infrastructure** dialog enter the **Service**, a **Connection name**, its
 connection and tests it at once. To test it again, select **Test** on the
 connection in the **Connected infrastructure** section.
 
+To change a connection, select **Edit** in its row. The **Edit connection**
+dialog opens with the stored values, and **Save and test** saves your changes
+and tests the connection again. These rules apply:
+
+| Change | Result |
+| --- | --- |
+| A name that another connection uses | Refused with `409 conflict`. The same applies when you create a connection. |
+| The service, address or credential reference of a connection that was never activated | Saved. The status returns to `pending` until the connection is tested again. |
+| The service of a connection that is an active runtime | Refused with `409 active_runtime`. The **Service** field is read-only in the dialog. Create a new connection instead. |
+| The address or credential reference of an active runtime | Saved only after the new target passes the checks that activation runs. No pipeline run can be queued or running, and the service must answer. The connection stays the active runtime. |
+
+A refused change saves nothing. If someone edits a connection while you test or
+activate it, the test or activation returns `409 connection_changed`, so a
+result is never recorded for a target that was not checked. Try again.
+
+!!! info "Available in a later release"
+    Editing a connection is not in platform v0.2.1 or earlier. In those
+    versions, create a new connection instead.
+
 Kionga runs the check from inside the stack, so use the inside-the-stack
 addresses:
 
@@ -121,8 +140,8 @@ addresses:
   authentication failures are reported as failures, with the reason.
 - You can make a Prefect or OpenFaaS connection the engine for new operations
   with **Use for new operations**. Other types only monitor availability.
-- Creating, testing and activating connections needs the `infra:Provision`
-  permission, which `admin` and `operator` have.
+- Creating, editing, testing and activating connections needs the
+  `infra:Provision` permission, which `admin` and `operator` have.
 
 The **Production readiness** section of the **Platform** page lists five checks:
 **Create a workspace**, **Connect Kubernetes**, **Connect MLflow**, **Connect
@@ -134,10 +153,11 @@ that check stays `pending` unless you connect one, for example a Kind cluster.
 ## Connect more services
 
 - **A real language model for agents**: in `deploy/.env`, set
-  `KIONGA_LLM_BACKEND` (`openai`, `anthropic` or `openai-compatible`), the
-  provider key, and optionally `KIONGA_LLM_MODEL`, then recreate the agent
-  runtime. The `openai` and `openai-compatible` backends go through the trace
-  proxy, so every call is recorded; `anthropic` calls Anthropic directly. See
+  `KIONGA_LLM_BACKEND` (`openai`, `anthropic`, `openai-compatible` or
+  `self-hosted`), the provider key, and optionally `KIONGA_LLM_MODEL`, then
+  recreate the agent runtime. The `openai` and `openai-compatible` backends,
+  and `self-hosted`, which is another name for `openai-compatible`, go through
+  the trace proxy, so every call is recorded; `anthropic` calls Anthropic directly. See
   [LLM providers](configuration.md#llm-providers).
 - **Live models and agents in the real-time examples**: set
   `FRAUD_MODEL_ENDPOINT` to a deployed model's endpoint URL and

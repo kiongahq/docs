@@ -345,7 +345,7 @@ Publishing requires a Kubernetes-managed runtime. See the
 | `list_tools()` | `list[Tool]` | `GET /api/v1/tools` |
 | `register_tool(name, version, description, input_schema, *, tags=None)` | `Tool` | `POST /api/v1/tools` |
 | `list_functions()` | `list[Function]` | `GET /api/v1/functions` |
-| `deploy_function(project_id, name, image, *, cpu="500m", memory="512Mi", env_vars=None, annotations=None, min_replicas=None, max_replicas=None, scaling=None)` | `Function` | `POST /api/v1/functions` |
+| `deploy_function(project_id, name, image, *, cpu="500m", memory="512Mi", env_vars=None, annotations=None, min_replicas=None, max_replicas=None, scaling=None, run_as_user=None, labels=None, visibility=None)` | `Function` | `POST /api/v1/functions` |
 | `invoke_function(name, payload)` | `dict` | `POST /api/v1/functions/{name}/invoke` |
 | `invoke_function_async(name, payload)` | `dict` | `POST /api/v1/functions/{name}/invoke-async` |
 | `delete_function(name)` | `None` | `DELETE /api/v1/functions/{name}` |
@@ -369,7 +369,7 @@ Applications run on Kubernetes installs only. Every method raises
 
 | Method | Returns | API call |
 | --- | --- | --- |
-| `create_application(project_id, name, *, image=None, source=None, port=None, env=None, secret_refs=None, cpu=None, memory=None, min_replicas=None, max_replicas=None, scaling=None, health_path=None, visibility=None)` | `Application` | `POST /api/v1/applications` |
+| `create_application(project_id, name, *, image=None, source=None, port=None, env=None, secret_refs=None, cpu=None, memory=None, min_replicas=None, max_replicas=None, scaling=None, health_path=None, visibility=None, run_as_user=None)` | `Application` | `POST /api/v1/applications` |
 | `list_applications(project_id="")` | `list[Application]` | `GET /api/v1/applications` |
 | `get_application(name)` | `Application` | `GET /api/v1/applications/{name}` |
 | `update_application(name, *, ...)` | `Application` | `PUT /api/v1/applications/{name}` |
@@ -377,6 +377,7 @@ Applications run on Kubernetes installs only. Every method raises
 | `redeploy_application(name)` | `Application` | `POST /api/v1/applications/{name}/redeploy` |
 | `application_events(name)` | `list[ApplicationEvent]` | `GET /api/v1/applications/{name}/events` |
 | `application_logs(name, *, tail=None, container="")` | `list[ApplicationPodLogs]` | `GET /api/v1/applications/{name}/logs` |
+| `follow_application_logs(name, *, tail=None, container="", since=None, max_seconds=None, on_end=None)` | An iterator of `ApplicationLogLine` (`pod`, `container`, `time`, `line`) | `GET /api/v1/applications/{name}/logs` with `follow=true` |
 | `wait_until_ready(name, *, timeout=600.0, poll_interval=3.0, generation=None)` | `Application` | polls `GET /api/v1/applications/{name}` |
 
 `wait_until_ready` raises `ApplicationFailed` with the reason as soon as the
@@ -384,6 +385,46 @@ application fails, and `ApplicationTimeout` when it is still starting after
 `timeout`. Pass the `generation` that `create_application`, `update_application` or
 `redeploy_application` returned, so a status from the previous rollout isn't taken
 as ready.
+
+`update_application` takes the same keyword arguments as `create_application`.
+It reads the current configuration, applies the arguments you pass and sends the
+result, so an argument that you leave out keeps its value. That includes
+`run_as_user`: pass a number to change it, or `run_as_user=kionga.CLEAR` to
+remove it so that the image's own user applies.
+
+| Argument | Rules |
+| --- | --- |
+| `name` | A lowercase DNS label that starts with a letter, at most 45 characters. A longer name raises `ValueError` before any request. |
+| `visibility` | `sso`, `public` or `internal`. `internal` gives the application no host. |
+| `run_as_user` | A user ID from 1 to 2147483647, for an image that runs as root or names its user. `0` raises `ValueError` before any request. |
+
+`follow_application_logs` yields lines as the pods write them. It starts with
+the last `tail` lines of each pod (1 to 2000, default 200), or with the lines
+after `since`, an RFC 3339 timestamp or a timezone-aware `datetime`. The gateway
+closes a stream after `max_seconds` (1 to 3600, default 600). The client then
+opens it again with the cursor that the gateway sent with the last line, so each
+pod continues exactly after its own last line, with no repeated and no missing
+lines. A dropped connection is retried with the client's `RetryPolicy`. The
+iterator ends when the pods' logs finish, and passes the gateway's reason to
+`on_end`.
+
+With a gateway that sends timestamps instead of cursors, the client resumes from
+five seconds before the newest line it delivered and drops the lines it already
+has. A line is then lost only if the gateway delivers it more than five seconds
+late.
+
+`deploy_function` replaces the whole function. An argument that you leave out
+goes back to the gateway's default, so pass `visibility`, `labels` and
+`run_as_user` on every deploy that should keep them. `visibility` is `internal`
+(the gateway's default, with no host), `sso` or `public`. `run_as_user` applies
+on Kubernetes only.
+
+!!! info "Available in a later release"
+    These are not in SDK v0.3.2 or earlier: `follow_application_logs`,
+    `run_as_user` and `kionga.CLEAR`, the `internal` visibility, and
+    `visibility` and `labels` on `deploy_function`. SDK v0.3.2 accepts
+    application names of up to 63 characters, which the gateway then refuses
+    above 45.
 
 ### Agent teams
 
@@ -490,7 +531,7 @@ All methods return Pydantic models from `kionga` (also importable from
 | `AgentSession` | `id`, `agent_id`, `user_id`, `status`, `current_node`, `turns`, `input_tokens`, `output_tokens`, `cost_usd`, `started_at`, `updated_at` |
 | `AgentTrace` | `id`, `agent_id`, `session_id`, `name`, `status`, `duration_ms`, `tokens`, `metadata`, `created_at` |
 | `Tool` | `id`, `name`, `version`, `description`, `tags`, `input_schema`, `status`, `created_at` |
-| `Function` | `name`, `project_id`, `image`, `status`, `replicas`, `env_vars`, `annotations`, `cpu`, `memory`, `created_at`, `updated_at` |
+| `Function` | `name`, `project_id`, `image`, `status`, `replicas`, `env_vars`, `labels`, `annotations`, `cpu`, `memory`, `replica_range`, `scaling`, `visibility`, `run_as_user`, `message`, `created_at`, `updated_at` |
 | `Connection` | `id`, `name`, `type`, `endpoint`, `secret_ref`, `status`, `created_at`, `checked_at`, `message` |
 | `Readiness` | `percent`, `ready`, `items` (each with `key`, `label`, `status`, `description`, `action`) |
 | `AuditEvent` | `id`, `action`, `resource`, `resource_id`, `actor`, `metadata`, `created_at` |

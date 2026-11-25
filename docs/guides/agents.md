@@ -200,7 +200,7 @@ and needs no key. To use a real provider on Compose:
 
     ```bash
     # OpenAI, or any OpenAI-compatible server behind LLM_UPSTREAM_URL
-    KIONGA_LLM_BACKEND=openai             # or openai-compatible
+    KIONGA_LLM_BACKEND=openai             # or openai-compatible, or self-hosted
     KIONGA_LLM_MODEL=gpt-4o
     LLM_UPSTREAM_API_KEY=sk-...                 # the provider key; the trace proxy holds it
     # LLM_UPSTREAM_URL=https://api.openai.com   # where the trace proxy forwards
@@ -218,7 +218,8 @@ and needs no key. To use a real provider on Compose:
     make -C deploy local-up
     ```
 
-With `openai` and `openai-compatible`, every call goes through the trace proxy,
+With `openai`, `openai-compatible` and `self-hosted` (another name for
+`openai-compatible`), every call goes through the trace proxy,
 which forwards it to the provider and publishes a trace record (agent, version,
 session, status code and duration, not the prompt or response) to the Kafka
 topic `kionga.llm.traces`. With `anthropic`, the runtime calls Anthropic directly, so
