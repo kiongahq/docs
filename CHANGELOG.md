@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.2](https://github.com/kiongahq/docs/compare/v2.0.1...v2.0.2) (2026-11-25)
+
+
+### Automation
+
+* **pages:** deploy releases from main, never from the tag ([3d372b9](https://github.com/kiongahq/docs/commit/3d372b9fa748dd0c056abd14d38b4ce08476d81f))
+
 ## [2.0.1](https://github.com/kiongahq/docs/compare/v2.0.0...v2.0.1) (2026-11-25)
 
 
