@@ -142,12 +142,25 @@ The gateway forwards your request to the model's MLflow `/invocations` route.
     === "Console"
 
         1. In the live version's row, click **Test**.
-        2. Enter the **Request payload** and click **Predict**. The field starts
-           empty and is required. Its placeholder shows an example of the MLflow
-           scoring format, and the help line lists the accepted shapes:
-           `dataframe_split`, `dataframe_records`, `instances` or `inputs`. The
-           example is generic and does not come from your model, so replace it
-           with inputs that match the model's signature.
+        2. If the dialog shows a sample above the field, click **Use example**
+           to fill the **Request payload** with it. The line above the button
+           says where the sample comes from:
+            - `This model's saved input example.` The payload is the input
+              example that was logged with the model in MLflow.
+            - `Derived from this model's signature`. The field names and types
+              are the model's, and the values are placeholders. Replace them
+              before you predict.
+        3. Enter or correct the **Request payload** and click **Predict**. The
+           field starts empty and is required. The help line lists the accepted
+           shapes: `dataframe_split`, `dataframe_records`, `instances` or
+           `inputs`.
+
+        Without a sample, the placeholder shows an example of the MLflow
+        scoring format. That example is generic and does not come from your
+        model, so replace it with inputs that match the model's signature. The
+        dialog has no sample when the model was logged without an input example
+        and without a signature, when the model is a Hugging Face reference,
+        or when the gateway can't read the model from MLflow.
 
     === "API"
 
@@ -160,8 +173,37 @@ The gateway forwards your request to the model's MLflow `/invocations` route.
 
 A model without a live endpoint returns `409 not_serving`.
 
+### Read a model's input example {#input-example}
+
+The sample in the dialog comes from `GET /api/v1/models/{id}/input-example`, which
+you can also call yourself:
+
+```bash
+curl -s "$KIONGA_URL/api/v1/models/<model-id>/input-example" \
+  -H "Authorization: Bearer $KIONGA_TOKEN"
+```
+
+The response has `model_id`, `name`, `version`, `source` and `payload`. The
+`payload` is a complete request body for `predict`. `source` is `input_example`
+for the example saved with the model, or `signature` for a skeleton that the
+gateway builds from the signature's input names and types.
+
+The gateway reads the model version's `MLmodel` file, and its saved input
+example, from the MLflow server at `MLFLOW_URL`. It needs no object storage
+credentials for this.
+
+| Response | Meaning |
+| --- | --- |
+| `404 not_found` | No model with that ID is in your scope. |
+| `409 not_configured` | `MLFLOW_URL` is not set on the gateway. The reply lists the steps to set it. |
+| `404 input_example_unavailable` | The model has no saved input example and no signature inputs, the model is a Hugging Face reference, or MLflow has no such model version. |
+| `502 mlflow_unavailable` | MLflow is unreachable, did not answer in time, refused the gateway's credentials or failed to serve a file. The gateway never answers with a derived skeleton in this case. |
+
 !!! info "Available in a later release"
     In platform v0.2.1 and earlier, the **Request payload** starts as `{}`.
+    **Use example**, the model's own sample and the `input-example` route are
+    not in platform v0.2.1 or earlier. The Compose stack sets `MLFLOW_URL` on
+    the gateway in deploy releases after v0.2.0.
 
 ## Roll back a model
 
@@ -243,6 +285,8 @@ registered versions in an `items` array.
 | `502 serving_failed`, `... must be pinned by digest (name@sha256:...)` | The operator requires digests and the `serving_image` has none. | Register the version with an image pinned as `name@sha256:<digest>`. |
 | `502 serving_failed` with another reason | The serving manager could not start the container. The message gives its reason. | Fix the cause it names. See [Troubleshooting](../operations/troubleshooting.md). |
 | `409 not_serving`, `model has no live serving endpoint` | The version has no live endpoint. | Deploy the model first, and wait for `deployment_status` to become `serving`. |
+| The **Test** dialog shows no **Use example** button | The model has no saved input example and no signature, the model is a Hugging Face reference, or the gateway can't read the model from MLflow. | Call [the `input-example` route](#input-example) to see the reason. Log the model with an input example or a signature, or have an administrator set `MLFLOW_URL` on the gateway. |
+| `502 mlflow_unavailable`, `MLflow refused the gateway's credentials (HTTP 401); check MLFLOW_TOKEN on the gateway` | MLflow requires a token that the gateway doesn't have, or the token is wrong. The status can also be `403`. | Give the gateway `MLFLOW_TOKEN` as a secret, and restart it. |
 | `422`, `no previous stage is available` | The version was never promoted, so rollback has no stage to return to. | Promote the version before you roll it back, or deploy a different version. |
 
 ## Related pages

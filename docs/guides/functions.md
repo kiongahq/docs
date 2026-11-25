@@ -20,7 +20,7 @@ The API and the commands are the same in both cases, so a client doesn't change.
 | Engine | Kionga, with KEDA for scaling | faasd or an OpenFaaS gateway you provide |
 | Scale to zero | Built in, on by default | Depends on your OpenFaaS setup |
 | Setup | The [cluster prerequisites](../operations/kubernetes-prerequisites.md) | `OPENFAAS_URL`, `OPENFAAS_USER` and `OPENFAAS_PASSWORD` |
-| Cron and Kafka triggers | Not available | OpenFaaS connectors |
+| Cron and Kafka triggers | Not available. The settings are recorded, and nothing acts on them. | OpenFaaS connectors |
 | Asynchronous calls | Run in the gateway, with no queue | OpenFaaS queue |
 
 !!! info "Available in a later release"
@@ -37,8 +37,9 @@ The API and the commands are the same in both cases, so a client doesn't change.
   `operator` or `admin` role, and access to the project.
 - The install runs on Kubernetes with KEDA and its HTTP add-on. Without the
   add-on, a function falls back to CPU scaling and keeps one pod running.
-- Your image serves HTTP on port 8080, accepts `POST /` with a JSON body, and
-  runs as a non-root user with a numeric user ID.
+- Your image serves HTTP on port 8080 and accepts `POST /` with a JSON body. It
+  runs as a non-root user with a numeric user ID, or you set one with
+  `run_as_user`.
 
 ## Deploy a function
 
@@ -88,6 +89,24 @@ The API and the commands are the same in both cases, so a client doesn't change.
     | `cpu`, `memory` | `100m`, `256Mi` | Per pod, as Kubernetes quantities. Request and limit are equal. The SDK's own defaults are `500m` and `512Mi`. |
     | `replicas` | `min` 0, `max` 5 | `max` is 1 to 100. |
     | `scaling` | `requests`, target 100 | `requests` counts concurrent calls per pod. `cpu` scales on utilization and needs `min` of 1 or more. |
+    | `visibility` | `internal` | `internal`, `sso` or `public`. `internal` gives the function no host. |
+    | `run_as_user` | The image's own user | Optional. A numeric user ID from 1 to 2147483647 for an image that runs as root or names its user. `0` is refused with `400 invalid_request`. |
+    | `labels` | none | Labels recorded on the function, as a map. |
+
+    A deploy replaces the whole function. A field that you leave out goes back
+    to its default, so send `visibility`, `labels` and `run_as_user` on every
+    deploy that should keep them. The SDK's `deploy_function` takes all three
+    as keyword arguments.
+
+    !!! info "Available in a later release"
+        `visibility` and `run_as_user` on functions are not in platform v0.2.1
+        or earlier, and the SDK's `visibility`, `labels` and `run_as_user`
+        arguments are not in SDK v0.3.2 or earlier.
+
+Function pods never run as root. When Kubernetes refuses to start an image
+because it runs as root or names its user, the function's status becomes
+`failed` with a message that names the image and the fix. The rules are the same
+as for an application's [container user](applications.md#container-user).
 
 A function has no public host by default. Callers reach it through the gateway,
 which also checks who may call it. The same health, restart and rolling-update
@@ -143,10 +162,26 @@ A function that must answer instantly needs a minimum of 1.
 ## What isn't available on Kubernetes
 
 - **Cron and Kafka triggers.** These came from OpenFaaS connectors, which the
-  Kubernetes runtime doesn't use. Schedule a call from a
+  Kubernetes runtime doesn't use. Nothing on Kubernetes runs a function on a
+  schedule or calls it for each message on a topic. Schedule a call from a
   [pipeline](pipelines.md#schedule-a-flow), or run a [real-time consumer](realtime.md).
 - **OpenFaaS settings.** `OPENFAAS_URL` and the OpenFaaS connection don't affect
   functions on Kubernetes.
+
+The console's **Deploy function** form shows the same **Trigger** list on every
+install: `http`, `async`, `cron` and `kafka`. The choice is saved with the
+function as the annotations `io.kionga.invocation`, `schedule` and `topic`, and
+the **Trigger** column shows it. This table says what each choice does:
+
+| **Trigger** | Kubernetes | Compose and single server |
+| --- | --- | --- |
+| `http` | Calls go through the gateway. | Calls go through the gateway. |
+| `async` | The function runs like any other. The console's invoke dialog sends an asynchronous call, and its button reads **Queue invocation**. | The same, and the call goes to the OpenFaaS queue. |
+| `cron` | Recorded only. The function never runs on the schedule. | The OpenFaaS cron connector runs it, when you have installed the connector. |
+| `kafka` | Recorded only. No message on the topic calls the function. | The OpenFaaS Kafka connector calls it, when you have installed the connector. |
+
+On Kubernetes, a function with the `cron` or `kafka` trigger still deploys and
+reads `ready`, so check the install mode before you rely on a trigger.
 
 ## Verify
 
@@ -178,6 +213,9 @@ A function that must answer instantly needs a minimum of 1.
 | `502 invoke_failed` with `function <name> failed: <reason>` | The operator reports the function as failed. | Read the reason, fix the image or its settings, and deploy again. |
 | `502 invoke_failed` after a long wait | The function didn't become ready in time, or its image can't start. | Check `kionga-cli function list` and the pod events. |
 | Status `failed` | The operator reported a failure for the function. | Read the status `message` in the function list and fix the cause it names. |
+| Status `failed`, and the message says that the image runs as root or names its user | Function pods never run as root, and Kubernetes can't verify a named user. | Deploy again with `run_as_user` set to a numeric non-root user ID, or rebuild the image with a numeric non-root `USER`. |
+| `400 invalid_request`, `run_as_user cannot be 0: workloads never run as root; use a non-root user id such as 1000` | You sent `run_as_user` as `0`. | Send a user ID from 1 to 2147483647, or leave the field out. |
+| A function with a `cron` or `kafka` trigger never runs by itself | On Kubernetes, nothing acts on the trigger settings. | Schedule the call from a [pipeline](pipelines.md#schedule-a-flow), or run a [real-time consumer](realtime.md). |
 | `503 kubernetes_unavailable` | The gateway cannot reach the Kubernetes API with its in-cluster service account. | Check the gateway's service account and the cluster's API access; see the [cluster prerequisites](../operations/kubernetes-prerequisites.md). |
 
 ## Related pages

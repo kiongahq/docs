@@ -446,11 +446,13 @@ Applications, functions and model endpoints on Kubernetes. See
 
 ## Kubernetes scale path (optional)
 
-Read by the operator and integration worker only:
+Read by the operator and integration worker, except where a row names the
+gateway:
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `MLFLOW_URL` | in-cluster MLflow | Model lifecycle integration |
+| `MLFLOW_URL` | in-cluster MLflow | Model lifecycle integration. The gateway also reads it, to return a model's [input example](../guides/models-serving.md#input-example); without it, that route returns `409 not_configured`. |
+| `MLFLOW_TOKEN` | *(unset)* | Bearer token for MLflow, when MLflow requires one. Read by the operator and by the gateway. Deliver it as a secret, for example with `MLFLOW_TOKEN_FILE`. |
 | `WORKBENCH_IMAGE` | `ghcr.io/kiongahq/jupyter:latest` | Image for provisioned Jupyter containers |
 | `IDE_IMAGE` | `ghcr.io/kiongahq/ide:latest` | Image for provisioned IDE containers |
 | `KIONGA_IMAGE_PULL_SECRETS` | unset | Comma-separated Secret names referenced by every workspace and agent pod (private registries). The Secrets must exist in the workload namespace. Helm sets it from `imagePullSecrets` |
@@ -461,6 +463,15 @@ Read by the operator and integration worker only:
 | `KIONGA_TARGET_NAMESPACE` | `default` | Namespace where lifecycle CRDs, workspaces and the application, function and model deployment resources are created |
 | `KIONGA_AGENT_NAMESPACE` | `default` | Namespace the gateway uses for ID-derived agent Service DNS; keep equal to the agent lifecycle target namespace |
 | `TRACE_PROXY_IMAGE` | `ghcr.io/kiongahq/trace-proxy:latest` | Sidecar image reconciled into every Kubernetes agent pod |
+
+The Helm chart delivers `config.MLFLOW_URL` to the gateway and the operator in
+one shared configuration file. When MLflow needs a token, give `MLFLOW_TOKEN`
+to both components as a secret.
+
+!!! info "Available in a later release"
+    The gateway does not read `MLFLOW_URL` or `MLFLOW_TOKEN` in platform v0.2.1
+    or earlier. The Compose stack in deploy v0.2.0 and earlier does not set
+    `MLFLOW_URL` on the gateway.
 
 These configure the Kubernetes fidelity path and are not needed for local or
 single-VM use. If `AGENT_RUNTIME_URL` remains set in a Kubernetes gateway it

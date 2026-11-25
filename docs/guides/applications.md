@@ -44,8 +44,9 @@ enable it; see [Turn applications on](#enable).
   record for the application domain. An administrator sets this up; see
   [Turn applications on](#enable) and
   [Kubernetes prerequisites](../operations/kubernetes-prerequisites.md).
-- Your container image serves HTTP on one port, runs as a non-root user with a
-  numeric user ID, and answers its [health check](#health-check).
+- Your container image serves HTTP on one port and answers its
+  [health check](#health-check). It runs as a non-root user with a numeric
+  user ID, or you set one for it; see [Container user](#container-user).
 - For the CLI and Python client, install the SDK (`pip install kionga`, version
   0.3.2 or later), then set `KIONGA_URL` to your gateway address and
   `KIONGA_TOKEN` to a personal API key.
@@ -146,9 +147,10 @@ Rules for sources:
 - The install needs a build registry. Without one, an application with a source
   fails with the reason `BuildNotConfigured`. Image deployments still work.
 - A build has a one hour limit and 2 CPU cores and 4 GiB of memory at most.
-- The phase is `Building` until the first build succeeds. If a later build fails,
-  Kionga keeps serving the previous image and shows the failure in the
-  application's last build.
+- The status is `pending` while the first build runs, and `failed` if that
+  build fails. Nothing is deployed until a build succeeds.
+- A later build doesn't interrupt the version that is serving. See
+  [Status during a rebuild](#rebuild-status).
 - A build runs once for each combination of repository, ref, directory,
   Dockerfile and redeploy request. A branch that moves does not rebuild by
   itself. [Redeploy](#redeploy) to build the new commit.
@@ -168,6 +170,7 @@ Rules for sources:
 | `scaling` | `requests`, target 100 | See [Scale an application](#scale). |
 | `health_path` | `/` | The path of the health check. See [Health check](#health-check). |
 | `visibility` | `sso` | `public`, `sso` or `internal`. See [Visibility](#visibility). |
+| `run_as_user` | The image's own user | Optional. A numeric user ID from 1 to 2147483647 for the containers. See [Container user](#container-user). |
 
 An unset field takes the default. When you send a configuration with `PUT`, send
 all of it: the gateway replaces the whole configuration. The Python client's
@@ -178,6 +181,22 @@ changes.
 ```bash
 kionga apps update billing --max-replicas 6 --env LOG_LEVEL=debug --wait
 ```
+
+### Edit an application in the console {#edit-in-console}
+
+1. Open **Applications**, and click the application's name or **Details**.
+2. Click **Edit**. The **Edit configuration** form opens with the current
+   settings. **Name** is read-only, because the name is the host name.
+3. Change the settings, and click **Save and roll out**. Kionga rolls out new
+   pods, and the address doesn't change.
+
+The form sends the whole configuration, so a field that you clear goes back to
+its default. An empty **Run as user ID** means the image's own user.
+
+!!! info "Available in a later release"
+    The **Edit** form and `run_as_user` are not in platform v0.2.1 or earlier.
+    In those versions, change an application with the CLI, the Python client
+    or the API.
 
 A user with a compute grant can't deploy an application whose CPU or memory
 at the maximum replica count exceeds the grant. The request returns `403
@@ -224,11 +243,71 @@ returns 200, such as `/healthz`. A wrong path leaves the application in
 See [Self-healing and autoscaling](../concepts/self-healing-and-autoscaling.md#self-healing)
 for the timings and what happens when a check fails.
 
+## Container user {#container-user}
+
+Application pods never run as root. Kubernetes refuses to start an image that
+runs as root, and an image whose `USER` is a name instead of a number, because
+it can't tell whether that name is root.
+
+For such an image, set `run_as_user` to a numeric user ID from 1 to 2147483647
+that the image can run as, such as `1000`. Kionga runs the containers as that
+user and changes nothing else in the pod's security settings. Leave it out to
+keep the image's own user.
+
+=== "Console"
+
+    In the **Deploy application** form or the
+    [**Edit configuration** form](#edit-in-console), enter the ID in
+    **Run as user ID**.
+
+=== "CLI"
+
+    ```bash
+    kionga apps update billing --run-as-user 1000 --wait
+    ```
+
+    `kionga apps deploy` takes the same option. `--no-run-as-user` on
+    `kionga apps update` goes back to the image's own user.
+
+=== "Python"
+
+    ```python
+    import kionga
+
+    client.update_application("billing", run_as_user=1000)
+    client.update_application("billing", run_as_user=kionga.CLEAR)  # the image's own user
+    ```
+
+    An update that doesn't pass `run_as_user` keeps the current value.
+
+=== "API"
+
+    Send `"run_as_user": 1000` in the `POST` or `PUT` body. A `PUT` without
+    the field clears it.
+
+Rules:
+
+- `0` is refused with `422 validation_error`. So is a value outside the range.
+- When Kubernetes refuses a pod of the current configuration, the status
+  becomes `failed` with the reason `ImageRunsAsRoot` or `ImageUserNotNumeric`,
+  and the message names the image and both fixes: set a numeric non-root
+  user, or rebuild the image with a numeric non-root `USER`.
+- An administrator must update the Kionga resource definitions before anyone
+  uses the field; see [Turn applications on](#enable).
+
+!!! info "Available in a later release"
+    `run_as_user`, the two reasons and the **Run as user ID** field are not in
+    platform v0.2.1 or earlier, and the CLI options and the Python argument
+    are not in SDK v0.3.2 or earlier. In those versions, an image that runs as
+    root or names its user leaves the application `pending`, and `kionga apps
+    events` shows `CreateContainerConfigError`. Rebuild the image with a
+    numeric non-root `USER`, such as `USER 10001`.
+
 ## Visibility
 
 | Value | Who can reach it |
 | --- | --- |
-| `sso` (default) | People who sign in to Kionga. The gateway signs them in on the application's own host and then forwards the request. |
+| `sso` (default) | People who sign in to Kionga. The gateway signs them in on the application's own host and then forwards the request. See [Sign-in for single sign-on applications](#application-sign-in). |
 | `public` | Anyone on the internet who can reach the host. Kionga adds no sign-in. |
 | `internal` | Nothing outside the cluster. There is no public host and no URL. Other workloads reach it at its internal address. |
 
@@ -241,6 +320,29 @@ for the timings and what happens when a check fails.
 
 A `public` application is open to the internet. Treat its image, its
 configuration and its secrets accordingly.
+
+### Sign-in for single sign-on applications {#application-sign-in}
+
+When someone opens an `sso` application without an application session, the
+gateway sends them to the console to sign in, checks that they may use the
+application's project, and returns them to the application's host with a
+sign-in link. The link is valid for 60 seconds, for that application only. The
+application session that follows lasts 8 hours, and the gateway checks access
+again on every request.
+
+A sign-in link works once. A second use of the same link, on any gateway
+replica, gets `401` with the message `Sign-in link expired, already used or
+invalid. Open the application again.` An expired or altered link gets the same
+answer. Opening the application again starts a new sign-in.
+
+The gateway records each used link in its own store. With PostgreSQL, every
+gateway replica shares that record, so no extra service or setting is needed. If
+the gateway can't record the use, it refuses the link with `503` and the message
+`Sign-in is temporarily unavailable. Open the application again.`
+
+!!! info "Available in a later release"
+    Sign-in on the application's host, with its single-use links, is not in
+    platform v0.2.1 or earlier.
 
 ## Scale an application {#scale}
 
@@ -293,10 +395,10 @@ The status has one of these values:
 
 | Status | Meaning |
 | --- | --- |
-| `pending` | Kionga accepted a change and the operator has not finished rolling it out. |
-| `ready` | The current version has the pods it needs. |
+| `pending` | Kionga accepted a change and the operator has not finished rolling it out. This includes a source build that is running. |
+| `ready` | The running pods are the current configuration. For a Git source, they run the image built for it. |
 | `scaled-to-zero` | Ready, with no pods running because it is idle. The next request starts one. |
-| `failed` | The spec is invalid, a Secret or build failed, or the rollout missed its deadline. The message gives the reason. |
+| `failed` | The spec is invalid, a Secret or build failed, Kubernetes refused the [container user](#container-user), or the rollout missed its deadline. The message gives the reason. |
 | `missing` | The Kubernetes resource is gone. |
 
 `kionga apps get` also shows the URL, ready replicas against the maximum, the
@@ -304,6 +406,30 @@ scaling trigger, the last build for a Git source, and the conditions `Ready`,
 `IngressReady`, `ScalingReady` and `BuildSucceeded`. The `generation` and
 `observed_generation` fields tell a client whether the status describes the
 latest change.
+
+### Status during a rebuild {#rebuild-status}
+
+A change to a Git source, or a [redeploy](#redeploy) of one, starts a build.
+The pods of the previous build keep running until the new image exists, so the
+application stays reachable.
+
+| Build | Status | Message |
+| --- | --- | --- |
+| Running | `pending` | Starts with `building`, and says whether the previous version is still serving or is deployed but not ready. |
+| Failed, with a previous build deployed | `failed` | The build's message, then the same note about the previous version. The previous version keeps serving. |
+| Failed, on the first build | `failed` | The build's message. Nothing is deployed. |
+| Succeeded and rolled out | `ready` | |
+
+`ready` therefore always describes the configuration you sent last. A client
+that waits for `ready` after an update, such as `--wait`, returns only when the
+new build is running.
+
+!!! info "Available in a later release"
+    In platform v0.2.1 and earlier, an application whose previous build is
+    healthy reads `ready` while a rebuild runs and after a rebuild fails, and
+    a redeploy restarts the pods of the previous build before the new build
+    finishes. Check the last build in `kionga apps get` to see the build's
+    result.
 
 ## Read logs and events {#logs}
 
@@ -326,10 +452,21 @@ curl -N "$KIONGA_URL/api/v1/applications/billing/logs?follow=true&tail=50" \
   -H "Authorization: Bearer $KIONGA_TOKEN"
 ```
 
-Each event has an `id` that is a timestamp. To resume after a break, reconnect
-with the last `id` in the `Last-Event-ID` header or the `since` parameter.
-Streaming covers the pods that exist when you connect, so reconnect to pick up
-new pods.
+Each event has an `id`. To resume after a break, reconnect with the last `id`
+in the `Last-Event-ID` header or the `since` parameter. Streaming covers the
+pods that exist when you connect, so reconnect to pick up new pods.
+
+The `id` is an opaque cursor that records the last line delivered for each pod
+and container. Send it back unchanged, and don't parse it. Each pod then
+continues exactly after its own last line, so a resumed stream neither repeats
+nor drops lines. A pod that the cursor doesn't know, such as one started after
+you connected, is read from the time the stream first opened. `since` also
+accepts an RFC 3339 timestamp, and every pod then skips lines at or before it.
+A value that is neither a cursor nor a timestamp returns `400 invalid_request`.
+
+!!! info "Available in a later release"
+    In platform v0.2.1 and earlier, the `id` is an RFC 3339 timestamp, and a
+    resumed stream can repeat or miss lines that share a timestamp.
 
 ## Redeploy {#redeploy}
 
@@ -395,6 +532,11 @@ The gateway also reads `KIONGA_APPLICATIONS_BASE_DOMAIN` and
 Kionga resource definitions for applications, functions and model deployments
 must be installed too. They come with each platform release in `config/crd`.
 
+Apply the resource definitions again when you upgrade the platform, because a
+release can add fields to them. The definitions in platform v0.2.1 and earlier
+have no `spec.runAsUser`, so [`run_as_user`](#container-user) needs the
+definitions of a later release.
+
 Source builds run rootless BuildKit, which needs an unconfined seccomp and
 AppArmor profile. A namespace that enforces the Pod Security `baseline` or
 `restricted` level refuses those pods, so builds need a namespace that doesn't.
@@ -449,7 +591,8 @@ operator's message.
 
 | Symptom | What to check |
 | --- | --- |
-| `Phase:` stays `pending`, and `kionga apps events` shows `CreateContainerConfigError` | The image runs as root, or has a non-numeric user. Set `USER 10001` in the Dockerfile. |
+| `Phase:` stays `pending`, and `kionga apps events` shows `CreateContainerConfigError` | On platform v0.2.1 and earlier, the image runs as root, or has a non-numeric user. Set `USER 10001` in the Dockerfile. Later releases report `failed` with a reason; see [Container user](#container-user). |
+| `422 validation_error` on `run_as_user` | The value is `0` or outside 1 to 2147483647. Applications never run as root. |
 | `Phase:` stays `pending`, and the events show probe failures | The health path doesn't return 200 on your port. |
 | `Phase:` is `failed` | Read `Reason:`, then match it to the operator reasons below. |
 | The URL doesn't resolve | The wildcard DNS record is missing, or the application is `internal`. |
@@ -468,6 +611,9 @@ maps them to the status values above.
 | `InvalidName` | The name is longer than 45 characters. |
 | `SecretNotAllowed` or `SecretNotFound` | The Secret is missing, or lacks the `kionga.dev/workload-secret=true` label. |
 | `BuildNotConfigured` | The operator has no `KIONGA_BUILD_REGISTRY`. |
+| `BuildFailed` | The source build failed. The message is the build's own. If a previous build is deployed, it keeps serving; see [Status during a rebuild](#rebuild-status). |
+| `ImageRunsAsRoot` | The image runs as root. Set [`run_as_user`](#container-user), or rebuild the image with a numeric non-root `USER`. |
+| `ImageUserNotNumeric` | The image's `USER` is a name. Set [`run_as_user`](#container-user), or rebuild the image with a numeric `USER`. |
 | `UnsupportedSource` | The Git URL isn't a public `https://` URL without credentials. |
 | `KEDAHTTPAddonMissing` (on the `ScalingReady` condition) | The KEDA HTTP add-on wasn't installed when the operator started. Install it and restart the operator. |
 

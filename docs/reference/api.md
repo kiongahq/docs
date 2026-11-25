@@ -58,7 +58,7 @@ Examples on other pages often leave the credential out for brevity.
 | `GET` | `/auth/sso/login?connector=<id>` | Start single sign-on with one provider |
 | `GET` | `/auth/callback` | OIDC authorization-code callback |
 | `POST` | `/auth/local/login` | Local sign-in with form fields `username`, `password` and optional `return_to`. Throttled per account after 5 failures. |
-| `GET` | `/auth/logout` | End the session, including workspace sessions |
+| `GET` | `/auth/logout` | End the session, including workspace sessions. Returns `503` and keeps the cookie when the session can't be ended, so you can try again. |
 
 ## Who can call a route
 
@@ -200,8 +200,8 @@ needs at least two. Administrators and operators are not subject to these checks
 
 | Method | Path | Access | Service | Purpose |
 | --- | --- | --- | --- | --- |
-| `GET` | `/api/v1/pipelines/runs` | read | `pipelines` | List runs (JSON array) |
-| `GET` | `/api/v1/pipelines/runs/{id}` | read | `pipelines` | One run with its steps and logs. Logs are removed when `logs:Read` is denied. |
+| `GET` | `/api/v1/pipelines/runs` | read | `pipelines` | List runs (JSON array). Each run has `owner_subject` and `owner_label`. |
+| `GET` | `/api/v1/pipelines/runs/{id}` | read | `pipelines` | One run with its steps and logs, and `owner_label`. Logs are removed when `logs:Read` is denied. |
 | `POST` | `/api/v1/pipelines/submit` | write | `pipelines` | Start a run of the built-in pipeline (`name`) or a flow (`definition_id`), with `parameters` and optional `overrides` |
 | `POST` | `/api/v1/pipelines/preflight` | write | `pipelines` | Check a run's configuration without starting it |
 | `POST` | `/api/v1/pipelines/runs/{id}/cancel` | write | `pipelines` | Cancel a run, including in the engine |
@@ -233,6 +233,21 @@ run at the same time. If the widest such group exceeds the user's grant, the
 request returns `403 resource_not_provisioned`. Steps that run one after another
 are not added together. See [Pipelines](../guides/pipelines.md).
 
+`owner_label` is a display name for `owner_subject`, resolved for each caller
+when the run is read:
+
+| Caller | `owner_label` |
+| --- | --- |
+| `admin` or `operator` | The email address on the owner's access profile |
+| The run's owner | Their own email address |
+| Anyone else, including members of the same project | The same value as `owner_subject` |
+
+When the owner has no access profile, or the profile has no email address,
+`owner_label` is `owner_subject`. A run without an owner has no `owner_label`.
+
+!!! info "Available in a later release"
+    `owner_label` is not in platform v0.2.1 or earlier.
+
 ## Models
 
 | Method | Path | Access | Service | Purpose |
@@ -244,6 +259,7 @@ are not added together. See [Pipelines](../guides/pipelines.md).
 | `POST` | `/api/v1/models/{id}/rollback` | write | `models` | Return to the previous stage and remove the model server |
 | `GET` | `/api/v1/models/{id}/deployment` | read | `models` | Live deployment status of a version: `pending`, `serving` (with `endpoint_url`) or `failed` (with a message). On Kubernetes it reads the operator's status |
 | `POST` | `/api/v1/models/{id}/predict` | write | `models` | Send a prediction request to the live endpoint (MLflow `/invocations` format) |
+| `GET` | `/api/v1/models/{id}/input-example` | read | `models` | A sample `predict` payload for the version: `source` is `input_example` (saved with the model) or `signature` (a skeleton with placeholder values) |
 | `GET` | `/api/v1/models/huggingface` | read | `models` | Search the Hugging Face Hub (`search`, `task`) |
 | `POST` | `/api/v1/models/huggingface/import` | write | `models` | Register a pinned Hub revision in a project ([Hugging Face models](../guides/huggingface.md)) |
 
@@ -256,6 +272,21 @@ when the model has no live endpoint.
 `serving_image` pins the version to a container image that provides the `mlflow`
 command and the exact libraries needed to load the model. Without it, the serving
 manager uses its `SERVE_IMAGE`.
+
+`input-example` reads the model version from the MLflow server that the
+gateway's `MLFLOW_URL` names. Its error responses are:
+
+| Status and code | Meaning |
+| --- | --- |
+| `404 not_found` | No model with that ID is in the caller's scope |
+| `409 not_configured` | `MLFLOW_URL` is not set on the gateway. The body has a `message` and `steps`. |
+| `404 input_example_unavailable` | The model has no saved input example and no signature inputs, the model is a Hugging Face reference, or MLflow has no such model version |
+| `502 mlflow_unavailable` | MLflow is unreachable, slow, refuses the gateway's credentials or fails to serve a file |
+
+See [Read a model's input example](../guides/models-serving.md#input-example).
+
+!!! info "Available in a later release"
+    The `input-example` route is not in platform v0.2.1 or earlier.
 
 ## Agents and tools
 
@@ -353,13 +384,32 @@ needs the `applications` service. See [Deploy applications](../guides/applicatio
 | Method | Path | Access | Service | Purpose |
 | --- | --- | --- | --- | --- |
 | `GET` | `/api/v1/applications` | read | `applications` | List applications with live status, URL and ready replicas. Filter with `project_id` |
-| `POST` | `/api/v1/applications` | write | `applications` | Deploy an application: `project_id`, `name`, `image` or `source`, and optional `port`, `env`, `secret_refs`, `resources`, `replicas`, `scaling`, `health_path`, `visibility` |
+| `POST` | `/api/v1/applications` | write | `applications` | Deploy an application: `project_id`, `name`, `image` or `source`, and optional `port`, `env`, `secret_refs`, `resources`, `replicas`, `scaling`, `health_path`, `visibility`, `run_as_user` |
 | `GET` | `/api/v1/applications/{name}` | read | `applications` | Read an application with status, conditions and last build |
-| `PUT` | `/api/v1/applications/{name}` | write | `applications` | Replace the configuration; the name and project can't change |
+| `PUT` | `/api/v1/applications/{name}` | write | `applications` | Replace the configuration; the name and project can't change. A field that you leave out goes back to its default, and leaving out `run_as_user` clears it. |
 | `DELETE` | `/api/v1/applications/{name}` | write | `applications` | Delete the application and its workload |
 | `POST` | `/api/v1/applications/{name}/redeploy` | write | `applications` | Restart the pods, and rebuild a Git source |
 | `GET` | `/api/v1/applications/{name}/logs` | read | `applications` | Recent logs per pod (`tail`, `container`, `since`). With `follow=true`, a bounded Server-Sent Events stream |
 | `GET` | `/api/v1/applications/{name}/events` | read | `applications` | Kubernetes events for the application |
+
+`run_as_user` is the numeric user that the containers run as, from 1 to
+2147483647. `0` and values outside the range return `422 validation_error`. See
+[Container user](../guides/applications.md#container-user).
+
+In a followed log stream, each event's `id` is an opaque cursor. To resume, send
+the last `id` back unchanged in the `Last-Event-ID` header or the `since`
+parameter. `since` also accepts an RFC 3339 timestamp. A value that is neither
+returns `400 invalid_request`. See
+[Read logs and events](../guides/applications.md#logs).
+
+The `status` of an application whose Git source is building is `pending`, and
+`ready` means that the running pods are the build of the current configuration.
+See [Status during a rebuild](../guides/applications.md#rebuild-status).
+
+!!! info "Available in a later release"
+    `run_as_user`, the log cursor and the rebuild status are not in platform
+    v0.2.1 or earlier. In those versions the event `id` is an RFC 3339
+    timestamp.
 
 ## Real-time and functions
 
@@ -368,7 +418,7 @@ needs the `applications` service. See [Deploy applications](../guides/applicatio
 | `GET` | `/api/v1/realtime` | read | `realtime` | Live statistics for the real-time examples |
 | `POST` | `/api/v1/realtime/{demo}` | reporting | | Report stream statistics |
 | `GET` | `/api/v1/functions` | read | `functions` | List functions and whether OpenFaaS is configured (on Kubernetes, `runtime` is `kubernetes`) |
-| `POST` | `/api/v1/functions` | write | `functions` | Deploy a function: `project_id`, `name`, `image`, optional `cpu`, `memory`, `env_vars`, `labels`, `annotations`, and on Kubernetes `replicas` and `scaling` |
+| `POST` | `/api/v1/functions` | write | `functions` | Deploy a function: `project_id`, `name`, `image`, optional `cpu`, `memory`, `env_vars`, `labels`, `annotations`, and on Kubernetes `replicas`, `scaling`, `visibility` and `run_as_user`. A deploy replaces the whole function. |
 | `DELETE` | `/api/v1/functions/{name}` | write | `functions` | Remove a function |
 | `POST` | `/api/v1/functions/{name}/invoke` | write | `functions` | Invoke a function with the request body as payload |
 | `POST` | `/api/v1/functions/{name}/invoke-async` | write | `functions` | Queue an invocation and return its call ID |
@@ -376,6 +426,17 @@ needs the `applications` service. See [Deploy applications](../guides/applicatio
 For a normal user, a function's CPU or memory above the user's grant returns
 `403 resource_not_provisioned`, and the function count is limited by the user's
 quota.
+
+On Kubernetes, `run_as_user` is the numeric user that the function runs as, from
+1 to 2147483647. `0` and values outside the range return `400 invalid_request`.
+A Compose install ignores the field. The `annotations` `schedule`, `topic` and
+`io.kionga.invocation` are saved with the function. On Kubernetes nothing acts
+on them, so a function never runs on a schedule or from a Kafka topic there. See
+[Run functions on Kubernetes](../guides/functions.md).
+
+!!! info "Available in a later release"
+    `visibility` and `run_as_user` on functions are not in platform v0.2.1 or
+    earlier.
 
 ## Engineering blog
 
