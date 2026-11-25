@@ -217,6 +217,10 @@ examples.
 `GET /api/v1/iam/catalog` returns this catalog from your running Kionga, and
 `GET /api/v1/iam/explain` explains any single decision.
 
+!!! info "Available in a later release"
+    Editing a connection, which `infra:Provision` also governs, is not in
+    platform v0.2.1 or earlier.
+
 ## Check your own access
 
 `GET /api/v1/me` returns your identity and what you can do:

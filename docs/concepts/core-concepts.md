@@ -80,8 +80,8 @@ Token counts come from the usage the model reports; Kionga does not estimate
 them. **Cost** is computed from the per-1,000-token rates you configure
 (`KIONGA_COST_PER_1K_INPUT` and `KIONGA_COST_PER_1K_OUTPUT`).
 
-Calls from the `openai` and `openai-compatible` backends go through the **trace
-proxy**, which forwards each call to your provider and publishes a trace of it to
+Calls from the `openai` and `openai-compatible` backends, and from `self-hosted`,
+which is another name for `openai-compatible`, go through the **trace proxy**, which forwards each call to your provider and publishes a trace of it to
 Kafka without any change to agent code. Langfuse provides detailed traces and a
 prompt library when its keys are configured. The `anthropic` backend calls
 Anthropic directly, so the trace proxy does not capture those calls.

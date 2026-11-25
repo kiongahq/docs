@@ -194,8 +194,8 @@ Used by the agent runtime and trace proxy.
 | --- | --- | --- |
 | `KIONGA_LLM_BACKEND` | `mock` | `openai` \| `anthropic` \| `openai-compatible` \| `self-hosted` \| `mock`. `self-hosted` is another name for `openai-compatible`. |
 | `KIONGA_LLM_MODEL` | *(empty)* | Model name for the chosen backend |
-| `KIONGA_LLM_BASE_URL` | `http://trace-proxy:8081/v1` | Base URL for the `openai` and `openai-compatible` backends; Compose points it at the trace proxy for capture |
-| `OPENAI_API_KEY` | *(empty)* | The key the `openai` and `openai-compatible` backends send. Behind the trace proxy this is your Kionga project key, not a provider key; see [Project keys](../guides/agents.md#project-keys) |
+| `KIONGA_LLM_BASE_URL` | `http://trace-proxy:8081/v1` | Base URL for the `openai`, `openai-compatible` and `self-hosted` backends; Compose points it at the trace proxy for capture |
+| `OPENAI_API_KEY` | *(empty)* | The key the `openai`, `openai-compatible` and `self-hosted` backends send. Behind the trace proxy this is your Kionga project key, not a provider key; see [Project keys](../guides/agents.md#project-keys) |
 | `ANTHROPIC_API_KEY` | *(empty)* | Provider key for the `anthropic` backend, which calls Anthropic directly (env-only; never logged or traced) |
 | `LLM_UPSTREAM_URL` | `https://api.openai.com` | Where the trace proxy forwards calls |
 | `LLM_UPSTREAM_API_KEY` | *(empty)* | Provider key the trace proxy sends upstream |

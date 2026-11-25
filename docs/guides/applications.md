@@ -190,8 +190,8 @@ kionga apps update billing --max-replicas 6 --env LOG_LEVEL=debug --wait
 3. Change the settings, and click **Save and roll out**. Kionga rolls out new
    pods, and the address doesn't change.
 
-The form sends the whole configuration, so a field that you clear goes back to
-its default. An empty **Run as user ID** means the image's own user.
+The form sends the whole configuration. An empty **Run as user ID** means the
+image's own user, so clearing the field removes a user that was set.
 
 !!! info "Available in a later release"
     The **Edit** form and `run_as_user` are not in platform v0.2.1 or earlier.

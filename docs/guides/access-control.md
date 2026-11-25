@@ -193,6 +193,10 @@ scoped per principal at evaluation time.
 Models, agents, functions, storage and the catalog are governed by the coarse
 gate plus project assignment; they have no policy actions yet.
 
+!!! info "Available in a later release"
+    Editing a connection, which `infra:Provision` also governs, is not in
+    platform v0.2.1 or earlier.
+
 ### Resources
 
 Resource names start with `kionga:` and use `/`-separated segments. IDs are
